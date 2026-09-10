@@ -78,7 +78,8 @@ from the private pipeline's `build/` folder into `data/`.
 ## One-time setup
 
 - **GitHub Pages**: Settings > Pages > *Build and deployment* > Source: **GitHub Actions**.
-  The deploy workflow also tries to enable this automatically on its first run.
+  The workflow cannot switch this on by itself; until it is enabled, the deploy job is
+  skipped with a warning and only the data check runs.
 - **Publishing token**: the private repository needs a secret `LOBBY_DEPLOY_TOKEN`, a
   fine-grained personal access token with *Contents: Read and write* on this repository.
   Details are in the private repository's README.

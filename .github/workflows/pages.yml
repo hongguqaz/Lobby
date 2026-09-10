@@ -1,8 +1,8 @@
 # 1. "check": on every push and pull request, make sure no raw data has been
 #    committed and that data/dashboard.json is a well-formed aggregate.
 # 2. "deploy": on the default branch, publish index.html + assets + data to
-#    GitHub Pages.  First-time setup: Settings > Pages > Source: "GitHub Actions"
-#    (the configure-pages step also tries to enable it automatically).
+#    GitHub Pages.  First-time setup: Settings > Pages > Source: "GitHub Actions".
+#    Until then the deploy job is skipped with a warning.
 name: Check and deploy dashboard
 
 on:
@@ -44,11 +44,25 @@ jobs:
           mkdir -p site
           cp index.html site/
           cp -r assets data site/
+      # The workflow token cannot switch Pages on by itself, so check first and
+      # skip the deployment with a warning until it has been enabled once.
+      - name: Check that GitHub Pages is enabled
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${GITHUB_REPOSITORY}/pages" --silent 2>/dev/null; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=GitHub Pages is not enabled yet::Enable it once under Settings > Pages > Build and deployment > Source: GitHub Actions, then re-run this workflow or push again. The dashboard files in this commit are ready to deploy."
+          fi
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
+        if: steps.pages.outputs.enabled == 'true'
       - uses: actions/upload-pages-artifact@v3
+        if: steps.pages.outputs.enabled == 'true'
         with:
           path: site
       - id: deployment
+        if: steps.pages.outputs.enabled == 'true'
         uses: actions/deploy-pages@v4
