@@ -135,7 +135,7 @@ a { color: var(--accent); }
 }
 .tile.hero { grid-column: span 2; }
 .tile-label { margin: 0; font-size: 12px; color: var(--ink-2); }
-.tile-value { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.15; overflow-wrap: anywhere; }
+.tile-value { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile.hero .tile-value { font-size: 44px; }
 .tile-foot { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 12px; color: var(--ink-2); align-items: baseline; }
 .tile-sub { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }

@@ -599,8 +599,24 @@
     return t;
   }
 
+  // Shrink a tile value's font until it fits on one line (large currencies, long numbers).
+  function fitTileValues(box) {
+    Array.prototype.forEach.call(box.querySelectorAll('.tile-value'), function (el) {
+      el.style.fontSize = '';
+      var size = parseFloat(getComputedStyle(el).fontSize);
+      while (el.scrollWidth > el.clientWidth + 1 && size > 20) {
+        size -= 2;
+        el.style.fontSize = size + 'px';
+      }
+    });
+  }
+
   function renderKpis(A, P) {
     var box = $('#kpis'); box.replaceChildren();
+    try { return renderKpiTiles(A, P, box); } finally { fitTileValues(box); }
+  }
+
+  function renderKpiTiles(A, P, box) {
     if (!A.count) { box.appendChild(h('p', { 'class': 'kpi-empty', text: 'No transactions match the current filters.' })); return; }
     var rangeText = periodLabel(keys[state.from]) + (state.from !== state.to ? ' – ' + periodLabel(keys[state.to]) : '');
     var prevText = P ? ' vs previous ' + A.len + ' ' + GRAIN_NOUN + (A.len > 1 ? 's' : '') : '';
@@ -608,7 +624,7 @@
     function neutralDelta(v) { return v == null ? null : { text: signed(v, '%') + prevText, dir: Math.sign(v) }; }
 
     var totalText = money(A.amount);
-    box.appendChild(tile({ label: 'Total spend', hero: true, value: totalText.length > 13 ? money(A.amount, true) : totalText, delta: neutralDelta(change(A.amount, P && P.amount)),
+    box.appendChild(tile({ label: 'Total spend', hero: true, value: totalText.length > 18 ? money(A.amount, true) : totalText, delta: neutralDelta(change(A.amount, P && P.amount)),
       sub: rangeText, spark: A.byPeriod.map(function (p) { return p.amount; }) }));
     box.appendChild(tile({ label: 'Transactions', value: num(A.count), delta: neutralDelta(change(A.count, P && P.count)),
       spark: A.byPeriod.map(function (p) { return p.count; }) }));
