@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maiden Hall - Lobby</title>
+  <link rel="stylesheet" href="../assets/rooms.css">
+  <link rel="stylesheet" href="../assets/gate.css">
+  <style>
+    :root { --room-bg: #ece7dd; --room-ink: #2f2a24; --room-ink-2: #524a40; --room-muted: #7a7060; --room-accent: #6f8fa8;
+      --room-panel: rgba(255, 255, 255, 0.7); --room-line: rgba(111, 143, 168, 0.35); --room-radius: 10px;
+      --room-font: Georgia, "Times New Roman", "Noto Serif", serif; --room-display: Georgia, "Times New Roman", serif; }
+    .crumbs a { color: var(--room-ink-2); }
+    .room-head h1 { font-weight: 500; letter-spacing: 0.01em; }
+    .placard { box-shadow: 0 6px 24px rgba(60, 50, 30, 0.08); }
+    .placard h2 { color: #3e5a72; }
+
+  </style>
+  <script src="../assets/gate.js"></script>
+  <script>LobbyGate.require("maiden-hall", "Maiden Hall");</script>
+
+</head>
+<body class="room">
+  <svg class="scene" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="mh-wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eeeae0"/><stop offset="1" stop-color="#e2ddd0"/></linearGradient>
+      <linearGradient id="mh-window" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbfaf4"/><stop offset="1" stop-color="#e6eff2"/></linearGradient>
+      <linearGradient id="mh-floor" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c7a97e"/><stop offset=".5" stop-color="#d9bd92"/><stop offset="1" stop-color="#c7a97e"/></linearGradient>
+      <linearGradient id="mh-light" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".55"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+    </defs>
+    <rect width="1600" height="900" fill="url(#mh-wall)"/>
+    <rect x="0" y="0" width="1600" height="60" fill="#e6e1d5"/><rect x="0" y="56" width="1600" height="6" fill="#cfc6b5"/>
+    <rect x="80" y="120" width="190" height="300" fill="none" stroke="#cfc6b5" stroke-width="3"/><rect x="80" y="450" width="190" height="120" fill="none" stroke="#cfc6b5" stroke-width="3"/><rect x="330" y="120" width="190" height="300" fill="none" stroke="#cfc6b5" stroke-width="3"/><rect x="330" y="450" width="190" height="120" fill="none" stroke="#cfc6b5" stroke-width="3"/><rect x="580" y="120" width="190" height="300" fill="none" stroke="#cfc6b5" stroke-width="3"/><rect x="580" y="450" width="190" height="120" fill="none" stroke="#cfc6b5" stroke-width="3"/><rect x="830" y="120" width="190" height="300" fill="none" stroke="#cfc6b5" stroke-width="3"/><rect x="830" y="450" width="190" height="120" fill="none" stroke="#cfc6b5" stroke-width="3"/><rect x="1080" y="120" width="190" height="300" fill="none" stroke="#cfc6b5" stroke-width="3"/><rect x="1080" y="450" width="190" height="120" fill="none" stroke="#cfc6b5" stroke-width="3"/><rect x="1330" y="120" width="190" height="300" fill="none" stroke="#cfc6b5" stroke-width="3"/><rect x="1330" y="450" width="190" height="120" fill="none" stroke="#cfc6b5" stroke-width="3"/>
+    <g><rect x="360" y="90" width="200" height="440" fill="url(#mh-window)" stroke="#d9d2c2" stroke-width="10"/><path d="M460,90 V530 M360,310 H560" stroke="#d9d2c2" stroke-width="8"/>
+      <rect x="1040" y="90" width="200" height="440" fill="url(#mh-window)" stroke="#d9d2c2" stroke-width="10"/><path d="M1140,90 V530 M1040,310 H1240" stroke="#d9d2c2" stroke-width="8"/></g>
+    <path d="M330,80 q30,220 0,470 h60 q-40,-250 0,-470 z" fill="#f6f3ea" opacity=".9"/><path d="M560,80 q-30,220 0,470 h60 q40,-250 0,-470 z" fill="#f6f3ea" opacity=".9"/>
+    <path d="M1010,80 q30,220 0,470 h60 q-40,-250 0,-470 z" fill="#f6f3ea" opacity=".9"/><path d="M1240,80 q-30,220 0,470 h60 q40,-250 0,-470 z" fill="#f6f3ea" opacity=".9"/>
+    <line x1="800" y1="0" x2="800" y2="110" stroke="#b8a06a" stroke-width="3"/><path d="M800,110 q-60,30 -84.0,70" fill="none" stroke="#c9b27a" stroke-width="3"/><ellipse cx="716" cy="184" rx="8" ry="14" fill="#fff4d6" opacity=".9"/><circle cx="716" cy="170" r="16" fill="#fff4d6" opacity=".25"/><path d="M800,110 q-30,30 -42.0,70" fill="none" stroke="#c9b27a" stroke-width="3"/><ellipse cx="758" cy="184" rx="8" ry="14" fill="#fff4d6" opacity=".9"/><circle cx="758" cy="170" r="16" fill="#fff4d6" opacity=".25"/><path d="M800,110 q30,30 42.0,70" fill="none" stroke="#c9b27a" stroke-width="3"/><ellipse cx="842" cy="184" rx="8" ry="14" fill="#fff4d6" opacity=".9"/><circle cx="842" cy="170" r="16" fill="#fff4d6" opacity=".25"/><path d="M800,110 q60,30 84.0,70" fill="none" stroke="#c9b27a" stroke-width="3"/><ellipse cx="884" cy="184" rx="8" ry="14" fill="#fff4d6" opacity=".9"/><circle cx="884" cy="170" r="16" fill="#fff4d6" opacity=".25"/><circle cx="800" cy="120" r="12" fill="#c9b27a"/>
+    <rect x="0" y="580" width="1600" height="14" fill="#cfc6b5"/><rect x="0" y="594" width="1600" height="306" fill="url(#mh-floor)"/>
+    <polygon points="360,594 560,594 700,900 220,900" fill="url(#mh-light)"/><polygon points="1040,594 1240,594 1380,900 900,900" fill="url(#mh-light)"/>
+    <rect x="620" y="640" width="360" height="150" rx="16" fill="#6f8fa8"/><rect x="600" y="620" width="400" height="60" rx="30" fill="#7d9bb3"/><rect x="600" y="760" width="400" height="20" rx="6" fill="#5f7e96"/>
+    <rect x="1290" y="600" width="220" height="16" rx="3" fill="#8a6a3a"/><rect x="1300" y="616" width="16" height="120" fill="#7a5c30"/><rect x="1484" y="616" width="16" height="120" fill="#7a5c30"/>
+    <rect x="1330" y="560" width="80" height="40" fill="#f2ecdd" transform="rotate(-8 1370 580)"/><rect x="1440" y="574" width="10" height="26" fill="#2b2b2b"/>
+    <ellipse cx="800" cy="850" rx="460" ry="60" fill="#b9c8d2" opacity=".55"/>
+  </svg>
+  <div class="room-wrap">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="../">Lobby</a><span aria-hidden="true">/</span><span aria-current="page">Maiden Hall</span></nav>
+    <header class="room-head">
+      <h1>Maiden Hall</h1>
+      <span class="status">Keyed &middot; the writing desk is set</span>
+    </header>
+    <p class="room-desc">The drawing room over the front door, in pale blue and cream, with tall windows onto the lake. Here reports are framed,
+      addresses are drafted, and the papers that support the day's work are kept within reach. The desk is set; the tools come later.</p>
+    <div class="shelf">
+      <section class="placard"><h2>Report scaffolds</h2><p>Outlines and templates for the reports written most often: structure first, then the filling in.</p><span class="soon">Space reserved</span></section>
+      <section class="placard"><h2>Speech drafts</h2><p>Remarks and addresses, from first notes to the delivered text, with what worked kept for next time.</p><span class="soon">Space reserved</span></section>
+      <section class="placard"><h2>Work materials</h2><p>Papers directly tied to current work, filed by matter and date.</p><span class="soon">Space reserved</span></section>
+      <section class="placard"><h2>Support tools</h2><p>Helpers for the work itself: checklists, phrase banks, formats. To be developed.</p><span class="soon">Planned</span></section>
+    </div>
+    <p class="room-foot">Design only for now. The private side of this room is <code>Drive/maiden-hall/</code>.</p>
+  </div>
+
+</body>
+</html>

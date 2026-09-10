@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bedroom - Lobby</title>
+  <link rel="stylesheet" href="../assets/rooms.css">
+  <link rel="stylesheet" href="../assets/gate.css">
+  <style>
+    :root { --room-bg: #1f1310; --room-ink: #f5e6d3; --room-ink-2: #dcc4ad; --room-muted: #b9957d; --room-accent: #e0a35a;
+      --room-panel: rgba(40, 20, 14, 0.6); --room-line: rgba(224, 163, 90, 0.3); --room-radius: 12px; --room-text-shadow: 0 1px 2px rgba(0,0,0,0.75), 0 0 18px rgba(0,0,0,0.65);
+      --room-font: Georgia, "Times New Roman", "Noto Serif", serif; --room-display: Georgia, "Times New Roman", serif; }
+    .room-head h1 { font-weight: 500; font-style: italic; }
+    .lamp { transform-box: fill-box; transform-origin: center; animation: glow 3.6s ease-in-out infinite alternate; }
+    .lamp-r { animation-delay: -1.8s; }
+    @keyframes glow { from { opacity: .82; } to { opacity: 1; } }
+    body.dim .lamp circle { opacity: .35; } body.dim .scene { filter: brightness(.7); }
+    .lights { margin-top: 20px; font: inherit; font-size: 13px; color: var(--room-ink); background: var(--room-panel); border: 1px solid var(--room-line); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+    @media (prefers-reduced-motion: reduce) { .lamp { animation: none; } }
+
+  </style>
+  <script src="../assets/gate.js"></script>
+  <script>LobbyGate.require("bedroom", "Bedroom");</script>
+
+</head>
+<body class="room">
+  <svg class="scene" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="bd-wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1712"/><stop offset="1" stop-color="#1a0f0c"/></linearGradient>
+      <linearGradient id="bd-curtain" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4a161c"/><stop offset=".5" stop-color="#6e2530"/><stop offset="1" stop-color="#4a161c"/></linearGradient>
+      <linearGradient id="bd-floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2216"/><stop offset="1" stop-color="#1c110c"/></linearGradient>
+      <linearGradient id="bd-moon" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c3a5c"/><stop offset="1" stop-color="#1a2440"/></linearGradient>
+      <radialGradient id="bd-lamp" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffb36b" stop-opacity=".75"/><stop offset=".45" stop-color="#ff9d4a" stop-opacity=".25"/><stop offset="1" stop-color="#ff9d4a" stop-opacity="0"/></radialGradient>
+    </defs>
+    <rect width="1600" height="900" fill="url(#bd-wall)"/>
+    <rect x="1240" y="100" width="220" height="360" fill="url(#bd-moon)" stroke="#3a2a22" stroke-width="10"/><circle cx="1380" cy="190" r="34" fill="#e9e2c8" opacity=".9"/><path d="M1350,100 V460 M1240,280 H1460" stroke="#3a2a22" stroke-width="8"/>
+    <rect x="0" y="600" width="1600" height="300" fill="url(#bd-floor)"/>
+    <rect x="200" y="640" width="1100" height="200" rx="12" fill="#5a2a2a" opacity=".55"/>
+    <rect x="360" y="80" width="880" height="26" rx="6" fill="#7a5a2a"/>
+    <path d="M370,106 q-60,220 -20,520 h90 q-40,-300 10,-520 z" fill="url(#bd-curtain)"/><path d="M1230,106 q60,220 20,520 h-90 q40,-300 -10,-520 z" fill="url(#bd-curtain)"/>
+    <rect x="480" y="300" width="640" height="150" rx="20" fill="#3d2a24"/><rect x="500" y="320" width="600" height="110" rx="14" fill="#5b3b32"/>
+    <rect x="470" y="450" width="660" height="230" rx="14" fill="#efe2cf"/><rect x="470" y="520" width="660" height="160" rx="14" fill="#7a2a33"/><rect x="470" y="600" width="660" height="80" rx="10" fill="#8f3540"/>
+    <rect x="520" y="455" width="230" height="60" rx="22" fill="#fbf4e6"/><rect x="850" y="455" width="230" height="60" rx="22" fill="#fbf4e6"/>
+    <g class="lamp lamp-l"><circle cx="330" cy="470" r="150" fill="url(#bd-lamp)"/><path d="M290,470 h80 l-12,-60 h-56 z" fill="#f2d9a8"/><rect x="326" y="470" width="8" height="60" fill="#8a6a3a"/><ellipse cx="330" cy="530" rx="22" ry="6" fill="#8a6a3a"/></g>
+    <g class="lamp lamp-r"><circle cx="1270" cy="470" r="150" fill="url(#bd-lamp)"/><path d="M1230,470 h80 l-12,-60 h-56 z" fill="#f2d9a8"/><rect x="1266" y="470" width="8" height="60" fill="#8a6a3a"/><ellipse cx="1270" cy="530" rx="22" ry="6" fill="#8a6a3a"/></g>
+    <rect x="270" y="530" width="120" height="80" rx="6" fill="#4a2e1c"/><rect x="1210" y="530" width="120" height="80" rx="6" fill="#4a2e1c"/>
+  </svg>
+  <div class="room-wrap">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="../">Lobby</a><span aria-hidden="true">/</span><span aria-current="page">Bedroom</span></nav>
+    <header class="room-head">
+      <h1>Bedroom</h1>
+      <span class="status">Keyed &middot; lamps lit</span>
+    </header>
+    <p class="room-desc">The private quarters in the east tower, under warm lamplight: a canopy bed in burgundy and cream, curtains drawn against the lake,
+      a moon in the window. Nothing to do here but rest.</p>
+    <button class="lights" type="button" id="lights" aria-pressed="false">Dim the lamps</button>
+    <div class="shelf">
+      <section class="placard"><h2>Rest</h2><p>Design only. This room is kept as it is.</p><span class="soon">Nothing planned</span></section>
+    </div>
+    <p class="room-foot">The private side of this room is <code>Drive/bedroom/</code>.</p>
+  </div>
+  <script>
+    (function () {
+      var b = document.getElementById('lights');
+      b.addEventListener('click', function () {
+        var dim = document.body.classList.toggle('dim');
+        b.setAttribute('aria-pressed', String(dim));
+        b.textContent = dim ? 'Light the lamps' : 'Dim the lamps';
+      });
+    })();
+  </script>
+</body>
+</html>

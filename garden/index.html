@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Garden - Lobby</title>
+  <link rel="stylesheet" href="../assets/rooms.css">
+  <link rel="stylesheet" href="../assets/gate.css">
+  <style>
+    :root { --room-bg: #dfeccb; --room-ink: #24331c; --room-ink-2: #3e5232; --room-muted: #5d6f4a; --room-accent: #d9645e;
+      --room-panel: rgba(255, 255, 255, 0.6); --room-line: rgba(60, 90, 40, 0.25); --room-radius: 16px; }
+    .crumbs a { color: var(--room-ink-2); }
+    .room-head h1 { font-weight: 600; }
+    .butterfly { animation: flutter 14s ease-in-out infinite; transform-origin: center; }
+    .butterfly.b2 { animation-duration: 19s; animation-delay: -6s; }
+    @keyframes flutter { 0% { transform: translate(400px, 520px); } 25% { transform: translate(700px, 600px) rotate(10deg); } 50% { transform: translate(1000px, 500px); } 75% { transform: translate(600px, 680px) rotate(-8deg); } 100% { transform: translate(400px, 520px); } }
+    @media (prefers-reduced-motion: reduce) { .butterfly { animation: none; transform: translate(500px, 560px); } }
+
+  </style>
+  <script src="../assets/gate.js"></script>
+  <script>LobbyGate.require("garden", "Garden");</script>
+
+</head>
+<body class="room">
+  <svg class="scene" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="gd-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fcdf0"/><stop offset=".7" stop-color="#dcecf5"/><stop offset="1" stop-color="#f3f1dd"/></linearGradient>
+      <linearGradient id="gd-lawn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fbf5e"/><stop offset="1" stop-color="#5c9a4e"/></linearGradient>
+      <linearGradient id="gd-pond" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe0f0"/><stop offset="1" stop-color="#6fa8c8"/></linearGradient>
+      <radialGradient id="gd-sun" cx="1300" cy="140" r="240" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff8d6"/><stop offset=".4" stop-color="#fff3c0" stop-opacity=".6"/><stop offset="1" stop-color="#fff3c0" stop-opacity="0"/></radialGradient>
+    </defs>
+    <rect width="1600" height="900" fill="url(#gd-sky)"/><rect width="1600" height="900" fill="url(#gd-sun)"/>
+    <ellipse cx="300" cy="150" rx="150" ry="36" fill="#fff" opacity=".8"/><ellipse cx="800" cy="110" rx="180" ry="40" fill="#fff" opacity=".7"/>
+    <path d="M0,470 C300,400 500,460 800,430 C1100,400 1300,450 1600,420 L1600,900 L0,900 Z" fill="#7fae5f"/>
+    <rect x="0" y="560" width="1600" height="340" fill="url(#gd-lawn)"/>
+    <ellipse cx="140" cy="600" rx="150" ry="70" fill="#3f7a3d"/><ellipse cx="1460" cy="590" rx="160" ry="75" fill="#41803f"/><ellipse cx="300" cy="520" rx="90" ry="50" fill="#4b8a45"/><ellipse cx="1300" cy="520" rx="100" ry="55" fill="#4b8a45"/>
+    <path d="M700,900 C720,760 880,760 900,900 Z" fill="#d9c9a0"/>
+    <ellipse cx="800" cy="800" rx="200" ry="60" fill="#9fb9a0"/><ellipse cx="800" cy="796" rx="180" ry="50" fill="url(#gd-pond)"/>
+    <circle cx="700" cy="790" r="14" fill="#5c9a4e"/><circle cx="706" cy="786" r="3" fill="#f6b6c8"/><circle cx="760" cy="810" r="11" fill="#5c9a4e"/><circle cx="764" cy="807" r="3" fill="#f6b6c8"/><circle cx="840" cy="795" r="13" fill="#5c9a4e"/><circle cx="845" cy="791" r="3" fill="#f6b6c8"/><circle cx="900" cy="815" r="10" fill="#5c9a4e"/><circle cx="904" cy="812" r="3" fill="#f6b6c8"/>
+    <rect x="1080" y="700" width="180" height="14" rx="4" fill="#6b4a2a"/><rect x="1090" y="714" width="12" height="40" fill="#5a3a1e"/><rect x="1238" y="714" width="12" height="40" fill="#5a3a1e"/><rect x="1080" y="672" width="180" height="10" rx="4" fill="#6b4a2a"/>
+    <circle cx="417" cy="747" r="5" fill="#d9645e"/><circle cx="1380" cy="712" r="4" fill="#f1d16b"/><circle cx="1052" cy="846" r="5" fill="#f1d16b"/><circle cx="1114" cy="775" r="3" fill="#e18ba7"/><circle cx="108" cy="734" r="5" fill="#d9645e"/><circle cx="221" cy="677" r="3" fill="#f1d16b"/><circle cx="1501" cy="650" r="4" fill="#d9645e"/><circle cx="1341" cy="753" r="3" fill="#f6f3ea"/><circle cx="1186" cy="767" r="5" fill="#e18ba7"/><circle cx="1408" cy="880" r="4" fill="#e18ba7"/><circle cx="397" cy="829" r="3" fill="#e18ba7"/><circle cx="120" cy="756" r="3" fill="#b48ad6"/><circle cx="782" cy="742" r="4" fill="#f1d16b"/><circle cx="462" cy="810" r="3" fill="#d9645e"/><circle cx="561" cy="659" r="3" fill="#f1d16b"/><circle cx="1459" cy="845" r="5" fill="#b48ad6"/><circle cx="225" cy="671" r="5" fill="#d9645e"/><circle cx="1224" cy="851" r="4" fill="#f1d16b"/><circle cx="778" cy="876" r="3" fill="#b48ad6"/><circle cx="918" cy="714" r="4" fill="#d9645e"/><circle cx="1106" cy="738" r="4" fill="#d9645e"/><circle cx="871" cy="708" r="3" fill="#e18ba7"/><circle cx="405" cy="823" r="5" fill="#d9645e"/><circle cx="85" cy="765" r="3" fill="#b48ad6"/><circle cx="1307" cy="831" r="5" fill="#f1d16b"/><circle cx="1250" cy="795" r="4" fill="#b48ad6"/><circle cx="1355" cy="668" r="3" fill="#f1d16b"/><circle cx="1363" cy="729" r="4" fill="#f6f3ea"/><circle cx="1303" cy="878" r="4" fill="#f1d16b"/><circle cx="291" cy="683" r="3" fill="#f1d16b"/><circle cx="958" cy="735" r="3" fill="#e18ba7"/><circle cx="1464" cy="773" r="5" fill="#f1d16b"/><circle cx="913" cy="874" r="3" fill="#b48ad6"/><circle cx="109" cy="866" r="4" fill="#d9645e"/><circle cx="1116" cy="736" r="5" fill="#f1d16b"/><circle cx="583" cy="681" r="5" fill="#e18ba7"/><circle cx="979" cy="846" r="4" fill="#d9645e"/><circle cx="197" cy="854" r="4" fill="#e18ba7"/><circle cx="608" cy="808" r="4" fill="#e18ba7"/><circle cx="939" cy="703" r="3" fill="#d9645e"/><circle cx="222" cy="862" r="4" fill="#f1d16b"/><circle cx="389" cy="830" r="5" fill="#d9645e"/><circle cx="181" cy="704" r="3" fill="#b48ad6"/><circle cx="1061" cy="647" r="3" fill="#f6f3ea"/><circle cx="395" cy="865" r="4" fill="#b48ad6"/><circle cx="952" cy="764" r="5" fill="#d9645e"/><circle cx="710" cy="675" r="5" fill="#b48ad6"/><circle cx="645" cy="675" r="5" fill="#e18ba7"/><circle cx="863" cy="815" r="3" fill="#e18ba7"/><circle cx="621" cy="791" r="4" fill="#f1d16b"/><circle cx="1276" cy="747" r="4" fill="#d9645e"/><circle cx="363" cy="674" r="3" fill="#e18ba7"/><circle cx="892" cy="664" r="3" fill="#e18ba7"/><circle cx="1394" cy="754" r="3" fill="#e18ba7"/><circle cx="323" cy="807" r="4" fill="#f1d16b"/><circle cx="702" cy="777" r="4" fill="#d9645e"/><circle cx="1091" cy="867" r="3" fill="#b48ad6"/><circle cx="420" cy="686" r="3" fill="#d9645e"/><circle cx="492" cy="821" r="5" fill="#b48ad6"/><circle cx="174" cy="794" r="5" fill="#b48ad6"/><circle cx="196" cy="842" r="3" fill="#d9645e"/><circle cx="1030" cy="861" r="3" fill="#d9645e"/><circle cx="1241" cy="684" r="5" fill="#f1d16b"/><circle cx="597" cy="818" r="5" fill="#f6f3ea"/><circle cx="165" cy="702" r="4" fill="#f1d16b"/><circle cx="713" cy="825" r="4" fill="#b48ad6"/><circle cx="1205" cy="765" r="5" fill="#e18ba7"/><circle cx="1197" cy="793" r="3" fill="#b48ad6"/><circle cx="1298" cy="828" r="4" fill="#b48ad6"/><circle cx="715" cy="714" r="5" fill="#b48ad6"/><circle cx="1156" cy="834" r="5" fill="#f1d16b"/><circle cx="210" cy="797" r="4" fill="#f1d16b"/><circle cx="807" cy="656" r="4" fill="#d9645e"/><circle cx="300" cy="862" r="3" fill="#e18ba7"/><circle cx="1363" cy="848" r="4" fill="#b48ad6"/><circle cx="1352" cy="645" r="5" fill="#d9645e"/><circle cx="1044" cy="772" r="5" fill="#d9645e"/><circle cx="902" cy="658" r="3" fill="#e18ba7"/><circle cx="179" cy="809" r="4" fill="#e18ba7"/><circle cx="585" cy="710" r="5" fill="#b48ad6"/><circle cx="908" cy="825" r="4" fill="#d9645e"/><circle cx="564" cy="742" r="4" fill="#f6f3ea"/><circle cx="1076" cy="698" r="5" fill="#e18ba7"/><circle cx="156" cy="762" r="3" fill="#d9645e"/><circle cx="843" cy="823" r="5" fill="#f1d16b"/><circle cx="1001" cy="800" r="5" fill="#b48ad6"/><circle cx="1448" cy="827" r="5" fill="#f6f3ea"/><circle cx="582" cy="763" r="4" fill="#d9645e"/><circle cx="706" cy="797" r="4" fill="#b48ad6"/><circle cx="93" cy="681" r="4" fill="#f1d16b"/>
+    <g class="butterfly" fill="#f0b64a"><path d="M0,0 q-14,-16 -16,0 q2,14 16,0 z"/><path d="M0,0 q14,-16 16,0 q-2,14 -16,0 z"/></g>
+    <g class="butterfly b2" fill="#7ea8e6"><path d="M0,0 q-12,-14 -14,0 q2,12 14,0 z"/><path d="M0,0 q12,-14 14,0 q-2,12 -14,0 z"/></g>
+  </svg>
+  <div class="room-wrap">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="../">Lobby</a><span aria-hidden="true">/</span><span aria-current="page">Garden</span></nav>
+    <header class="room-head">
+      <h1>Garden</h1>
+      <span class="status">Keyed &middot; in bloom</span>
+    </header>
+    <p class="room-desc">The grounds outside the walls: a lawn, a pond with lilies, a bench under the hedge. This is where lighter things will go,
+      for leisure rather than work. Nothing needs doing here yet.</p>
+    <div class="shelf">
+      <section class="placard"><h2>Leisure</h2><p>Things enjoyed for their own sake.</p><span class="soon">Later</span></section>
+      <section class="placard"><h2>Light reading</h2><p>Pieces that ask nothing of the reader.</p><span class="soon">Later</span></section>
+      <section class="placard"><h2>Walks</h2><p>Places, routes, seasons.</p><span class="soon">Later</span></section>
+    </div>
+    <p class="room-foot">Design only. The private side of this room is <code>Drive/garden/</code>.</p>
+  </div>
+
+</body>
+</html>

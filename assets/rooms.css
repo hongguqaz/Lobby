@@ -1,0 +1,30 @@
+/* Shared skeleton for the room pages. Each page sets its own palette variables. */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body { font-family: var(--room-font, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif); color: var(--room-ink, #1a1a1a);
+  background: var(--room-bg, #111); line-height: 1.5; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--room-accent, #4fa3ff); outline-offset: 2px; }
+.scene { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; display: block; }
+.room-wrap { max-width: 1120px; margin: 0 auto; padding: 22px 20px 60px; }
+.crumbs { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--room-muted, #888); }
+.crumbs a { color: var(--room-ink, #eee); text-decoration: none; font-weight: 600; opacity: 0.85; }
+.crumbs a:hover { opacity: 1; text-decoration: underline; }
+.crumbs [aria-current] { color: var(--room-ink); }
+.room-head { margin-top: 26px; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px; }
+.room-head h1 { margin: 0; font-size: clamp(30px, 4vw, 46px); font-weight: 600; letter-spacing: -0.01em; font-family: var(--room-display, inherit); }
+.status { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--room-muted); }
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--room-accent); box-shadow: 0 0 10px var(--room-accent); }
+.room-head h1, .room-desc, .status, .motto { text-shadow: var(--room-text-shadow, none); }
+.room-desc { max-width: 64ch; color: var(--room-ink-2, var(--room-ink)); font-size: 16px; line-height: 1.65; margin: 12px 0 0; }
+.shelf { margin-top: 28px; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.placard { background: var(--room-panel, rgba(255,255,255,0.08)); border: 1px solid var(--room-line, rgba(255,255,255,0.14));
+  border-radius: var(--room-radius, 10px); padding: 16px 18px; min-height: 132px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.placard h2 { margin: 0 0 6px; font-size: 16px; font-family: var(--room-display, inherit); font-weight: 600; }
+.placard p { margin: 0; font-size: 14px; color: var(--room-ink-2, var(--room-ink)); line-height: 1.5; }
+.placard .soon { display: inline-block; margin-top: 10px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--room-muted); border: 1px dashed var(--room-line); padding: 2px 8px; border-radius: 999px; }
+.room-foot { margin-top: 34px; font-size: 12px; color: var(--room-muted); }
+.room-foot a { color: inherit; }
+html.gated .room-wrap { visibility: hidden; }
+@media (max-width: 560px) { .room-wrap { padding-inline: 16px; } }

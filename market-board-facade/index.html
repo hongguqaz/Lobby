@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dashboard - Lobby</title>
-  <meta name="description" content="Vendor spend and performance dashboard built from aggregated vendor records. Source spreadsheets are private and not published.">
+  <title>Market Board Facade - Lobby</title>
+  <meta name="description" content="Market Board Facade: the financial market board of the Lobby, shown as a dashboard. Source data stays in the private Drive repository.">
   <link rel="stylesheet" href="../assets/tokens.css">
   <link rel="stylesheet" href="assets/style.css">
   <script>
@@ -18,10 +18,10 @@
 <body>
   <a class="skip" href="#main">Skip to content</a>
   <div class="wrap">
-    <nav class="crumbs" aria-label="Breadcrumb"><a href="../">Lobby</a><span aria-hidden="true">/</span><span aria-current="page">Dashboard</span></nav>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="../">Lobby</a><span aria-hidden="true">/</span><span aria-current="page">Market Board Facade</span></nav>
     <header class="topbar">
       <div>
-        <h1>Vendor Dashboard</h1>
+        <h1>Market Board Facade</h1>
         <p class="sub" id="subtitle">Spend and performance across vendors</p>
       </div>
       <div class="topbar-actions">
@@ -32,9 +32,9 @@
 
     <div id="sample-banner" class="banner" role="status" hidden>
       <span class="icon" aria-hidden="true">&#9888;</span>
-      <p><strong>Showing synthetic sample data.</strong> The private data folder held no vendor spreadsheets when this
-        dashboard was built, so the pipeline used its built-in sample. Add the real files to the private repository's
-        <code>data/vendors/</code> folder and this page updates automatically.</p>
+      <p><strong>Showing sample data.</strong> The financial market database is not connected yet. The board will draw on
+        market data that is uploaded, auto-updated, or extracted from the Fin Lab; until then it demonstrates the mechanics
+        with a synthetic vendor dataset from the private repository's <code>market-board-facade/data/sample/</code> folder.</p>
     </div>
     <div id="anon-note" class="banner" role="note" hidden>
       <span class="icon" aria-hidden="true">&#128274;</span>
@@ -79,10 +79,12 @@
     </main>
 
     <footer>
-      <p><strong>How this page is built.</strong> The vendor spreadsheets live in a private repository. A pipeline there
-        reads them, keeps only vendor, date, amount, category, region, status, on-time and rating columns, sums them per
-        month, and publishes just those aggregates to this public repository. Row-level data, identifiers, descriptions and
-        contact details are never published, and a check in this repository blocks spreadsheets from being committed.</p>
+      <p><strong>How this page is built.</strong> The source data lives in the private Drive repository under
+        <code>market-board-facade/</code>. A pipeline there reads the spreadsheets, keeps only the nine canonical columns,
+        sums them per month, and publishes just those aggregates to this public repository. Row-level data, identifiers,
+        descriptions and contact details are never published, and a check in this repository blocks spreadsheets from being
+        committed. The market database (uploads, automatic updates, or extraction from the Fin Lab) will replace the sample
+        feed when it exists.</p>
       <p>Tooltips and the <em>Table</em> toggle on each chart show the same numbers in text form.</p>
     </footer>
   </div>

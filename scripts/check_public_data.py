@@ -3,9 +3,9 @@
 Fails when raw data could be leaking into this public repository:
 
 1. any spreadsheet-like file is present anywhere in the tree;
-2. dashboard/data/dashboard.json is missing, malformed, or carries keys outside the
+2. market-board-facade/data/dashboard.json is missing, malformed, or carries keys outside the
    aggregate schema (row-level fields, file names, identifiers, ...);
-3. dashboard/data/dashboard.js does not match dashboard/data/dashboard.json;
+3. market-board-facade/data/dashboard.js does not match market-board-facade/data/dashboard.json;
 4. any published label looks like an e-mail, phone number, URL, IBAN or free text.
 
 Run locally with:  python scripts/check_public_data.py
@@ -19,6 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 FORBIDDEN_SUFFIXES = {".xlsx", ".xlsm", ".xls", ".xlsb", ".csv", ".tsv", ".ods", ".numbers"}
+FORBIDDEN_UPLOADS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic"}   # photographs are not published either
 SKIP_DIRS = {".git", "node_modules", "site"}
 
 ALLOWED = {
@@ -59,17 +60,19 @@ def main() -> int:
             continue
         if path.is_file() and path.suffix.lower() in FORBIDDEN_SUFFIXES:
             problems.append(f"raw data file committed to the public repository: {path.relative_to(ROOT)}")
+        if path.is_file() and path.suffix.lower() in FORBIDDEN_UPLOADS:
+            problems.append(f"photograph committed to the public repository: {path.relative_to(ROOT)} (artwork is drawn as SVG)")
 
-    json_path = ROOT / "dashboard" / "data" / "dashboard.json"
-    js_path = ROOT / "dashboard" / "data" / "dashboard.js"
+    json_path = ROOT / "market-board-facade" / "data" / "dashboard.json"
+    js_path = ROOT / "market-board-facade" / "data" / "dashboard.js"
     model = None
     if not json_path.exists():
-        problems.append("dashboard/data/dashboard.json is missing")
+        problems.append("market-board-facade/data/dashboard.json is missing")
     else:
         try:
             model = json.loads(json_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
-            problems.append(f"dashboard/data/dashboard.json is not valid JSON: {exc}")
+            problems.append(f"market-board-facade/data/dashboard.json is not valid JSON: {exc}")
 
     if isinstance(model, dict):
         check_keys(model, ALLOWED["top"], "dashboard.json", problems)
@@ -109,18 +112,18 @@ def main() -> int:
         problems.append("dashboard.json: top level must be an object")
 
     if not js_path.exists():
-        problems.append("dashboard/data/dashboard.js is missing")
+        problems.append("market-board-facade/data/dashboard.js is missing")
     elif model is not None:
         text = js_path.read_text(encoding="utf-8")
         m = re.search(r"window\.__VENDOR_DASHBOARD__\s*=\s*(.*);\s*$", text, re.S)
         if not m:
-            problems.append("dashboard/data/dashboard.js does not assign window.__VENDOR_DASHBOARD__")
+            problems.append("market-board-facade/data/dashboard.js does not assign window.__VENDOR_DASHBOARD__")
         else:
             try:
                 if json.loads(m.group(1)) != model:
-                    problems.append("dashboard/data/dashboard.js does not match dashboard/data/dashboard.json")
+                    problems.append("market-board-facade/data/dashboard.js does not match market-board-facade/data/dashboard.json")
             except json.JSONDecodeError as exc:
-                problems.append(f"dashboard/data/dashboard.js payload is not valid JSON: {exc}")
+                problems.append(f"market-board-facade/data/dashboard.js payload is not valid JSON: {exc}")
 
     if problems:
         print("Public data check FAILED:")

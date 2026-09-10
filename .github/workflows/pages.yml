@@ -1,6 +1,6 @@
 # 1. "check": on every push and pull request, make sure no raw data has been
 #    committed and that data/dashboard.json is a well-formed aggregate.
-# 2. "deploy": on the default branch, publish the landing page and every feature folder to
+# 2. "deploy": on the default branch, publish the landing page and every room folder to
 #    GitHub Pages.  First-time setup: Settings > Pages > Source: "GitHub Actions".
 #    Until then the deploy job is skipped with a warning.
 name: Check and deploy dashboard
@@ -41,9 +41,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Assemble the static site
         run: |
-          mkdir -p site
-          cp index.html site/
-          cp -r assets dashboard research site/
+          rsync -a --exclude .git --exclude .github --exclude scripts --exclude README.md --exclude site ./ site/
       # The workflow token cannot switch Pages on by itself, so check first and
       # skip the deployment with a warning until it has been enabled once.
       - name: Check that GitHub Pages is enabled
