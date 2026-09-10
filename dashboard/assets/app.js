@@ -908,7 +908,7 @@
     btn.addEventListener('click', function () {
       var next = current() === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', next);
-      try { localStorage.setItem('vendor-dashboard-theme', next); } catch (e) { /* storage unavailable */ }
+      try { localStorage.setItem('lobby-theme', next); } catch (e) { /* storage unavailable */ }
       label();
     });
     label();

@@ -3,9 +3,9 @@
 Fails when raw data could be leaking into this public repository:
 
 1. any spreadsheet-like file is present anywhere in the tree;
-2. data/dashboard.json is missing, malformed, or carries keys outside the
+2. dashboard/data/dashboard.json is missing, malformed, or carries keys outside the
    aggregate schema (row-level fields, file names, identifiers, ...);
-3. data/dashboard.js does not match data/dashboard.json;
+3. dashboard/data/dashboard.js does not match dashboard/data/dashboard.json;
 4. any published label looks like an e-mail, phone number, URL, IBAN or free text.
 
 Run locally with:  python scripts/check_public_data.py
@@ -60,16 +60,16 @@ def main() -> int:
         if path.is_file() and path.suffix.lower() in FORBIDDEN_SUFFIXES:
             problems.append(f"raw data file committed to the public repository: {path.relative_to(ROOT)}")
 
-    json_path = ROOT / "data" / "dashboard.json"
-    js_path = ROOT / "data" / "dashboard.js"
+    json_path = ROOT / "dashboard" / "data" / "dashboard.json"
+    js_path = ROOT / "dashboard" / "data" / "dashboard.js"
     model = None
     if not json_path.exists():
-        problems.append("data/dashboard.json is missing")
+        problems.append("dashboard/data/dashboard.json is missing")
     else:
         try:
             model = json.loads(json_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
-            problems.append(f"data/dashboard.json is not valid JSON: {exc}")
+            problems.append(f"dashboard/data/dashboard.json is not valid JSON: {exc}")
 
     if isinstance(model, dict):
         check_keys(model, ALLOWED["top"], "dashboard.json", problems)
@@ -109,18 +109,18 @@ def main() -> int:
         problems.append("dashboard.json: top level must be an object")
 
     if not js_path.exists():
-        problems.append("data/dashboard.js is missing")
+        problems.append("dashboard/data/dashboard.js is missing")
     elif model is not None:
         text = js_path.read_text(encoding="utf-8")
         m = re.search(r"window\.__VENDOR_DASHBOARD__\s*=\s*(.*);\s*$", text, re.S)
         if not m:
-            problems.append("data/dashboard.js does not assign window.__VENDOR_DASHBOARD__")
+            problems.append("dashboard/data/dashboard.js does not assign window.__VENDOR_DASHBOARD__")
         else:
             try:
                 if json.loads(m.group(1)) != model:
-                    problems.append("data/dashboard.js does not match data/dashboard.json")
+                    problems.append("dashboard/data/dashboard.js does not match dashboard/data/dashboard.json")
             except json.JSONDecodeError as exc:
-                problems.append(f"data/dashboard.js payload is not valid JSON: {exc}")
+                problems.append(f"dashboard/data/dashboard.js payload is not valid JSON: {exc}")
 
     if problems:
         print("Public data check FAILED:")
