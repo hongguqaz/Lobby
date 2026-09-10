@@ -1,0 +1,19 @@
+# This repository is PUBLIC. Raw vendor data must never be committed here.
+# The dashboard reads only the aggregated data/dashboard.json produced by the
+# private Drive repository's pipeline.
+*.xlsx
+*.xlsm
+*.xls
+*.xlsb
+*.csv
+*.tsv
+*.ods
+*.numbers
+vendor-key.json
+
+# Local tooling
+site/
+node_modules/
+__pycache__/
+.DS_Store
+Thumbs.db
