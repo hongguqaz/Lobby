@@ -1,5 +1,6 @@
-/* The Fin Lab analyst: an illustrated guide that talks, blinks, follows the
-   pointer with her eyes, and waves when clicked. Lines live in LINES below. */
+/* The Fin Lab analyst: a photographic figure that turns toward the pointer,
+   breathes, nods and flashes when clicked, and talks in EN or KO.
+   Lines live in LINES below; the portrait is assets/analyst.jpg. */
 (function () {
   'use strict';
   var LINES = {
@@ -25,10 +26,12 @@
     }
   };
   var figure = document.getElementById('figure');
+  var tilt = document.getElementById('figure-tilt');
   var bubbleText = document.getElementById('bubble-text');
   var chips = document.getElementById('chips');
   var nameEl = document.getElementById('fig-name');
-  if (!figure || !bubbleText) return;
+  if (!figure || !tilt || !bubbleText) return;
+  var reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   var lang = 'en';
   try { lang = localStorage.getItem('lobby-lang') || ((navigator.language || '').slice(0, 2) === 'ko' ? 'ko' : 'en'); } catch (e) { /* ignore */ }
   if (!LINES[lang]) lang = 'en';
@@ -38,9 +41,8 @@
     if (typing) { clearInterval(typing); typing = null; }
     bubbleText.textContent = '';
     figure.classList.add('talking');
-    var i = 0;
-    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) { bubbleText.textContent = text; figure.classList.remove('talking'); return; }
+    var i = 0;
     typing = setInterval(function () {
       i++;
       bubbleText.textContent = text.slice(0, i);
@@ -49,9 +51,9 @@
   }
   function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
   function wave() {
-    figure.classList.remove('waving'); void figure.getBoundingClientRect(); figure.classList.add('waving');
+    figure.classList.remove('waving'); void figure.offsetWidth; figure.classList.add('waving');
     clearTimeout(waveTimer);
-    waveTimer = setTimeout(function () { figure.classList.remove('waving'); }, 1700);
+    waveTimer = setTimeout(function () { figure.classList.remove('waving'); }, 1300);
   }
   function renderChips() {
     var L = LINES[lang];
@@ -78,31 +80,35 @@
   }
   Array.prototype.forEach.call(document.querySelectorAll('.nameplate button'), function (b) {
     b.addEventListener('click', function () { setLang(b.getAttribute('data-lang')); });
+    b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === lang));
   });
 
-  // eyes follow the pointer
-  var pupils = figure.querySelectorAll('.pupil');
-  var eyeCenters = [{ x: 129, y: 106 }, { x: 173, y: 106 }];
+  // she turns toward the pointer: a gentle 3D tilt of the portrait
+  var current = { x: 0, y: 0 }, target = { x: 0, y: 0 }, raf = null;
+  function animate() {
+    current.x += (target.x - current.x) * 0.12;
+    current.y += (target.y - current.y) * 0.12;
+    tilt.style.transform = 'rotateY(' + current.x.toFixed(2) + 'deg) rotateX(' + current.y.toFixed(2) + 'deg)';
+    if (Math.abs(target.x - current.x) > 0.05 || Math.abs(target.y - current.y) > 0.05) raf = requestAnimationFrame(animate);
+    else raf = null;
+  }
   function lookAt(clientX, clientY) {
     var r = figure.getBoundingClientRect();
-    var sx = 300 / r.width, sy = 330 / r.height;
-    var px = (clientX - r.left) * sx, py = (clientY - r.top) * sy;
-    Array.prototype.forEach.call(pupils, function (p, i) {
-      var dx = px - eyeCenters[i].x, dy = py - eyeCenters[i].y, d = Math.hypot(dx, dy) || 1;
-      var k = Math.min(3.2, d / 40);
-      p.setAttribute('transform', 'translate(' + (dx / d * k).toFixed(2) + ',' + (dy / d * k).toFixed(2) + ')');
-    });
+    var px = (clientX - (r.left + r.width / 2)) / Math.max(r.width, 1);
+    var py = (clientY - (r.top + r.height / 2)) / Math.max(r.height, 1);
+    var dist = Math.min(1, Math.hypot(px, py) / 1.6);
+    target.x = Math.max(-9, Math.min(9, px * 14)) * (1 - dist * 0.35);
+    target.y = Math.max(-7, Math.min(7, -py * 10)) * (1 - dist * 0.35);
+    if (!raf) raf = requestAnimationFrame(animate);
   }
-  function lookAhead() { Array.prototype.forEach.call(pupils, function (p) { p.removeAttribute('transform'); }); }
-  document.addEventListener('pointermove', function (e) { lookAt(e.clientX, e.clientY); });
-  document.addEventListener('pointerleave', lookAhead);
+  if (!reduced) {
+    document.addEventListener('pointermove', function (e) { lookAt(e.clientX, e.clientY); });
+    document.addEventListener('pointerleave', function () { target.x = 0; target.y = 0; if (!raf) raf = requestAnimationFrame(animate); });
+  }
 
   figure.addEventListener('click', function () { wave(); say(pick(LINES[lang].react)); });
   figure.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); wave(); say(pick(LINES[lang].react)); } });
 
-  Array.prototype.forEach.call(document.querySelectorAll('.nameplate button'), function (b) {
-    b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === lang));
-  });
   renderChips();
   setTimeout(function () { say(pick(LINES[lang].greet)); wave(); }, 500);
 })();

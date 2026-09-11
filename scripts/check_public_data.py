@@ -6,7 +6,8 @@ Fails when raw data could be leaking into this public repository:
 2. market-board-facade/data/dashboard.json is missing, malformed, or carries keys outside the
    aggregate schema (row-level fields, file names, identifiers, ...);
 3. market-board-facade/data/dashboard.js does not match market-board-facade/data/dashboard.json;
-4. any published label looks like an e-mail, phone number, URL, IBAN or free text.
+4. any published label looks like an e-mail, phone number, URL, IBAN or free text;
+5. an image file sits outside an assets folder (scene art belongs in assets/img/ or <room>/assets/).
 
 Run locally with:  python scripts/check_public_data.py
 """
@@ -19,7 +20,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 FORBIDDEN_SUFFIXES = {".xlsx", ".xlsm", ".xls", ".xlsb", ".csv", ".tsv", ".ods", ".numbers"}
-FORBIDDEN_UPLOADS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic"}   # photographs are not published either
+IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".avif"}
+IMAGE_DIRS = {"assets"}   # images live only in art folders: assets/img/ or <room>/assets/
 SKIP_DIRS = {".git", "node_modules", "site"}
 
 ALLOWED = {
@@ -60,8 +62,8 @@ def main() -> int:
             continue
         if path.is_file() and path.suffix.lower() in FORBIDDEN_SUFFIXES:
             problems.append(f"raw data file committed to the public repository: {path.relative_to(ROOT)}")
-        if path.is_file() and path.suffix.lower() in FORBIDDEN_UPLOADS:
-            problems.append(f"photograph committed to the public repository: {path.relative_to(ROOT)} (artwork is drawn as SVG)")
+        if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES and not (set(path.relative_to(ROOT).parts[:-1]) & IMAGE_DIRS):
+            problems.append(f"image outside an assets folder: {path.relative_to(ROOT)} (scene images go in assets/img/ or <room>/assets/)")
 
     json_path = ROOT / "market-board-facade" / "data" / "dashboard.json"
     js_path = ROOT / "market-board-facade" / "data" / "dashboard.js"

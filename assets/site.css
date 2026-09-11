@@ -27,37 +27,28 @@ a { color: var(--accent); }
   background: linear-gradient(135deg, #c79a3f 0%, #f0d58a 22%, #b7852e 48%, #e9c96f 74%, #a9761f 100%);
   box-shadow: 0 30px 70px rgba(0, 0, 0, 0.35), inset 0 0 0 2px rgba(80, 50, 0, 0.35), inset 0 0 0 6px rgba(255, 235, 170, 0.35); }
 .mat { padding: 10px; background: #efe6d2; box-shadow: inset 0 0 0 1px rgba(60, 40, 10, 0.35); }
-.mat svg { display: block; width: 100%; height: auto; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4); }
 .plate-caption { margin: 16px auto 0; max-width: 100%; width: max-content; text-align: center;
   background: linear-gradient(180deg, #e9c96f, #b7852e); color: #2b2416; font-family: Georgia, "Times New Roman", serif;
   font-size: 13px; letter-spacing: 0.04em; padding: 6px 18px; border-radius: 3px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); }
 
-/* hotspots inside the painting */
-.hotspot { cursor: pointer; outline: none; }
+/* the stage: drawn painting underneath, optional photo on top, hotspot overlay above both */
+.stage { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #1c1a16; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4); }
+.stage > img, .stage > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.stage > img { object-fit: cover; }
+#hotspot-layer { pointer-events: none; }
+#hotspot-layer .hotspot { pointer-events: all; cursor: pointer; outline: none; }
 .hotspot .hit { fill: transparent; }
-.hotspot .glow { opacity: 0.4; transition: opacity 0.25s; }
-.hotspot:hover .glow, .hotspot:focus-visible .glow { opacity: 1; filter: url(#bloom); }
+.hotspot .area { fill: #ffd98a; opacity: 0; transition: opacity 0.25s; filter: url(#bloomO); }
+.hotspot .edge { fill: none; stroke: #ffe9b0; stroke-width: 1.5; opacity: 0; transition: opacity 0.25s; }
+.hotspot:hover .area, .hotspot:focus-visible .area { opacity: 0.32; }
+.hotspot:hover .edge, .hotspot:focus-visible .edge { opacity: 0.8; }
 .hotspot .plate { opacity: 0.86; transition: opacity 0.25s; }
 .hotspot:hover .plate, .hotspot:focus-visible .plate { opacity: 1; }
-.hotspot .plate rect { fill: #2b2416; fill-opacity: 0.8; stroke: #d9b45c; stroke-opacity: 0.75; }
+.hotspot .plate rect { fill: #2b2416; fill-opacity: 0.82; stroke: #d9b45c; stroke-opacity: 0.75; }
 .hotspot .plate text { fill: #f3e6c8; font-size: 13px; font-weight: 600; font-family: Georgia, "Times New Roman", serif; letter-spacing: 0.02em; }
 .hotspot .plate use { color: #e8c877; }
 .hotspot.unlocked .plate rect { stroke: #9ed17f; }
 .hotspot:focus-visible .hit { stroke: #ffe9a8; stroke-width: 3; }
-.clouds { animation: drift 160s linear infinite alternate; }
-@keyframes drift { to { transform: translateX(-70px); } }
-.birds { animation: fly 120s linear infinite alternate; }
-@keyframes fly { to { transform: translate(-220px, -40px); } }
-.smoke .puff { animation: rise 6s ease-out infinite; }
-.smoke .p1 { animation-delay: -2s; }
-.smoke .p2 { animation-delay: -4s; }
-@keyframes rise { 0% { transform: translate(0, 0); opacity: 0.55; } 100% { transform: translate(16px, -70px); opacity: 0; } }
-.jet { animation: spout 2.4s ease-in-out infinite alternate; transform-origin: 1275px 758px; }
-@keyframes spout { to { transform: scaleY(1.18); } }
-.shimmer line { animation: glint 3s ease-in-out infinite alternate; }
-.shimmer line:nth-child(2n) { animation-delay: -1.5s; }
-@keyframes glint { to { opacity: 0.15; } }
-@media (prefers-reduced-motion: reduce) { .clouds, .birds, .smoke .puff, .jet, .shimmer line { animation: none; } }
 
 /* ---------- room cards */
 .rooms { margin-top: 30px; }
