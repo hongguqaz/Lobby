@@ -19,14 +19,14 @@ NOISE = ("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width=
 
 # shared filters every scene can use
 FILTERS = '''
-      <filter id="wood" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".004 .35" numOctaves="4" seed="7"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .1 .34"/></feComponentTransfer></filter>
-      <filter id="plaster" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".6" numOctaves="3" seed="2"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 0 .16"/></feComponentTransfer></filter>
-      <filter id="fabric" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".02 .5" numOctaves="3" seed="4"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .05 .3"/></feComponentTransfer></filter>
-      <filter id="grass" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".5 .9" numOctaves="3" seed="9"/><feColorMatrix type="matrix" values="0 0 0 0 .2  0 0 0 0 .32  0 0 0 0 .12  0 0 0 .6 -.14"/></filter>
+      <filter id="wood" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".004 .35" numOctaves="4" seed="7"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .1 .34"/></feComponentTransfer><feComposite in2="SourceGraphic" operator="in"/></filter>
+      <filter id="plaster" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".6" numOctaves="3" seed="2"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 0 .16"/></feComponentTransfer><feComposite in2="SourceGraphic" operator="in"/></filter>
+      <filter id="fabric" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".02 .5" numOctaves="3" seed="4"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .05 .3"/></feComponentTransfer><feComposite in2="SourceGraphic" operator="in"/></filter>
+      <filter id="grass" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".5 .9" numOctaves="3" seed="9"/><feColorMatrix type="matrix" values="0 0 0 0 .2  0 0 0 0 .32  0 0 0 0 .12  0 0 0 .6 -.14"/><feComposite in2="SourceGraphic" operator="in"/></filter>
       <filter id="clouds" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".004 .012" numOctaves="5" seed="11"/><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 .99  0 0 0 0 .97  0 0 0 11 -5.6"/><feGaussianBlur stdDeviation="1.6"/></filter>
-      <filter id="soft4" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4"/></filter>
-      <filter id="soft12" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="12"/></filter>
-      <filter id="soft30" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="30"/></filter>
+      <filter id="soft4" x="-40%" y="-80%" width="180%" height="260%"><feGaussianBlur stdDeviation="4"/></filter>
+      <filter id="soft12" x="-50%" y="-120%" width="200%" height="340%"><feGaussianBlur stdDeviation="12"/></filter>
+      <filter id="soft30" x="-60%" y="-160%" width="220%" height="420%"><feGaussianBlur stdDeviation="30"/></filter>
       <filter id="leaf" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency=".06" numOctaves="3" seed="5"/><feDisplacementMap in="SourceGraphic" scale="18" xChannelSelector="R" yChannelSelector="G"/></filter>
 '''
 
@@ -414,17 +414,17 @@ def garden():
     lilies = ''.join('<ellipse cx="%d" cy="%d" rx="%d" ry="%d" fill="#5c9a4e"/><circle cx="%d" cy="%d" r="3" fill="#f6b6c8"/>' % (x, y, r, int(r * .6), x + int(r * .4), y - int(r * .3)) for (x, y, r) in [(700, 790, 14), (760, 810, 11), (840, 795, 13), (900, 815, 10)])
     defs = '''
       <linearGradient id="gd-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fb0e8"/><stop offset=".6" stop-color="#cfe4f2"/><stop offset="1" stop-color="#f1efd8"/></linearGradient>
-      <linearGradient id="gd-lawn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9ccc66"/><stop offset="1" stop-color="#4f8a43"/></linearGradient>
+      <linearGradient id="gd-lawn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fb25e"/><stop offset="1" stop-color="#4f8a43"/></linearGradient>
       <linearGradient id="gd-pond" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe7f3"/><stop offset="1" stop-color="#4f8bb0"/></linearGradient>
       <radialGradient id="gd-sun" cx="1300" cy="140" r="260" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fffbe6"/><stop offset=".35" stop-color="#fff3c0" stop-opacity=".7"/><stop offset="1" stop-color="#fff3c0" stop-opacity="0"/></radialGradient>
-      <linearGradient id="gd-far" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fb27a"/><stop offset="1" stop-color="#6c9a5a"/></linearGradient>
+      <linearGradient id="gd-far" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#93b87e"/><stop offset="1" stop-color="#7fb25e"/></linearGradient>
       <linearGradient id="gd-haze" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
 '''
     inner = '''    <rect width="1600" height="900" fill="url(#gd-sky)"/><rect width="1600" height="900" fill="url(#gd-sun)"/>
     <rect x="-100" y="0" width="1800" height="420" filter="url(#clouds)" opacity=".9"/>
-    <path d="M0,470 C300,400 500,460 800,430 C1100,400 1300,450 1600,420 L1600,900 L0,900 Z" fill="url(#gd-far)"/>
+    <path d="M0,470 C300,400 500,460 800,430 C1100,400 1300,450 1600,420 L1600,572 L0,572 Z" fill="url(#gd-far)"/>
+    <rect x="0" y="560" width="1600" height="340" fill="url(#gd-lawn)"/><rect x="0" y="400" width="1600" height="500" filter="url(#grass)" opacity=".8"/>
     <rect x="0" y="400" width="1600" height="170" fill="url(#gd-haze)"/>
-    <rect x="0" y="560" width="1600" height="340" fill="url(#gd-lawn)"/><rect x="0" y="560" width="1600" height="340" filter="url(#grass)" opacity=".85"/>
     %s
     <path d="M700,900 C720,760 880,760 900,900 Z" fill="#d9c9a0"/><path d="M700,900 C720,760 880,760 900,900 Z" filter="url(#plaster)" opacity=".8"/>
     <ellipse cx="800" cy="812" rx="210" ry="66" fill="#3a5a3a" opacity=".35" filter="url(#soft12)"/>
