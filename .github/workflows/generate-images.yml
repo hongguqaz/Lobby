@@ -36,12 +36,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Names only: secret values never reach the log (and are masked if they did).
       - name: Check that the API key secret exists
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SECRET_NAMES: ${{ toJSON(secrets) }}
+          VARIABLE_NAMES: ${{ toJSON(vars) }}
         run: |
           if [ -z "${OPENAI_API_KEY}" ]; then
-            echo "::error::Secret OPENAI_API_KEY is not set. Add it under Settings > Secrets and variables > Actions, then re-run."
+            echo "::error::Secret OPENAI_API_KEY is not set. Add it under Settings > Secrets and variables > Actions > Repository secrets (not Variables, not an Environment secret), then re-run."
+            echo "Repository secrets this workflow can see (names only): $(jq -r 'keys | join(", ")' <<<"${SECRET_NAMES}")"
+            echo "Repository variables this workflow can see (names only): $(jq -r 'keys | join(", ")' <<<"${VARIABLE_NAMES}")"
             exit 1
           fi
 
