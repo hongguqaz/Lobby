@@ -1,0 +1,66 @@
+{
+  "_comment": "Source of truth for tools/gen_images.py. 'reference' images are sent to the image-edit endpoint so the result keeps their composition; scenes without a reference are generated from the prompt alone. Sizes are what the OpenAI image models accept (1536x1024 landscape, 1024x1536 portrait). Landscape scenes are centre-cropped to 16:9 when 'crop' is set.",
+  "model": "auto",
+  "style": "Photorealistic photograph, full-frame camera, 35mm lens, natural light, rich but believable colour, high dynamic range, faint film grain. No people, no readable text, no watermark, no illustration or cartoon look.",
+  "scenes": [
+    {
+      "id": "castle",
+      "out": "assets/img/castle.jpg",
+      "size": "1536x1024",
+      "crop": "16:9",
+      "reference": "assets/img/castle-reference.jpg",
+      "prompt": "Re-render this drawn scene as a real photograph while keeping the exact composition, camera angle and the position of every element: the symmetrical limestone chateau with a round tower under a conical slate roof at each end, two wings with rows of tall windows, the central pavilion with a pediment and the arched main gate glowing warmly at the centre, the balcony window directly above the gate, the terrace and the gravel path leading straight down from the gate, the lake at the lower left reflecting the house, the formal parterre garden with clipped hedges and a small fountain at the lower right, tall trees framing the left and right edges, blue mountains behind and a golden-hour sky with soft clouds and a low sun on the right. Warm light in the windows, dusk atmosphere, an 18th-to-19th-century European estate."
+    },
+    {
+      "id": "fin-lab",
+      "out": "assets/img/fin-lab.jpg",
+      "size": "1536x1024",
+      "prompt": "Interior of a trading-floor office at dusk seen from the entrance: floor-to-ceiling windows across the far wall looking over a city skyline with lit towers, two rows of desks with dark monitors that show only faint grid lines, one warm desk lamp on the right, empty chairs, a potted plant at the left, polished dark floor reflecting the screens. Cinematic, calm, slightly moody. Keep the lower-left third of the frame uncluttered."
+    },
+    {
+      "id": "legal-quarter",
+      "out": "assets/img/legal-quarter.jpg",
+      "size": "1536x1024",
+      "prompt": "Interior of old law chambers: walnut-panelled walls, a tall bookcase of leather-bound volumes with gold tooling on the left, a mahogany desk with a green banker's lamp lit on the right, brass fittings, a burgundy rug, a little dust in warm dim light. Elegant, quiet, slightly old-fashioned. Keep the lower-left third of the frame uncluttered."
+    },
+    {
+      "id": "library",
+      "out": "assets/img/library.jpg",
+      "size": "1536x1024",
+      "prompt": "Interior of a large private library: wooden bookshelves from floor to ceiling on every wall, a rolling ladder on the right, a reading table with a green-shaded lamp and an antique globe in the foreground, warm evening light, polished wooden floor. Rich, intimate, scholarly. Keep the lower-left third of the frame uncluttered."
+    },
+    {
+      "id": "maiden-hall",
+      "out": "assets/img/maiden-hall.jpg",
+      "size": "1536x1024",
+      "prompt": "Interior of a 19th-century European drawing room: pale blue and cream panelled walls with white mouldings, two tall windows with sheer curtains letting in soft morning light, a crystal chandelier, a light-blue settee in the centre, a small writing desk with papers by the right window, herringbone parquet floor with a pale rug. Clean, airy, refined. Keep the lower-left third of the frame uncluttered."
+    },
+    {
+      "id": "garden",
+      "out": "assets/img/garden.jpg",
+      "size": "1536x1024",
+      "prompt": "An English garden in late afternoon: a wide lawn, clipped hedges, flower beds in bloom, a small pond with water lilies in the centre foreground, a wooden bench under a hedge on the right, tall trees behind, soft sunlight and a bright sky with scattered clouds. Peaceful and lush. Keep the upper-left third of the frame as calm sky."
+    },
+    {
+      "id": "bedroom",
+      "out": "assets/img/bedroom.jpg",
+      "size": "1536x1024",
+      "prompt": "A luxurious bedroom at night under warm lamplight: a canopy bed with burgundy velvet curtains and cream linen in the centre, two bedside lamps glowing amber, heavy drawn curtains, a tall window with moonlight on the right, dark wooden floor with a deep red rug. Warm, intimate, restful. Keep the lower-left third of the frame uncluttered."
+    }
+  ],
+  "figure": {
+    "_comment": "Keyframes of the Fin Lab analyst, each edited from the original portrait so she stays the same person in the same seat. The web page crossfades between them.",
+    "reference": "fin-lab/assets/analyst.jpg",
+    "out_dir": "fin-lab/assets/frames",
+    "size": "1024x1536",
+    "base_prompt": "Photorealistic photograph of the same woman as in the provided photo: identical face and features, thin round glasses, long dark hair, black blazer over a white blouse, same desk with keyboard, papers and pen, same monitors with charts and the same city window behind her, same camera position, framing, lens and lighting. Change only her pose and expression as described, nothing else: ",
+    "frames": [
+      { "id": "look",   "prompt": "she has turned her head to look directly into the camera with a gentle, warm closed-mouth smile." },
+      { "id": "talk",   "prompt": "she looks directly into the camera and is mid-sentence, mouth slightly open as if speaking, lively and friendly expression." },
+      { "id": "wave",   "prompt": "she looks into the camera, smiling, and raises her right hand beside her shoulder in a small friendly wave." },
+      { "id": "point",  "prompt": "she looks into the camera while gesturing with her left hand toward the monitor beside her, as if presenting it." },
+      { "id": "blink",  "prompt": "she faces the camera with her eyes closed in a relaxed blink, calm neutral expression." },
+      { "id": "listen", "prompt": "she looks into the camera with her head tilted slightly to one side, attentive and listening, small smile." }
+    ]
+  }
+}

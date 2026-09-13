@@ -109,5 +109,11 @@
     });
     label();
   }
-  document.addEventListener('DOMContentLoaded', function () { initTheme(); buildOverlay(); renderCards(); });
+  function initCalibrate() {
+    var layer = document.getElementById('hotspot-layer');
+    if (!layer) return;
+    var apply = function () { layer.classList.toggle('calibrate', window.location.hash === '#calibrate'); };
+    window.addEventListener('hashchange', apply); apply();
+  }
+  document.addEventListener('DOMContentLoaded', function () { initTheme(); buildOverlay(); renderCards(); initCalibrate(); });
 })();

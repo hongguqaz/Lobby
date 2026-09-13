@@ -49,6 +49,9 @@ a { color: var(--accent); }
 .hotspot .plate use { color: #e8c877; }
 .hotspot.unlocked .plate rect { stroke: #9ed17f; }
 .hotspot:focus-visible .hit { stroke: #ffe9a8; stroke-width: 3; }
+/* open the page with #calibrate to see every hotspot box while aligning a new castle.jpg */
+#hotspot-layer.calibrate .edge { opacity: 0.9; stroke: #ff5a5a; }
+#hotspot-layer.calibrate .area { opacity: 0.18; }
 
 /* ---------- room cards */
 .rooms { margin-top: 30px; }

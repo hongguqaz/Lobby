@@ -4,6 +4,21 @@ Every scene of the house has a photo slot. Put a file with the exact name below 
 folder and the page uses it automatically (the drawn SVG scene stays as the fallback when
 the file is missing). No code changes are needed.
 
+**Generating them.** `prompts.json` here is the source of truth and `tools/gen_images.py`
+turns it into images with the OpenAI image API. The easiest way to run it is the
+*Generate scene images* workflow (Actions tab > Run workflow): it needs one repository
+secret, `OPENAI_API_KEY`, and commits the results itself. Choose `only` to regenerate a
+single scene, and `quality` low/medium/high. Locally:
+`OPENAI_API_KEY=... python3 tools/gen_images.py --only castle`.
+
+The castle is produced with the image-edit endpoint from `castle-reference.jpg` (the drawn
+scene padded to 3:2) so the gate, wings and towers stay where the hotspots expect them;
+the result is centre-cropped back to 16:9. Open the landing page with `#calibrate` in the
+URL to see the hotspot boxes over the finished photo and adjust `assets/rooms.js` if needed.
+
+The analyst's keyframes (`fin-lab/assets/frames/`) are edits of her portrait with only the
+pose changed, so she stays the same person while the page crossfades between them.
+
 | File | Used by | Size | Notes |
 |---|---|---|---|
 | `castle.jpg` | landing page (the painting) | 1600 x 900 (16:9) | composition must match the hotspots, see below |
@@ -22,8 +37,8 @@ that region calm.
 
 ## Prompts
 
-These prompts produce scenes that fit the pages and the hotspot layout. Use them as they
-are or adjust the mood; keep the composition notes.
+The prompts below are the ones in `prompts.json`, kept here for reading. Edit `prompts.json`
+to change them; keep the composition notes.
 
 **castle.jpg**
 > Photorealistic 18th-to-19th-century European château on a lake at golden hour, seen

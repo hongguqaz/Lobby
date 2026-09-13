@@ -1,0 +1,76 @@
+# Generates the photorealistic scene images and the analyst keyframes with the
+# OpenAI image API and commits them.  Run it from the Actions tab ("Run workflow").
+#
+# One-time setup: Settings > Secrets and variables > Actions > New repository secret
+#   OPENAI_API_KEY = your OpenAI API key
+# The key never appears in the repository or in the logs.
+name: Generate scene images
+
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Comma-separated ids to (re)generate: castle, fin-lab, legal-quarter, library, maiden-hall, garden, bedroom, figure. Or 'all'."
+        default: "all"
+      quality:
+        description: "Image quality: low | medium | high"
+        default: "high"
+      model:
+        description: "Image model id, or 'auto' for the newest gpt-image model"
+        default: "auto"
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: generate-images
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check that the API key secret exists
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            echo "::error::Secret OPENAI_API_KEY is not set. Add it under Settings > Secrets and variables > Actions, then re-run."
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install --quiet requests pillow
+
+      - name: Generate images
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python tools/gen_images.py --only "${{ inputs.only }}" --quality "${{ inputs.quality }}" --model "${{ inputs.model }}"
+
+      - name: Public data check
+        run: python scripts/check_public_data.py
+
+      - name: Commit the images
+        run: |
+          git add assets/img fin-lab/assets
+          if git diff --cached --quiet; then
+            echo "No image changes."
+            exit 0
+          fi
+          git -c user.name="scene-painter-bot" -c user.email="scene-painter-bot@users.noreply.github.com" \
+            commit -m "Generate scene images (${{ inputs.only }}, ${{ inputs.quality }})"
+          git push origin HEAD
+
+      # A push made with the workflow token does not trigger other workflows, so ask
+      # the Pages workflow to run explicitly.
+      - name: Redeploy the site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref "${{ github.ref_name }}" || echo "::warning::Could not start the Pages workflow; push any commit to redeploy."

@@ -4,9 +4,12 @@ The public front of a private house. The landing page shows the house on the lak
 Facade** is entered by the main gate and is open to everyone; the other rooms are reached through the
 windows of the quarter they belong to, and each asks for a key.
 
-Every scene has a **photo slot**: drop a photorealistic image with the right name into `assets/img/`
-and the page uses it; until then a drawn SVG scene stands in. `assets/img/README.md` lists the files,
-sizes and ready-made prompts. The Fin Lab analyst is a photograph (`fin-lab/assets/analyst.jpg`).
+Every scene has a **photo slot**: a photorealistic image with the right name in `assets/img/` is
+used automatically; until then a drawn SVG scene stands in. The images are generated with the OpenAI
+image API by the *Generate scene images* workflow (`tools/gen_images.py`, prompts in
+`assets/img/prompts.json`), which needs the repository secret `OPENAI_API_KEY`. The Fin Lab analyst
+is a photograph (`fin-lab/assets/analyst.jpg`) with generated keyframes of the same woman that the
+page crossfades between so she blinks, turns to you, talks, waves and points.
 
 **Live site:** https://hongguqaz.github.io/Lobby/ (after GitHub Pages is enabled, see below)
 
@@ -97,3 +100,5 @@ python -m http.server 8000     # then open http://localhost:8000/
 - **Publishing token**: Drive needs a secret `LOBBY_DEPLOY_TOKEN` with *Contents: Read and write* on
   this repository. Details are in Drive's README.
 - **Keys**: change the shared `1111` before putting anything sensitive behind a door.
+- **Scene images**: add the repository secret `OPENAI_API_KEY`, then run the *Generate scene
+  images* workflow from the Actions tab. It commits the images and redeploys the site.

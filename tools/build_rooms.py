@@ -137,7 +137,11 @@ def fin_lab():
     .figure { position: relative; perspective: 900px; cursor: pointer; outline: none; border-radius: 10px; }
     .figure:focus-visible { box-shadow: 0 0 0 2px var(--room-accent); }
     .figure-tilt { transform-style: preserve-3d; transition: transform 0.18s ease-out; border-radius: 10px; overflow: hidden; background: #0b1120 url(assets/analyst-bg.jpg) center / cover; box-shadow: 0 18px 40px rgba(0,0,0,0.55); }
+    .figure-tilt { position: relative; }
     .figure-photo { display: block; width: 100%; height: auto; aspect-ratio: 2 / 3; object-fit: cover; animation: breathe 5.2s ease-in-out infinite; transform-origin: 50% 90%; }
+    .figure-photo.frame { position: absolute; inset: 0; height: 100%; opacity: 0; transition: opacity 0.32s ease; }
+    .figure-photo.frame.on { opacity: 1; }
+    .figure-photo.frame.fast { transition-duration: 0.12s; }
     @keyframes breathe { 50% { transform: scale(1.012) translateY(-1px); } }
     .figure-glow { position: absolute; inset: 0; background: radial-gradient(60% 45% at 18% 42%, rgba(79,163,255,0.28), rgba(79,163,255,0) 70%); mix-blend-mode: screen; animation: monitor 3.4s ease-in-out infinite alternate; pointer-events: none; }
     @keyframes monitor { to { opacity: 0.45; } }
@@ -161,7 +165,7 @@ def fin_lab():
     .chips { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
     .chips button, .chips a { font: inherit; font-size: 12px; color: var(--room-ink); background: rgba(79, 163, 255, 0.12); border: 1px solid rgba(79, 163, 255, 0.35); border-radius: 999px; padding: 4px 10px; cursor: pointer; text-decoration: none; }
     .chips button:hover, .chips a:hover { background: rgba(79, 163, 255, 0.24); }
-    @media (prefers-reduced-motion: reduce) { .figure-photo, .figure-glow, .figure.waving .figure-tilt, .figure.waving .figure-shine, .figure.waving .figure-ring, .ticker-track { animation: none !important; } .figure-tilt { transition: none; } }
+    @media (prefers-reduced-motion: reduce) { .figure-photo, .figure-glow, .figure.waving .figure-tilt, .figure.waving .figure-shine, .figure.waving .figure-ring, .ticker-track { animation: none !important; } .figure-tilt, .figure-photo.frame { transition: none; } }
     @media (max-width: 760px) { .lab { grid-template-columns: 1fr; } }
 '''
     ticker_items = ''.join('<span><b>%s</b><i>&mdash; awaiting feed</i></span>' % n for n in ['KOSPI', 'KOSDAQ', 'S&amp;P 500', 'NASDAQ', 'USD/KRW', 'US 10Y', 'KR 3Y', 'WTI', 'GOLD', 'BTC'])
@@ -176,7 +180,9 @@ def fin_lab():
       <aside class="guide" aria-label="The analyst">
         <div class="figure" id="figure" tabindex="0" role="img" aria-label="The Fin Lab analyst at her desk. Click to get her attention.">
           <div class="figure-tilt" id="figure-tilt">
-            <img class="figure-photo" src="assets/analyst.jpg" alt="" width="768" height="1152">
+            <img class="figure-photo base" src="assets/analyst.jpg" alt="" width="768" height="1152">
+            <img class="figure-photo frame" alt="" aria-hidden="true">
+            <img class="figure-photo frame" alt="" aria-hidden="true">
             <div class="figure-glow"></div>
             <div class="figure-shine"></div>
           </div>
