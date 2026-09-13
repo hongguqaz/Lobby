@@ -3,6 +3,7 @@
 
     OPENAI_API_KEY=... python3 tools/gen_images.py                 # everything in assets/img/prompts.json
     OPENAI_API_KEY=... python3 tools/gen_images.py --only castle,figure --quality medium
+    OPENAI_API_KEY=... python3 tools/gen_images.py --candidates 2   # two variants each, into candidates/ folders
     python3 tools/gen_images.py --dry-run                           # show the plan, call nothing
 
 Runs in the "Generate scene images" GitHub Actions workflow with the key kept as a
@@ -136,7 +137,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--only", default="all", help="comma-separated scene ids and/or 'figure' (default: all)")
     ap.add_argument("--quality", default=None, help="override quality for everything: low | medium | high")
     ap.add_argument("--model", default=None, help="override the model id (default: prompts.json, 'auto' picks the newest gpt-image)")
-    ap.add_argument("--workers", type=int, default=2)
+    ap.add_argument("--workers", type=int, default=3)
+    ap.add_argument("--candidates", type=int, default=1, help="variants per item; >1 writes to a candidates/ folder next to the final path instead of the final path")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args(argv)
 
@@ -144,21 +146,30 @@ def main(argv: list[str] | None = None) -> int:
     only = None if args.only in ("", "all") else {s.strip() for s in args.only.split(",") if s.strip()}
     style = cfg.get("style", "")
 
+    n_cand = max(1, args.candidates)
+
+    def outputs(final: Path) -> list[Path]:
+        if n_cand == 1:
+            return [final]
+        return [final.parent / "candidates" / f"{final.stem}-{k}{final.suffix}" for k in range(1, n_cand + 1)]
+
     jobs = []
     for scene in cfg.get("scenes", []):
         if only and scene["id"] not in only:
             continue
         ref = ROOT / scene["reference"] if scene.get("reference") else None
-        jobs.append({"what": scene["id"], "out": ROOT / scene["out"], "size": scene["size"],
-                     "quality": args.quality or scene.get("quality", "high"), "crop": scene.get("crop"),
-                     "prompt": scene["prompt"] + " " + style, "reference": ref})
+        for k, out in enumerate(outputs(ROOT / scene["out"]), start=1):
+            jobs.append({"what": scene["id"] + (f" #{k}" if n_cand > 1 else ""), "out": out, "size": scene["size"],
+                         "quality": args.quality or scene.get("quality", "high"), "crop": scene.get("crop"),
+                         "prompt": scene["prompt"] + " " + style, "reference": ref})
     fig = cfg.get("figure")
     if fig and (not only or "figure" in only):
         ref = ROOT / fig["reference"]
         for frame in fig["frames"]:
-            jobs.append({"what": f"figure/{frame['id']}", "out": ROOT / fig["out_dir"] / f"{frame['id']}.jpg",
-                         "size": fig["size"], "quality": args.quality or fig.get("quality", "high"), "crop": None,
-                         "prompt": fig["base_prompt"] + frame["prompt"], "reference": ref})
+            for k, out in enumerate(outputs(ROOT / fig["out_dir"] / f"{frame['id']}.jpg"), start=1):
+                jobs.append({"what": f"figure/{frame['id']}" + (f" #{k}" if n_cand > 1 else ""), "out": out,
+                             "size": fig["size"], "quality": args.quality or fig.get("quality", "high"), "crop": None,
+                             "prompt": fig["base_prompt"] + frame["prompt"], "reference": ref})
     if not jobs:
         log("nothing selected"); return 2
 

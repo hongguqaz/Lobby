@@ -18,6 +18,9 @@ on:
       model:
         description: "Image model id, or 'auto' for the newest gpt-image model"
         default: "auto"
+      candidates:
+        description: "Variants per image. 1 writes the final files; 2 or more writes numbered files into candidates/ folders for review."
+        default: "1"
 
 permissions:
   contents: write
@@ -52,7 +55,7 @@ jobs:
       - name: Generate images
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: python tools/gen_images.py --only "${{ inputs.only }}" --quality "${{ inputs.quality }}" --model "${{ inputs.model }}"
+        run: python tools/gen_images.py --only "${{ inputs.only }}" --quality "${{ inputs.quality }}" --model "${{ inputs.model }}" --candidates "${{ inputs.candidates }}"
 
       - name: Public data check
         run: python scripts/check_public_data.py
@@ -65,7 +68,7 @@ jobs:
             exit 0
           fi
           git -c user.name="scene-painter-bot" -c user.email="scene-painter-bot@users.noreply.github.com" \
-            commit -m "Generate scene images (${{ inputs.only }}, ${{ inputs.quality }})"
+            commit -m "Generate scene images (${{ inputs.only }}, ${{ inputs.quality }}, x${{ inputs.candidates }})"
           git push origin HEAD
 
       # A push made with the workflow token does not trigger other workflows, so ask
