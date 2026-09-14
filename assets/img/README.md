@@ -62,8 +62,11 @@ suffix when it is sent. Two composition rules are baked into them and must survi
   the detailed set dressing lower and to the right.
 - **Analyst keyframes.** Each is an edit of `fin-lab/assets/analyst.jpg` with only the pose
   and expression changed, so she stays the same person while the page moves between
-  `look`, `talk`, `wave`, `point`, `blink` and `listen`. `tools/morph_frames.py` (run by the
-  workflow after a final, single-candidate generation, or by hand) computes optical flow
-  between the poses and writes short in-between strips to `fin-lab/assets/frames/morph/`, so
-  the head turns, the eyes close and the hand rises instead of cutting; delete that folder
-  to fall back to crossfades.
+  `look`, `talk`, `wave`, `point`, `blink` and `listen`, passing through `wave-mid` and
+  `point-mid` on the way up. After a final (single-candidate) generation the workflow runs
+  `tools/match_frames.py`, which fits each frame's exposure and colour to the portrait so
+  nothing flickers between poses, then `tools/morph_frames.py`, which computes optical flow
+  between the poses and writes eight evenly spaced in-between frames per transition to
+  `fin-lab/assets/frames/morph/`. The page blends along those strips over time (a head turn
+  takes about two thirds of a second, a hand most of a second); delete the folder to fall
+  back to crossfades. A single keyframe can be regenerated with `only` = `frame:<id>`.
