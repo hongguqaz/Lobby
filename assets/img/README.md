@@ -61,5 +61,9 @@ suffix when it is sent. Two composition rules are baked into them and must survi
   image, strongest at the upper left, so every room prompt keeps that region calm and puts
   the detailed set dressing lower and to the right.
 - **Analyst keyframes.** Each is an edit of `fin-lab/assets/analyst.jpg` with only the pose
-  and expression changed, so she stays the same person while the page crossfades between
-  `look`, `talk`, `wave`, `point`, `blink` and `listen`.
+  and expression changed, so she stays the same person while the page moves between
+  `look`, `talk`, `wave`, `point`, `blink` and `listen`. `tools/morph_frames.py` (run by the
+  workflow after a final, single-candidate generation, or by hand) computes optical flow
+  between the poses and writes short in-between strips to `fin-lab/assets/frames/morph/`, so
+  the head turns, the eyes close and the hand rises instead of cutting; delete that folder
+  to fall back to crossfades.

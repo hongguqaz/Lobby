@@ -142,6 +142,9 @@ def fin_lab():
     .figure-photo.frame { position: absolute; inset: 0; height: 100%; opacity: 0; transition: opacity 0.32s ease; }
     .figure-photo.frame.on { opacity: 1; }
     .figure-photo.frame.fast { transition-duration: 0.12s; }
+    .figure-photo.frame.instant { transition: none; }
+    .figure-photo.morph { position: absolute; inset: 0; height: 100%; opacity: 0; pointer-events: none; }
+    .figure-photo.morph.on { opacity: 1; }
     @keyframes breathe { 50% { transform: scale(1.012) translateY(-1px); } }
     .figure-glow { position: absolute; inset: 0; background: radial-gradient(60% 45% at 18% 42%, rgba(79,163,255,0.28), rgba(79,163,255,0) 70%); mix-blend-mode: screen; animation: monitor 3.4s ease-in-out infinite alternate; pointer-events: none; }
     @keyframes monitor { to { opacity: 0.45; } }
@@ -183,6 +186,7 @@ def fin_lab():
             <img class="figure-photo base" src="assets/analyst.jpg" alt="" width="768" height="1152">
             <img class="figure-photo frame" alt="" aria-hidden="true">
             <img class="figure-photo frame" alt="" aria-hidden="true">
+            <canvas class="figure-photo morph" width="512" height="768" aria-hidden="true"></canvas>
             <div class="figure-glow"></div>
             <div class="figure-shine"></div>
           </div>
@@ -205,7 +209,7 @@ def fin_lab():
         placard('Analyst reports', 'Sell-side and in-house research, tagged by sector, issuer and author, with the key charts kept alongside.', 'Space reserved'),
         placard('Sources &amp; feeds', 'Where the material comes from and how it is refreshed: uploads, scheduled pulls, and links to be connected.', 'To be connected'),
         placard('Hand-off to the Market Board', 'What the lab extracts for the board outside: series, snapshots and summaries, once the database is established.', 'Planned'))
-    return shell('fin-lab', 'Fin Lab', palette, scene(inner, defs), body, extra_scripts='  <script src="assets/figure.js"></script>')
+    return shell('fin-lab', 'Fin Lab', palette, scene(inner, defs), body, extra_scripts='  <script src="assets/frames/morph/manifest.js"></script>\n  <script src="assets/figure.js"></script>')
 
 
 # ====================================================================== LEGAL QUARTER
