@@ -3,6 +3,7 @@
 
     OPENAI_API_KEY=... python3 tools/gen_images.py                 # everything in assets/img/prompts.json
     OPENAI_API_KEY=... python3 tools/gen_images.py --only castle,figure --quality medium
+    OPENAI_API_KEY=... python3 tools/gen_images.py --only frame:wave-mid     # one keyframe
     OPENAI_API_KEY=... python3 tools/gen_images.py --candidates 2   # two variants each, into candidates/ folders
     python3 tools/gen_images.py --dry-run                           # show the plan, call nothing
 
@@ -160,7 +161,7 @@ def finish(data: bytes, out: Path, crop: str | None) -> None:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", type=Path, default=ROOT / "assets" / "img" / "prompts.json")
-    ap.add_argument("--only", default="all", help="comma-separated scene ids and/or 'figure' (default: all)")
+    ap.add_argument("--only", default="all", help="comma-separated scene ids, 'figure' (every keyframe) and/or 'frame:<id>' (default: all)")
     ap.add_argument("--quality", default=None, help="override quality for everything: low | medium | high | xhigh | max (default: per item in prompts.json)")
     ap.add_argument("--model", default=None, help="override the model id (default: prompts.json, 'auto' picks the newest gpt-image)")
     ap.add_argument("--workers", type=int, default=3)
@@ -194,9 +195,12 @@ def main(argv: list[str] | None = None) -> int:
                          "quality": args.quality or scene.get("quality", "high"), "crop": scene.get("crop"),
                          "prompt": scene["prompt"] + " " + style, "reference": ref})
     fig = cfg.get("figure")
-    if fig and (not only or "figure" in only):
+    wanted_frames = {s.split(":", 1)[1] for s in (only or set()) if s.startswith("frame:")}
+    if fig and (not only or "figure" in only or wanted_frames):
         ref = ROOT / fig["reference"]
         for frame in fig["frames"]:
+            if wanted_frames and "figure" not in (only or set()) and frame["id"] not in wanted_frames:
+                continue
             for k, out in enumerate(outputs(ROOT / fig["out_dir"] / f"{frame['id']}.jpg"), start=1):
                 jobs.append({"what": f"figure/{frame['id']}" + (f" #{k}" if n_cand > 1 else ""), "out": out,
                              "size": fig["size"], "quality": args.quality or fig.get("quality", "high"), "crop": None,

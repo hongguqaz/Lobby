@@ -2,7 +2,7 @@
 """Build the in-between frames that let the Fin Lab analyst move smoothly.
 
     python3 tools/morph_frames.py            # every pair in PAIRS that has both keyframes
-    python3 tools/morph_frames.py --k 8      # more in-betweens per transition
+    python3 tools/morph_frames.py --k 12     # more in-betweens per transition
 
 For each pair of poses (the resting portrait and the keyframes in fin-lab/assets/frames/)
 this computes optical flow between the two photographs and synthesises K frames that warp
@@ -31,17 +31,18 @@ W, H = 512, 768
 PAIRS = [   # every transition the page plays; b -> a is the same strip played backwards
     ("base", "look"), ("base", "blink"), ("base", "listen"), ("base", "wave"), ("base", "point"),
     ("look", "talk"), ("look", "wave"), ("look", "point"), ("look", "blink"), ("look", "listen"),
+    # with the mid-rise keyframes present, the hand travels in two legs instead of appearing
+    ("base", "wave-mid"), ("look", "wave-mid"), ("wave-mid", "wave"),
+    ("base", "point-mid"), ("look", "point-mid"), ("point-mid", "point"),
 ]
-RAISED = {"wave", "point"}   # poses where a hand is up: it rises into view, or sinks out of it
-
-
-def smoothstep(t: float) -> float:
-    return t * t * (3 - 2 * t)
+VIA = {"wave": "wave-mid", "point": "point-mid"}   # pose -> the mid pose to pass through when it exists
+RAISED = {"wave", "point", "wave-mid", "point-mid"}   # poses with a hand up: it rises into view, or sinks out
+RAISED_ORDER = {"wave-mid": 1, "wave": 2, "point-mid": 1, "point": 2}   # higher = hand higher
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--k", type=int, default=6, help="in-between frames per transition")
+    ap.add_argument("--k", type=int, default=8, help="in-between frames per transition")
     ap.add_argument("--quality", type=int, default=80, help="WebP quality")
     args = ap.parse_args(argv)
     try:
@@ -99,7 +100,7 @@ def main(argv: list[str] | None = None) -> int:
         ys, xs = np.mgrid[0:H, 0:W].astype(np.float32)
         frames = []
         for i in range(1, k + 1):
-            te = smoothstep(i / (k + 1))
+            te = i / (k + 1)                 # evenly spaced; the page applies the easing
             wa = cv2.remap(a, xs - te * fab[..., 0], ys - te * fab[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
             wb = cv2.remap(b, xs - (1 - te) * fba[..., 0], ys - (1 - te) * fba[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
             out = cv2.addWeighted(wa, 1 - te, wb, te, 0).astype(np.float32)
@@ -122,18 +123,22 @@ def main(argv: list[str] | None = None) -> int:
     for stale in OUT.glob("*.webp"):
         if stale.name not in wanted:
             stale.unlink(); print(f"removed stale {stale.relative_to(ROOT)}")
-    manifest = {"width": W, "height": H, "frames": args.k, "pairs": []}
+    manifest = {"width": W, "height": H, "frames": args.k, "pairs": [], "via": {}}
     for a_id, b_id in PAIRS:
         if not (path(a_id).exists() and path(b_id).exists()):
             print(f"skip {a_id}-{b_id}: keyframe missing"); continue
         a, b = load(a_id), load(b_id)
-        rise = "b" if (b_id in RAISED and a_id not in RAISED) else "a" if (a_id in RAISED and b_id not in RAISED) else None
+        ra, rb = RAISED_ORDER.get(a_id, 0), RAISED_ORDER.get(b_id, 0)
+        rise = "b" if rb > ra else "a" if ra > rb else None
         frames, wiped = inbetweens(a, b, args.k, rise)
         strip = cv2.cvtColor(cv2.hconcat(frames), cv2.COLOR_BGR2RGB)
         out = OUT / f"{a_id}-{b_id}.webp"
         Image.fromarray(strip).save(out, "WEBP", quality=args.quality, method=6)
         manifest["pairs"].append(f"{a_id}-{b_id}")
         print(f"wrote {out.relative_to(ROOT)}  {strip.shape[1]}x{strip.shape[0]}  {out.stat().st_size // 1024} KB" + ("  (rise wipe)" if wiped else ""))
+    for pose, mid in VIA.items():
+        if path(mid).exists() and path(pose).exists():
+            manifest["via"][pose] = mid
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=1) + "\n")
     # the page reads it as a script so it also works from file:// and without fetch
     (OUT / "manifest.js").write_text("window.LOBBY_MORPH = " + json.dumps(manifest) + ";\n")

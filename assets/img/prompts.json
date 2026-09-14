@@ -84,6 +84,14 @@
       {
         "id": "listen",
         "prompt": "she has turned her face from the monitor to look straight into the lens, head tilted a few degrees toward her left shoulder on the window side, chin level, brows softly lifted as if listening, eyes attentive behind the round glasses with the same window catchlight in the lenses, lips closed in a small warm smile; shoulders, torso and posture unchanged, hair falling naturally with the tilt, hands low at the desk, below frame."
+      },
+      {
+        "id": "wave-mid",
+        "prompt": "she has turned her head to look into the lens, a warm smile just beginning, lips together; her right hand is on its way up in front of her, at collarbone height and a little left of centre, palm turning toward the camera, fingers loosely curled and half open, elbow bent and tucked near her ribs so the black blazer sleeve gathers slightly at the wrist, the hand a touch softer in focus than her eyes; left forearm resting on the desk; shoulders unmoved."
+      },
+      {
+        "id": "point-mid",
+        "prompt": "she looks straight into the lens with a calm closed-mouth smile, chin level; her left hand is lifting off the desk toward the candlestick-chart monitor at the left of the frame, at the height of her lower ribs, palm beginning to open and turn toward the screen, fingers together, wrist loose, elbow near her body, arm not yet extended; right hand resting by the keyboard; shoulders unmoved, no added screens."
       }
     ],
     "quality": "xhigh"

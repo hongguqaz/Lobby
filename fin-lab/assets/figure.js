@@ -1,10 +1,15 @@
 /* The Fin Lab analyst.
    assets/analyst.jpg is her resting pose. tools/gen_images.py derives keyframes from it
    (assets/frames/{look,talk,wave,point,blink,listen}.jpg): the same woman at the same desk,
-   only the pose changed. tools/morph_frames.py then builds in-between strips
-   (assets/frames/morph/<a>-<b>.webp, listed in manifest.js) so a move from one pose to the
-   next is a short run of frames on a canvas rather than a crossfade: the head turns, the
-   eyes close and open, the hand rises into view. Without the strips the poses crossfade;
+   only the pose changed. tools/match_frames.py brings their exposure in line with the
+   portrait and tools/morph_frames.py builds evenly spaced in-between strips
+   (assets/frames/morph/<a>-<b>.webp, listed in manifest.js).
+
+   This script draws her on a canvas and moves between poses along those strips at a human
+   pace: a head turn takes about two thirds of a second, a blink closes fast and opens
+   slower, a hand takes most of a second to come up and then waves, and speech opens the
+   mouth to varying depths at syllable rhythm. Consecutive strip frames are blended, so the
+   motion is continuous whatever the frame rate. Without the strips the poses crossfade;
    without the frames she still tilts toward the pointer, breathes and nods. Lines live in
    LINES. */
 (function () {
@@ -31,10 +36,10 @@
       chips: { what: '이 방은 무엇인가요?', board: 'Market Board는요?', rooms: '다른 방들', go: 'Market Board로 →' }
     }
   };
-  var FRAME_IDS = ['look', 'talk', 'wave', 'point', 'blink', 'listen'];
+  var FRAME_IDS = ['look', 'talk', 'wave', 'point', 'blink', 'listen', 'wave-mid', 'point-mid'];
   var FRAME_DIR = 'assets/frames/';
   var MORPH_DIR = FRAME_DIR + 'morph/';
-  var MANIFEST = window.LOBBY_MORPH || null;       // written by tools/morph_frames.py
+  var MANIFEST = window.LOBBY_MORPH || null;        // written by tools/morph_frames.py
 
   var figure = document.getElementById('figure');
   var tilt = document.getElementById('figure-tilt');
@@ -53,23 +58,18 @@
   var layers = Array.prototype.slice.call(figure.querySelectorAll('.figure-photo.frame'));
   var canvas = figure.querySelector('canvas.morph');
   var ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null;
+  var canvasMode = !!(ctx && MANIFEST && MANIFEST.pairs && !reduced);
   var active = -1;
-  var pose = 'base';                                    // what is on screen when nothing is playing
+  var pose = 'base';                                    // where she is when nothing is playing
   var hovering = false, talking = false;
   var holdTimer = null, talkTimer = null, idleTimer = null, waveTimer = null, leaveTimer = null;
 
   function has(id) { return id === 'base' || !!frames[id]; }
-  function loaded(id) { var im = frames[id]; return !!im && im.complete && im.naturalWidth > 0; }
-  function instantAll() {
-    layers.forEach(function (l) { l.classList.add('instant'); });
-    setTimeout(function () { layers.forEach(function (l) { l.classList.remove('instant'); }); }, 60);
-  }
-  function setStatic(id, instant) {
-    if (instant) instantAll();
-    if (id === 'base' || !has(id)) {
-      layers.forEach(function (l) { l.classList.remove('on'); });
-      return;
-    }
+  function ready(id) { var im = frames[id]; return !!im && im.complete && im.naturalWidth > 0; }
+
+  // Fallback display: two crossfading <img> layers over the portrait.
+  function setStatic(id) {
+    if (id === 'base' || !has(id)) { layers.forEach(function (l) { l.classList.remove('on'); }); return; }
     var next = (active + 1) % layers.length;
     var layer = layers[next];
     layer.src = frames[id].src;
@@ -78,8 +78,25 @@
     active = next;
   }
 
-  // ---------------------------------------------------------------- in-between strips
-  var strips = {};                                      // 'a-b' -> { img, ready }
+  // ---------------------------------------------------------------- canvas
+  function fitCanvas() {
+    if (!canvasMode) return;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var w = Math.max(1, Math.round(tilt.offsetWidth * dpr)), h = Math.max(1, Math.round(tilt.offsetHeight * dpr));
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    if (!anim) drawPose(pose, 1);
+  }
+  function drawPose(id, alpha) {
+    var im = frames[id] || baseImg;
+    if (!im || !im.complete || !im.naturalWidth) return;
+    ctx.globalAlpha = alpha; ctx.drawImage(im, 0, 0, canvas.width, canvas.height); ctx.globalAlpha = 1;
+  }
+  function drawStrip(s, i, alpha) {
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(s.img, i * MANIFEST.width, 0, MANIFEST.width, MANIFEST.height, 0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = 1;
+  }
+  var strips = {};                                      // 'a-b' -> { img, ready, waiting }
   function stripFor(a, b) {
     if (!MANIFEST || !MANIFEST.pairs) return null;
     if (MANIFEST.pairs.indexOf(a + '-' + b) >= 0) return { key: a + '-' + b, reverse: false };
@@ -98,104 +115,143 @@
     return s;
   }
   function preloadStrips() {
-    if (!MANIFEST || !ctx || reduced) return;
+    if (!canvasMode) return;
     var order = ['look-blink', 'base-look', 'base-blink', 'look-talk', 'look-wave', 'base-wave', 'look-point', 'base-point', 'look-listen', 'base-listen'];
-    var rest = MANIFEST.pairs.filter(function (k) { return order.indexOf(k) < 0; });
-    var queue = order.filter(function (k) { return MANIFEST.pairs.indexOf(k) >= 0; }).concat(rest);
+    var queue = order.filter(function (k) { return MANIFEST.pairs.indexOf(k) >= 0; })
+      .concat(MANIFEST.pairs.filter(function (k) { return order.indexOf(k) < 0; }));
     (function next() { var k = queue.shift(); if (k) loadStrip(k, next); })();
   }
-  function drawEndpoint(id) {
-    var im = frames[id] || baseImg;
-    if (im && im.complete) ctx.drawImage(im, 0, 0, canvas.width, canvas.height);
+
+  /* A track runs from pose a (position 0) to pose b (position K+1) through the K strip
+     frames. drawAt blends the two nearest sources, so any position is a picture. */
+  function makeTrack(a, b) {
+    var s = stripFor(a, b);
+    var st = s ? loadStrip(s.key) : null;
+    return { a: a, b: b, s: s, st: st, K: MANIFEST.frames, usable: !!(st && st.ready && ready(a === 'base' ? 'base' : a) && ready(b === 'base' ? 'base' : b)) };
   }
-  function drawStripFrame(s, i) {
-    ctx.drawImage(s.img, i * MANIFEST.width, 0, MANIFEST.width, MANIFEST.height, 0, 0, canvas.width, canvas.height);
+  function drawSource(track, j, alpha) {
+    if (j <= 0) drawPose(track.a, alpha);
+    else if (j >= track.K + 1) drawPose(track.b, alpha);
+    else drawStrip(track.st, track.s.reverse ? track.K - j : j - 1, alpha);
+  }
+  function drawAt(track, f) {
+    var end = track.K + 1;
+    f = Math.max(0, Math.min(end, f));
+    var lo = Math.floor(f), frac = f - lo;
+    drawSource(track, lo, 1);
+    if (frac > 0.02 && lo < end) drawSource(track, lo + 1, frac);
   }
 
-  // A playback owns the canvas; new requests wait for it or cut it short.
-  var playing = null, pending = null;
-  function stopPlaying() {
-    if (playing) { clearTimeout(playing.timer); playing = null; }
-    pending = null;
-    if (canvas) canvas.classList.remove('on');
-  }
-  function flush() {
-    if (pending && !playing) { var p = pending; pending = null; goTo(p.id, p.ms, p.then); }
-  }
-  /* Move from the current pose to `id`, playing the strip between them when there is one
-     (`ms` per frame), otherwise crossfading. `then` runs once she has arrived. */
-  function goTo(id, ms, then) {
-    if (!has(id)) id = 'base';
-    if (id === pose && !playing) { if (then) then(); return; }
-    if (playing) { pending = { id: id, ms: ms, then: then }; return; }
-    var s = (!reduced && ctx) ? stripFor(pose, id) : null;
-    var st = s ? loadStrip(s.key) : null;
-    if (!st || !st.ready || !loaded(id === 'base' ? 'base' : id)) {
-      setStatic(id, false); pose = id;
+  // ---------------------------------------------------------------- easing and the animator
+  var EASE = {
+    inOut: function (t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; },
+    out: function (t) { return 1 - Math.pow(1 - t, 3); },
+    in_: function (t) { return t * t * t; },
+    inQ: function (t) { return t * t; },
+    outQ: function (t) { return 1 - (1 - t) * (1 - t); },
+    sine: function (t) { return -(Math.cos(Math.PI * t) - 1) / 2; },
+    linear: function (t) { return t; }
+  };
+  var anim = null, pending = null, lastTrack = null;
+  function now() { return (window.performance && performance.now) ? performance.now() : Date.now(); }
+  /* Run position from f0 to f1 on a track over ms milliseconds. */
+  function runRange(track, f0, f1, ms, ease, then) {
+    var t0 = now();
+    anim = { cancel: false };
+    var me = anim;
+    (function frame() {
+      if (me.cancel) return;
+      var p = Math.min(1, (now() - t0) / Math.max(1, ms));
+      drawAt(track, f0 + (f1 - f0) * (ease || EASE.inOut)(p));
+      if (p < 1) { requestAnimationFrame(frame); return; }
+      anim = null;
       if (then) then();
-      return;
-    }
-    var K = MANIFEST.frames, order = [], i;
-    for (i = 0; i < K; i++) order.push(s.reverse ? K - 1 - i : i);
-    var step = 0;
-    playing = { timer: 0 };
-    canvas.classList.add('on');
-    (function tick() {
-      if (step < order.length) {
-        drawStripFrame(st, order[step]); step++;
-        playing.timer = setTimeout(tick, ms || 40);
-        return;
-      }
-      drawEndpoint(id);
-      setStatic(id, true); pose = id;
-      requestAnimationFrame(function () { requestAnimationFrame(function () {
-        if (playing) { canvas.classList.remove('on'); playing = null; }
-        if (then) then();
-        flush();
-      }); });
+      flush();
     })();
   }
-  /* Part of a strip out and back again, from the current pose: a half-open mouth, a small
-     tilt of the head. Leaves the pose unchanged. */
-  function playPartial(id, depth, ms, then) {
-    var s = (!reduced && ctx) ? stripFor(pose, id) : null;
-    var st = s ? loadStrip(s.key) : null;
-    if (!st || !st.ready || playing) { if (then) then(); return; }
-    var K = MANIFEST.frames, seq = [], i;
-    depth = Math.max(1, Math.min(K, depth));
-    for (i = 0; i < depth; i++) seq.push(s.reverse ? K - 1 - i : i);
-    for (i = depth - 2; i >= 0; i--) seq.push(s.reverse ? K - 1 - i : i);
-    var step = 0;
-    playing = { timer: 0 };
-    canvas.classList.add('on');
-    (function tick() {
-      if (step < seq.length) { drawStripFrame(st, seq[step]); step++; playing.timer = setTimeout(tick, ms); return; }
-      drawEndpoint(pose);
-      requestAnimationFrame(function () {
-        if (playing) { canvas.classList.remove('on'); playing = null; }
-        if (then) then();
-        flush();
+  function cancelAnim() { if (anim) { anim.cancel = true; anim = null; } pending = null; }
+  function flush() { if (pending && !anim) { var p = pending; pending = null; goTo(p.id, p.ms, p.ease, p.then); } }
+
+  /* A raised hand passes through its mid-rise keyframe when that exists (manifest.via), so
+     the move is two legs: accelerating into the first, easing out of the second. Returns the
+     list of poses to visit. */
+  function route(from, to) {
+    var via = (MANIFEST && MANIFEST.via) || {};
+    var mid = via[to];
+    if (mid && has(mid) && from !== mid && stripFor(from, mid) && stripFor(mid, to)) return [mid, to];
+    mid = via[from];
+    if (mid && has(mid) && to !== mid && stripFor(from, mid) && stripFor(mid, to)) return [mid, to];
+    return [to];
+  }
+  /* Move from the current pose to `id` over `ms` milliseconds. Uses the strip between them
+     when it is loaded, a canvas crossfade otherwise; the layer fallback outside canvas mode. */
+  function goTo(id, ms, ease, then) {
+    if (!has(id)) id = 'base';
+    if (id === pose && !anim) { if (then) then(); return; }
+    if (anim) { pending = { id: id, ms: ms, ease: ease, then: then }; return; }
+    if (!canvasMode) { setStatic(id); pose = id; if (then) then(); return; }
+    var legs = route(pose, id);
+    if (legs.length === 2) {
+      var total = ms || 800;
+      leg(legs[0], total * 0.55, EASE.inQ, function () { leg(legs[1], total * 0.45, EASE.outQ, then); });
+      return;
+    }
+    leg(id, ms, ease, then);
+  }
+  function leg(id, ms, ease, then) {
+    var track = makeTrack(pose, id);
+    var from = pose;
+    pose = id;
+    if (track.usable) {
+      lastTrack = track;
+      runRange(track, 0, track.K + 1, ms || 600, ease, then);
+    } else {
+      // plain dissolve between the two photographs
+      lastTrack = null;
+      var t0 = now(); anim = { cancel: false }; var me = anim;
+      (function frame() {
+        if (me.cancel) return;
+        var p = Math.min(1, (now() - t0) / Math.max(1, ms || 400));
+        drawPose(from, 1); drawPose(id, EASE.sine(p));
+        if (p < 1) { requestAnimationFrame(frame); return; }
+        anim = null; if (then) then(); flush();
+      })();
+    }
+  }
+  /* From the current pose part-way along the strip toward `id` and back: a syllable, a nod
+     of the head. `depth` is 0..1 of the way there. */
+  function playPartial(id, depth, msOut, msBack, then) {
+    if (!canvasMode || anim) { if (then) then(); return; }
+    var track = makeTrack(pose, id);
+    if (!track.usable) { if (then) then(); return; }
+    var target = Math.max(1, Math.min(track.K + 1, depth * (track.K + 1)));
+    runRange(track, 0, target, msOut, EASE.out, function () {
+      runRange(track, target, 0, msBack, EASE.inOut, then);
+    });
+  }
+  /* A small wave of the raised hand: dip along the last part of the track and back. */
+  function waveHand(times, then) {
+    var track = lastTrack;
+    if (!canvasMode || !track || track.b !== pose || anim) { if (then) then(); return; }
+    var end = track.K + 1, dip = end - 1.2, n = 0;
+    (function once() {
+      runRange(track, end, dip, 190, EASE.sine, function () {
+        runRange(track, dip, end, 210, EASE.sine, function () { if (++n < times) once(); else if (then) then(); });
       });
     })();
   }
   function restingPose() { return hovering ? 'look' : 'base'; }
-  function hold(id, ms, then) {
-    clearTimeout(holdTimer);
-    goTo(id, 40, function () {
-      holdTimer = setTimeout(function () { goTo(then === undefined ? restingPose() : then, 40); }, ms);
-    });
-  }
   function blink(then) {
-    goTo('blink', 26, function () {
-      holdTimer = setTimeout(function () { goTo(restingPose(), 30, then); }, 70);
+    if (!has('blink')) { if (then) then(); return; }
+    goTo('blink', 120, EASE.in_, function () {
+      holdTimer = setTimeout(function () { goTo(restingPose(), 190, EASE.out, then); }, 60);
     });
   }
   function preloadFrames() {
-    if (!layers.length) return;
     var left = FRAME_IDS.length;
     FRAME_IDS.forEach(function (id) {
       var img = new Image();
-      img.onload = function () { frames[id] = img; if (--left <= 0 || id === 'blink') scheduleIdle(); };
+      img.onload = function () { frames[id] = img; if (--left <= 0) scheduleIdle(); };
       img.onerror = function () { if (--left <= 0) scheduleIdle(); };
       img.src = FRAME_DIR + id + '.jpg';
     });
@@ -205,14 +261,17 @@
   function scheduleIdle() {
     if (reduced) return;
     clearTimeout(idleTimer);
-    idleTimer = setTimeout(idle, 3200 + Math.random() * 4200);
+    idleTimer = setTimeout(idle, 3500 + Math.random() * 4500);
   }
   function idle() {
-    if (!talking && !hovering && !playing && pose === 'base') {
+    if (!talking && !hovering && !anim && pose === 'base') {
       var r = Math.random();
-      if (r < 0.55 && has('blink')) blink();
-      else if (r < 0.8 && has('look')) hold('look', 1400 + Math.random() * 900, 'base');
-      else if (has('listen')) playPartial('listen', 2 + Math.floor(Math.random() * 2), 46);
+      if (r < 0.5) blink();
+      else if (r < 0.78 && has('look')) {
+        goTo('look', 700, EASE.inOut, function () {
+          holdTimer = setTimeout(function () { if (!talking && !hovering) goTo('base', 850, EASE.inOut); }, 1400 + Math.random() * 1200);
+        });
+      } else if (has('listen')) playPartial('listen', 0.3 + Math.random() * 0.3, 900, 1100);
     }
     scheduleIdle();
   }
@@ -221,18 +280,16 @@
   var typing = null;
   function talkLoop() {
     if (!talking) return;
-    var s = stripFor('look', 'talk');
-    if (!s || !loadStrip(s.key).ready || reduced || !ctx) {
-      // no strip: flick between the two mouths
-      var open = pose !== 'talk';
-      setStatic(open && has('talk') ? 'talk' : 'look', false); pose = open && has('talk') ? 'talk' : 'look';
+    if (!canvasMode) {
+      var open = pose !== 'talk' && has('talk');
+      setStatic(open ? 'talk' : 'look'); pose = open ? 'talk' : 'look';
       talkTimer = setTimeout(talkLoop, 150 + Math.random() * 130);
       return;
     }
-    if (pose !== 'look') { goTo('look', 26, talkLoop); return; }
-    var depth = 3 + Math.floor(Math.random() * (MANIFEST.frames - 2));      // how far the mouth opens
-    playPartial('talk', depth, 24 + Math.random() * 10, function () {
-      talkTimer = setTimeout(talkLoop, 40 + Math.random() * 170);
+    if (pose !== 'look') { goTo('look', 500, EASE.inOut, talkLoop); return; }
+    var depth = 0.45 + Math.random() * 0.55;                   // how far the mouth opens
+    playPartial('talk', depth, 90 + Math.random() * 60, 120 + Math.random() * 70, function () {
+      talkTimer = setTimeout(talkLoop, 40 + Math.random() * 150);
     });
   }
   function startTalking() {
@@ -247,29 +304,38 @@
     clearTimeout(talkTimer);
     var settle = function () {
       clearTimeout(holdTimer);
-      holdTimer = setTimeout(function () { goTo(restingPose(), 40); }, 1400);
+      holdTimer = setTimeout(function () { goTo(restingPose(), 850, EASE.inOut); }, 1500);
     };
-    if (playing) pending = { id: 'look', ms: 26, then: settle }; else goTo('look', 26, settle);
+    if (anim) pending = { id: 'look', ms: 300, ease: EASE.out, then: settle }; else goTo('look', 300, EASE.out, settle);
   }
   function say(text, gesture) {
     if (typing) { clearInterval(typing); typing = null; }
     clearTimeout(talkTimer); clearTimeout(holdTimer); talking = false; figure.classList.remove('talking');
-    stopPlaying();
     bubbleText.textContent = '';
-    if (reduced) { bubbleText.textContent = text; if (gesture && has(gesture)) { setStatic(gesture, false); pose = gesture; } return; }
+    if (reduced) { bubbleText.textContent = text; if (gesture && has(gesture)) { setStatic(gesture); pose = gesture; } return; }
     var i = 0;
-    var begin = function () {
-      startTalking();
+    var type = function () {
       typing = setInterval(function () {
         i++;
         bubbleText.textContent = text.slice(0, i);
         if (i >= text.length) { clearInterval(typing); typing = null; stopTalking(); }
       }, 22);
     };
-    if (gesture && has(gesture)) {
-      goTo(gesture, 55, function () { holdTimer = setTimeout(begin, 700); });
+    if (gesture === 'wave' && has('wave')) {
+      // hand up, a couple of waves, then it comes down as she starts to speak
+      goTo('wave', 800, EASE.inOut, function () {
+        waveHand(2, function () {
+          holdTimer = setTimeout(function () { startTalking(); type(); }, 250);
+        });
+      });
+    } else if (gesture && has(gesture)) {
+      // point or listen: she takes the pose, begins speaking, and lets it go a moment later
+      goTo(gesture, 850, EASE.inOut, function () {
+        type();
+        holdTimer = setTimeout(startTalking, 1300);
+      });
     } else {
-      begin();
+      startTalking(); type();
     }
   }
   function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
@@ -331,17 +397,24 @@
   var guide = figure.closest('.guide') || figure;
   guide.addEventListener('pointerenter', function () {
     hovering = true; clearTimeout(leaveTimer);
-    if (!talking && has('look')) { clearTimeout(holdTimer); goTo('look', 40); }
+    if (!talking && has('look')) { clearTimeout(holdTimer); goTo('look', 650, EASE.inOut); }
   });
   guide.addEventListener('pointerleave', function () {
     hovering = false;
-    if (!talking) { clearTimeout(holdTimer); leaveTimer = setTimeout(function () { if (!talking && !hovering) goTo('base', 40); }, 500); }
+    if (!talking) { clearTimeout(holdTimer); leaveTimer = setTimeout(function () { if (!talking && !hovering) goTo('base', 800, EASE.inOut); }, 600); }
   });
 
   function greetClick() { wave(); say(pick(LINES[lang].react), has('wave') ? 'wave' : null); }
   figure.addEventListener('click', greetClick);
   figure.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); greetClick(); } });
 
+  // ---------------------------------------------------------------- start
+  if (canvasMode) {
+    canvas.classList.add('on');
+    var paint = function () { fitCanvas(); drawPose('base', 1); };
+    if (baseImg.complete && baseImg.naturalWidth) paint(); else baseImg.addEventListener('load', paint);
+    window.addEventListener('resize', fitCanvas);
+  }
   preloadFrames();
   renderChips();
   var greeted = false;
@@ -349,9 +422,9 @@
     if (greeted) return; greeted = true;
     wave(); say(pick(LINES[lang].greet), has('wave') ? 'wave' : null);
   }
-  // Greet once the wave strip is in, so the first thing she does is already smooth (or after a moment anyway).
-  var waveStrip = stripFor('base', 'wave');
-  if (waveStrip && ctx && !reduced) loadStrip(waveStrip.key, function () { setTimeout(greet, 350); });
-  setTimeout(greet, waveStrip ? 2600 : 600);
-  setTimeout(preloadStrips, 800);
+  // Greet once the wave frame and its strip are in, so the first movement is already smooth.
+  var waveStrip = canvasMode ? stripFor('base', 'wave') : null;
+  if (waveStrip) loadStrip(waveStrip.key, function () { var w = function () { if (ready('wave')) setTimeout(greet, 400); else setTimeout(w, 100); }; w(); });
+  setTimeout(greet, waveStrip ? 3000 : 600);
+  setTimeout(preloadStrips, 700);
 })();

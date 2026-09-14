@@ -57,13 +57,15 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || secrets.OPEN_AI_API_KEY || secrets.OPEN_AI_KEY || secrets.OPEN_AI_API || secrets.OPEN_AI || secrets.OPENAI_KEY || secrets.OPENAI_API }}
         run: python tools/gen_images.py --only "${{ inputs.only }}" --quality "${{ inputs.quality }}" --model "${{ inputs.model }}" --candidates "${{ inputs.candidates }}"
 
-      # The analyst's in-between frames (fin-lab/assets/frames/morph/) follow from her keyframes.
-      - name: Build the analyst's in-between frames
+      # The analyst's keyframes are matched to her portrait's exposure, then the in-between
+      # strips (fin-lab/assets/frames/morph/) are built from them.
+      - name: Match the keyframes and build the in-between frames
         run: |
           if [ -f fin-lab/assets/frames/look.jpg ] && [ "${{ inputs.candidates }}" = "1" ]; then
+            python tools/match_frames.py
             python tools/morph_frames.py
           else
-            echo "keyframes not final yet (candidates run or no frames); skipping the morph strips"
+            echo "keyframes not final yet (candidates run or no frames); skipping the match and morph steps"
           fi
 
       - name: Public data check

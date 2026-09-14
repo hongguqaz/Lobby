@@ -1,1 +1,1 @@
-window.LOBBY_MORPH = {"width": 512, "height": 768, "frames": 6, "pairs": ["base-look", "base-blink", "base-listen", "base-wave", "base-point", "look-talk", "look-wave", "look-point", "look-blink", "look-listen"]};
+window.LOBBY_MORPH = {"width": 512, "height": 768, "frames": 8, "pairs": ["base-look", "base-blink", "base-listen", "base-wave", "base-point", "look-talk", "look-wave", "look-point", "look-blink", "look-listen"], "via": {}};

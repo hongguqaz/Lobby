@@ -1,7 +1,7 @@
 {
  "width": 512,
  "height": 768,
- "frames": 6,
+ "frames": 8,
  "pairs": [
   "base-look",
   "base-blink",
@@ -13,5 +13,6 @@
   "look-point",
   "look-blink",
   "look-listen"
- ]
+ ],
+ "via": {}
 }
