@@ -14,6 +14,8 @@ page crossfades between so she blinks, turns to you, talks, waves and points.
 **Live site:** https://hongguqaz.github.io/Lobby/ (after GitHub Pages is enabled, see below)
 
 ```
+Google Drive / laptop / phone  --sync-->  Drive (private)          add-only; see Drive's sync/README.md
+
 Drive (private)                              Lobby (public, this repository)
   market-board-facade/  data + pipeline  -->   market-board-facade/  the board, as a dashboard   (open)
   fin-lab/              reserved         -->   fin-lab/              trading-floor office        (key)
@@ -25,7 +27,9 @@ Drive (private)                              Lobby (public, this repository)
                                                index.html            the painting
 ```
 
-Only result files cross from Drive to Lobby. Source data never enters this repository.
+Only result files cross from Drive to Lobby. Source data never enters this repository. Raw material
+reaches Drive from Google Drive and from device folders through Drive's `sync/` tool, which only
+ever adds files (see Drive's `sync/README.md`).
 
 ## The rooms and where they sit
 
