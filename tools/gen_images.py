@@ -11,6 +11,11 @@ repository secret; it can equally run on a laptop.  Scenes with a 'reference' im
 the edits endpoint so the composition of the drawn scene (and the hotspots that depend
 on it) survives; the analyst keyframes use the original portrait as the reference so she
 stays the same person.  Outputs are JPEGs kept under ~900 KB.
+
+Model "auto" picks the newest gpt-image model, preferring the quality variant
+(gpt-image-2.5-sunburst over -flare).  Sizes are WIDTHxHEIGHT with both numbers multiples
+of 16 (gpt-image-2.5 renders any such size up to 3840x2160); quality is one of
+low | medium | high | xhigh | max, where xhigh and max exist from gpt-image-2.5 on.
 """
 from __future__ import annotations
 
@@ -52,7 +57,9 @@ def pick_model(key: str, wanted: str, requests) -> str:
     def version(i: str):
         m = re.search(r"gpt-image-(\d+(?:\.\d+)?)", i)
         return float(m.group(1)) if m else 0.0
-    candidates.sort(key=version, reverse=True)
+    # Newest version first; within a version prefer the quality-oriented variant
+    # (gpt-image-2.5 ships as "sunburst" for quality and "flare" for speed).
+    candidates.sort(key=lambda i: (version(i), "sunburst" in i, "flare" not in i), reverse=True)
     chosen = candidates[0] if candidates else "gpt-image-1"
     log(f"image model: {chosen}  (available: {', '.join(candidates) or 'none listed'})")
     return chosen
@@ -70,6 +77,9 @@ def call_with_retry(fn, what: str, attempts: int = 5):
                 body = exc.response.text[:300]  # type: ignore[attr-defined]
             except Exception:  # noqa: BLE001
                 pass
+            if "insufficient_quota" in body or "credit_balance_exhausted" in body or "billing" in body.lower():
+                raise RuntimeError(f"{what}: the OpenAI account has no API credits left; add credits at "
+                                   f"https://platform.openai.com/settings/organization/billing/ and re-run. {body}") from exc
             if i == attempts or (status and status < 500 and status != 429):
                 raise RuntimeError(f"{what}: {exc} {body}") from exc
             log(f"{what}: attempt {i} failed ({status or exc}); retrying in {delay}s")
@@ -77,11 +87,24 @@ def call_with_retry(fn, what: str, attempts: int = 5):
             delay = min(delay * 2, 90)
 
 
+QUALITIES = ("low", "medium", "high", "xhigh", "max", "auto")
+
+
+def effective_quality(model: str, quality: str) -> str:
+    """xhigh and max exist from gpt-image-2.5 on; older models get high instead."""
+    if quality not in QUALITIES:
+        raise SystemExit(f"quality must be one of {', '.join(QUALITIES)}, not {quality!r}")
+    m = re.search(r"gpt-image-(\d+(?:\.\d+)?)", model)
+    if quality in ("xhigh", "max") and (not m or float(m.group(1)) < 2.5):
+        return "high"
+    return quality
+
+
 def generate(key: str, model: str, prompt: str, size: str, quality: str, requests) -> bytes:
     def go():
-        r = requests.post(f"{API}/images/generations", headers=headers(key), timeout=300, json={
+        r = requests.post(f"{API}/images/generations", headers=headers(key), timeout=600, json={
             "model": model, "prompt": prompt, "size": size, "quality": quality, "n": 1,
-            "output_format": "jpeg", "output_compression": 90,
+            "output_format": "jpeg", "output_compression": 92,
         })
         r.raise_for_status()
         return base64.b64decode(r.json()["data"][0]["b64_json"])
@@ -89,18 +112,21 @@ def generate(key: str, model: str, prompt: str, size: str, quality: str, request
 
 
 def edit(key: str, model: str, prompt: str, size: str, quality: str, reference: Path, requests) -> bytes:
+    """Edit the reference image.  gpt-image-2 and later always read the input at high fidelity
+    and reject the input_fidelity field, so it is only sent to the gpt-image-1 family."""
     def go():
         mime = "image/png" if reference.suffix.lower() == ".png" else "image/jpeg"
+        data = {"model": model, "prompt": prompt, "size": size, "quality": quality, "n": "1",
+                "output_format": "jpeg", "output_compression": "92"}
+        if re.match(r"gpt-image-1(\.|$|-)", model):
+            data["input_fidelity"] = "high"
         with reference.open("rb") as fh:
-            r = requests.post(f"{API}/images/edits", headers=headers(key), timeout=300,
-                              data={"model": model, "prompt": prompt, "size": size, "quality": quality, "n": "1",
-                                    "output_format": "jpeg", "output_compression": "90", "input_fidelity": "high"},
+            r = requests.post(f"{API}/images/edits", headers=headers(key), timeout=600, data=data,
                               files={"image[]": (reference.name, fh, mime)})
-        if r.status_code == 400 and "input_fidelity" in r.text:
+        if r.status_code == 400 and "input_fidelity" in r.text and "input_fidelity" in data:
+            data.pop("input_fidelity")
             with reference.open("rb") as fh2:
-                r = requests.post(f"{API}/images/edits", headers=headers(key), timeout=300,
-                                  data={"model": model, "prompt": prompt, "size": size, "quality": quality, "n": "1",
-                                        "output_format": "jpeg", "output_compression": "90"},
+                r = requests.post(f"{API}/images/edits", headers=headers(key), timeout=600, data=data,
                                   files={"image[]": (reference.name, fh2, mime)})
         r.raise_for_status()
         return base64.b64decode(r.json()["data"][0]["b64_json"])
@@ -135,7 +161,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", type=Path, default=ROOT / "assets" / "img" / "prompts.json")
     ap.add_argument("--only", default="all", help="comma-separated scene ids and/or 'figure' (default: all)")
-    ap.add_argument("--quality", default=None, help="override quality for everything: low | medium | high")
+    ap.add_argument("--quality", default=None, help="override quality for everything: low | medium | high | xhigh | max (default: per item in prompts.json)")
     ap.add_argument("--model", default=None, help="override the model id (default: prompts.json, 'auto' picks the newest gpt-image)")
     ap.add_argument("--workers", type=int, default=3)
     ap.add_argument("--candidates", type=int, default=1, help="variants per item; >1 writes to a candidates/ folder next to the final path instead of the final path")
@@ -144,6 +170,11 @@ def main(argv: list[str] | None = None) -> int:
 
     cfg = json.loads(args.config.read_text(encoding="utf-8"))
     only = None if args.only in ("", "all") else {s.strip() for s in args.only.split(",") if s.strip()}
+    if args.quality in ("", "config", "default"):
+        args.quality = None
+    for q in filter(None, [args.quality] + [s.get("quality") for s in cfg.get("scenes", [])] + [cfg.get("figure", {}).get("quality")]):
+        if q not in QUALITIES:
+            log(f"error: quality {q!r} is not one of {', '.join(QUALITIES)}"); return 2
     style = cfg.get("style", "")
 
     n_cand = max(1, args.candidates)
@@ -178,6 +209,9 @@ def main(argv: list[str] | None = None) -> int:
         log(f"- {j['what']}: {kind}, {j['size']}, {j['quality']} -> {j['out'].relative_to(ROOT)}")
         if j["reference"] and not j["reference"].exists():
             log(f"  ERROR: reference {j['reference']} is missing"); return 2
+        w, h = (int(x) for x in j["size"].lower().split("x"))
+        if w % 16 or h % 16 or not (655_360 <= w * h <= 8_294_400) or max(w, h) / min(w, h) > 3:
+            log(f"  ERROR: size {j['size']} must use multiples of 16, 655,360-8,294,400 pixels and an aspect ratio within 3:1"); return 2
     if args.dry_run:
         return 0
 
@@ -190,10 +224,11 @@ def main(argv: list[str] | None = None) -> int:
 
     def run(j):
         started = time.time()
+        quality = effective_quality(model, j["quality"])
         if j["reference"]:
-            data = edit(key, model, j["prompt"], j["size"], j["quality"], j["reference"], requests)
+            data = edit(key, model, j["prompt"], j["size"], quality, j["reference"], requests)
         else:
-            data = generate(key, model, j["prompt"], j["size"], j["quality"], requests)
+            data = generate(key, model, j["prompt"], j["size"], quality, requests)
         finish(data, j["out"], j["crop"])
         return j["what"], time.time() - started
 

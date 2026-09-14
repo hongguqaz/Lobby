@@ -13,10 +13,10 @@ on:
         description: "Comma-separated ids to (re)generate: castle, fin-lab, legal-quarter, library, maiden-hall, garden, bedroom, figure. Or 'all'."
         default: "all"
       quality:
-        description: "Image quality: low | medium | high"
-        default: "high"
+        description: "Image quality for everything: low | medium | high | xhigh | max, or 'config' to use the per-item value in prompts.json (xhigh)"
+        default: "config"
       model:
-        description: "Image model id, or 'auto' for the newest gpt-image model"
+        description: "Image model id, or 'auto' for the newest gpt-image model (prefers the quality variant, e.g. gpt-image-2.5-sunburst)"
         default: "auto"
       candidates:
         description: "Variants per image. 1 writes the final files; 2 or more writes numbered files into candidates/ folders for review."

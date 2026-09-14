@@ -9,8 +9,9 @@ shared `style` suffix, and the analyst's base prompt plus one line per keyframe)
 `tools/gen_images.py` turns it into images with the OpenAI image API. The easiest way to run
 it is the *Generate scene images* workflow (Actions tab > Run workflow): it needs one
 repository secret, `OPENAI_API_KEY`, and commits the results itself. Inputs: `only` to
-regenerate a single scene or `figure`, `quality` low/medium/high, `model` (`auto` = newest
-gpt-image model), and `candidates`. Locally:
+regenerate a single scene or `figure`, `quality` (low/medium/high/xhigh/max, or `config` for
+the per-item value in `prompts.json`, currently xhigh), `model` (`auto` = newest gpt-image
+model, preferring the quality variant such as gpt-image-2.5-sunburst), and `candidates`. Locally:
 `OPENAI_API_KEY=... python3 tools/gen_images.py --only castle`.
 
 **Choosing between variants.** With `candidates` = 2 or more, nothing goes live: the variants
@@ -20,28 +21,28 @@ then `python3 tools/promote_candidates.py castle=2 garden=1 look=1 ... --first -
 the picks to their final names and deletes the candidates folders. Commit and push.
 
 The castle is produced with the image-edit endpoint from `castle-reference.jpg` (the drawn
-scene padded to 3:2) so the gate, wings and towers stay where the hotspots expect them;
-the result is centre-cropped back to 16:9. Open the landing page with `#calibrate` in the
-URL to see the hotspot boxes over the finished photo and adjust `assets/rooms.js` if needed.
+scene rendered at 2048 x 1152) so the gate, wings and towers stay where the hotspots expect
+them. Open the landing page with `#calibrate` in the URL to see the hotspot boxes over the
+finished photo and adjust `assets/rooms.js` if needed.
 
 The analyst's keyframes (`fin-lab/assets/frames/`) are edits of her portrait with only the
 pose changed, so she stays the same person while the page crossfades between them.
 
 | File | Used by | Size | Notes |
 |---|---|---|---|
-| `castle.jpg` | landing page (the painting) | 1600 x 900 (16:9) | composition must match the hotspots, see below |
-| `fin-lab.jpg` | Fin Lab | 1920 x 1080 | full-bleed background |
-| `legal-quarter.jpg` | Legal Quarter | 1920 x 1080 | |
-| `library.jpg` | Library | 1920 x 1080 | |
-| `maiden-hall.jpg` | Maiden Hall | 1920 x 1080 | |
-| `garden.jpg` | Garden | 1920 x 1080 | |
-| `bedroom.jpg` | Bedroom | 1920 x 1080 | |
+| `castle.jpg` | landing page (the painting) | 2048 x 1152 (16:9) | composition must match the hotspots, see below |
+| `fin-lab.jpg` | Fin Lab | 2048 x 1152 | full-bleed background |
+| `legal-quarter.jpg` | Legal Quarter | 2048 x 1152 | |
+| `library.jpg` | Library | 2048 x 1152 | |
+| `maiden-hall.jpg` | Maiden Hall | 2048 x 1152 | |
+| `garden.jpg` | Garden | 2048 x 1152 | |
+| `bedroom.jpg` | Bedroom | 2048 x 1152 | |
 
 The analyst portrait lives at `fin-lab/assets/analyst.jpg` (already in place).
 
-Keep files under about 800 KB each (JPEG quality 80 is plenty); images are served straight
-from GitHub Pages. Text on the page sits over the lower-left area of each scene, so keep
-that region calm.
+Keep files under about 900 KB each (the generator recompresses to stay below that);
+images are served straight from GitHub Pages. Any 16:9 size works for a hand-made
+replacement.
 
 ## Prompts
 
