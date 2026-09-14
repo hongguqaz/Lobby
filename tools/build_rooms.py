@@ -256,7 +256,6 @@ def legal_quarter():
       --room-panel: rgba(24, 14, 8, 0.66); --room-line: rgba(201, 162, 74, 0.35); --room-radius: 4px; --room-text-shadow: 0 1px 2px rgba(0,0,0,0.75), 0 0 18px rgba(0,0,0,0.65);
       --room-font: Georgia, "Times New Roman", "Noto Serif", serif; --room-display: Georgia, "Times New Roman", serif; }
     .room-head h1 { font-weight: 500; letter-spacing: 0.02em; }
-    .room-desc { background: var(--room-panel); border: 1px solid var(--room-line); padding: 12px 16px; border-radius: 6px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
     .motto { margin: 8px 0 0; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--room-muted); }
     .placard { border-top: 3px solid var(--room-accent); }
     .placard h2 { font-variant: small-caps; letter-spacing: 0.05em; }
@@ -326,7 +325,6 @@ def library():
       --room-panel: rgba(30, 18, 8, 0.66); --room-line: rgba(210, 169, 90, 0.32); --room-radius: 6px; --room-text-shadow: 0 1px 2px rgba(0,0,0,0.75), 0 0 18px rgba(0,0,0,0.65);
       --room-font: Georgia, "Times New Roman", "Noto Serif", serif; --room-display: Georgia, "Times New Roman", serif; }
     .room-head h1 { font-weight: 500; }
-    .room-desc { background: var(--room-panel); border: 1px solid var(--room-line); padding: 12px 16px; border-radius: 6px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
     .placard h2::before { content: "\\00a7 "; color: var(--room-accent); }
 '''
     body = '''    <header class="room-head">
@@ -382,7 +380,8 @@ def maiden_hall():
     <rect x="1330" y="560" width="80" height="40" fill="#f2ecdd" transform="rotate(-8 1370 580)"/><rect x="1440" y="574" width="10" height="26" fill="#2b2b2b"/>
     <ellipse cx="800" cy="850" rx="460" ry="60" fill="#b9c8d2" opacity=".55"/><ellipse cx="800" cy="850" rx="460" ry="60" filter="url(#fabric)" opacity=".4"/>''' % (panels, chandelier)
     palette = '''    :root { --room-bg: #ece7dd; --room-ink: #2f2a24; --room-ink-2: #524a40; --room-muted: #7a7060; --room-accent: #6f8fa8;
-      --room-panel: rgba(255, 255, 255, 0.72); --room-line: rgba(111, 143, 168, 0.35); --room-radius: 10px;
+      --room-panel: rgba(255, 255, 255, 0.78); --room-line: rgba(111, 143, 168, 0.35); --room-radius: 10px;
+      --room-text-shadow: 0 1px 2px rgba(255,255,255,0.9), 0 0 18px rgba(255,255,255,0.85);
       --room-font: Georgia, "Times New Roman", "Noto Serif", serif; --room-display: Georgia, "Times New Roman", serif; }
     .crumbs a { color: var(--room-ink-2); }
     .room-head h1 { font-weight: 500; letter-spacing: 0.01em; }
@@ -442,7 +441,8 @@ def garden():
     <g class="butterfly" fill="#f0b64a"><path d="M0,0 q-14,-16 -16,0 q2,14 16,0 z"/><path d="M0,0 q14,-16 16,0 q-2,14 -16,0 z"/></g>
     <g class="butterfly b2" fill="#7ea8e6"><path d="M0,0 q-12,-14 -14,0 q2,12 14,0 z"/><path d="M0,0 q12,-14 14,0 q-2,12 -14,0 z"/></g>''' % (hedges, lilies, flowers)
     palette = '''    :root { --room-bg: #dfeccb; --room-ink: #24331c; --room-ink-2: #3e5232; --room-muted: #5d6f4a; --room-accent: #d9645e;
-      --room-panel: rgba(255, 255, 255, 0.62); --room-line: rgba(60, 90, 40, 0.25); --room-radius: 16px; }
+      --room-panel: rgba(255, 255, 255, 0.74); --room-line: rgba(60, 90, 40, 0.25); --room-radius: 16px;
+      --room-text-shadow: 0 1px 2px rgba(255,255,255,0.9), 0 0 18px rgba(255,255,255,0.85); }
     .crumbs a { color: var(--room-ink-2); }
     .room-head h1 { font-weight: 600; }
     .butterfly { animation: flutter 14s ease-in-out infinite; transform-origin: center; }
