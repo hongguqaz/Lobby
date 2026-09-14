@@ -8,8 +8,9 @@ For each pair of poses (the resting portrait and the keyframes in fin-lab/assets
 this computes optical flow between the two photographs and synthesises K frames that warp
 and dissolve one into the other, so a blink closes gradually, a head tilt turns, and a
 hand rises into view instead of appearing.  Where something new enters the picture (a
-raised hand) the flow has nothing to track, so that region is revealed with a soft wipe
-from the bottom up while it slides into place.
+raised hand) the flow has nothing to track, so the hand is cut out of the target frame and
+travels from where it starts (the lower hand pose, or below its place) to where it ends,
+gaining opacity on the way.
 
 Output: fin-lab/assets/frames/morph/<a>-<b>.webp, a horizontal strip of the K in-betweens
 (played left to right for a -> b, right to left for b -> a), plus morph/manifest.json and
@@ -65,10 +66,10 @@ def main(argv: list[str] | None = None) -> int:
         return dis.calc(cv2.cvtColor(a, cv2.COLOR_BGR2GRAY), cv2.cvtColor(b, cv2.COLOR_BGR2GRAY), None)
 
     def appearance_mask(a, b, fab):
-        """Where b shows something that is not in a at all (a hand coming up).  A head turn or a
-        blink is explained by the flow, so warping a onto b leaves little residual there; a new
-        object leaves a large blob of residual.  Returns a feathered float mask in [0,1] and its
-        bounding box, or None."""
+        """The region of b that a cannot account for (a hand that is up in b): warping a onto b
+        with the flow leaves a large blob of residual there, while a head turn or a blink is
+        explained by the flow.  Returns a feathered float mask in [0,1] and its centroid (y, x),
+        or (None, None)."""
         ys, xs = np.mgrid[0:H, 0:W].astype(np.float32)
         warped = cv2.remap(a, xs - fab[..., 0], ys - fab[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
         diff = cv2.absdiff(cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY), cv2.cvtColor(b, cv2.COLOR_BGR2GRAY))
@@ -76,27 +77,48 @@ def main(argv: list[str] | None = None) -> int:
         mask = (diff > 28).astype(np.uint8)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((7, 7), np.uint8))
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((31, 31), np.uint8))
-        mask = cv2.dilate(mask, np.ones((21, 21), np.uint8))
-        n, labels, stats, _ = cv2.connectedComponentsWithStats(mask)
-        keep = np.zeros_like(mask)
-        for i in range(1, n):
-            if stats[i, cv2.CC_STAT_AREA] > 0.012 * W * H:
-                keep[labels == i] = 1
-        if not keep.any():
+        mask = cv2.dilate(mask, np.ones((17, 17), np.uint8))
+        n, labels, stats, cents = cv2.connectedComponentsWithStats(mask)
+        if n < 2:
             return None, None
-        ys, xs = np.where(keep)
-        box = (xs.min(), ys.min(), xs.max(), ys.max())
-        feather = cv2.GaussianBlur(keep.astype(np.float32), (0, 0), 8)
-        return np.clip(feather / max(feather.max(), 1e-6), 0, 1), box
+        # the hand is the largest blob; smaller differences (a sleeve on the desk) are left to the dissolve
+        big = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+        if stats[big, cv2.CC_STAT_AREA] < 0.012 * W * H:
+            return None, None
+        keep = (labels == big).astype(np.uint8)
+        # only the hand travels: the dark sleeve stays with the dissolve, so it never smears
+        # across the desk on its way up
+        ycc = cv2.cvtColor(b, cv2.COLOR_BGR2YCrCb)
+        skin = ((ycc[..., 1] > 133) & (ycc[..., 1] < 178) & (ycc[..., 2] > 80) & (ycc[..., 2] < 135) & (ycc[..., 0] > 60)).astype(np.uint8)
+        skin = cv2.morphologyEx(skin, cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8))
+        skin = cv2.dilate(skin, np.ones((7, 7), np.uint8))
+        hand = keep & skin
+        if hand.sum() > 0.004 * W * H:
+            keep = hand
+        ys_k, xs_k = np.where(keep)
+        feather = cv2.GaussianBlur(keep.astype(np.float32), (0, 0), 6)
+        return np.clip(feather / max(feather.max(), 1e-6), 0, 1), (float(ys_k.mean()), float(xs_k.mean()))
+
+    def shift(img, dy, dx):
+        M = np.float32([[1, 0, dx], [0, 1, dy]])
+        return cv2.warpAffine(img, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
 
     def inbetweens(a, b, k, rise):
-        """rise: 'b' when b brings a hand up, 'a' when a's raised hand goes down (built as the
-        reverse of the rising sequence), None for flow-only transitions."""
+        """rise: 'b' when b's hand is higher than a's (or a has none), 'a' for the reverse (built
+        as the reverse of the rising sequence), None for flow-only transitions."""
         if rise == "a":
             frames, wiped = inbetweens(b, a, k, "b")
             return frames[::-1], wiped
         fab, fba = flow(a, b), flow(b, a)
-        mask, box = appearance_mask(a, b, fab) if rise == "b" else (None, None)
+        mask, cent = appearance_mask(a, b, fab) if rise == "b" else (None, None)
+        travel = None
+        if mask is not None:
+            # Where does the hand start?  At a's hand if a has one up, otherwise below its place.
+            mask_a, cent_a = appearance_mask(b, a, fba)
+            if mask_a is not None and cent_a[0] > cent[0]:
+                travel = (cent_a[0] - cent[0], cent_a[1] - cent[1])
+            else:
+                travel = (0.32 * H, 0.0)     # from the lap: it enters over the bottom edge
         ys, xs = np.mgrid[0:H, 0:W].astype(np.float32)
         frames = []
         for i in range(1, k + 1):
@@ -105,16 +127,12 @@ def main(argv: list[str] | None = None) -> int:
             wb = cv2.remap(b, xs - (1 - te) * fba[..., 0], ys - (1 - te) * fba[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
             out = cv2.addWeighted(wa, 1 - te, wb, te, 0).astype(np.float32)
             if mask is not None:
-                # The new thing slides up into place while a soft wipe uncovers it from below.
-                x0, y0, x1, y1 = box
-                rise = int(0.10 * H * (1 - te))
-                shifted = np.roll(b, rise, axis=0).astype(np.float32)
-                if rise:
-                    shifted[:rise] = b[:rise]
-                line = y1 - (y1 - y0 + 40) * min(1.0, te * 1.25)          # wipe front, moving up
-                wipe = np.clip((ys - line) / 28.0 + 0.5, 0, 1)             # 1 below the front, 0 above
-                alpha = (mask * wipe)[..., None]
-                out = out * (1 - alpha) + shifted * alpha
+                # The hand itself travels from where it starts to where it ends, gaining opacity
+                # on the way, drawn over the dissolve of everything else.
+                dy, dx = travel[0] * (1 - te), travel[1] * (1 - te)
+                hand = shift(b, dy, dx).astype(np.float32)
+                alpha = (shift(mask, dy, dx) * min(1.0, 0.45 + te * 2.2))[..., None]
+                out = out * (1 - alpha) + hand * alpha
             frames.append(np.clip(out, 0, 255).astype(np.uint8))
         return frames, mask is not None
 
@@ -135,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
         out = OUT / f"{a_id}-{b_id}.webp"
         Image.fromarray(strip).save(out, "WEBP", quality=args.quality, method=6)
         manifest["pairs"].append(f"{a_id}-{b_id}")
-        print(f"wrote {out.relative_to(ROOT)}  {strip.shape[1]}x{strip.shape[0]}  {out.stat().st_size // 1024} KB" + ("  (rise wipe)" if wiped else ""))
+        print(f"wrote {out.relative_to(ROOT)}  {strip.shape[1]}x{strip.shape[0]}  {out.stat().st_size // 1024} KB" + ("  (hand travel)" if wiped else ""))
     for pose, mid in VIA.items():
         if path(mid).exists() and path(pose).exists():
             manifest["via"][pose] = mid
