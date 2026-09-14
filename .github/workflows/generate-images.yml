@@ -2,7 +2,7 @@
 # OpenAI image API and commits them.  Run it from the Actions tab ("Run workflow").
 #
 # One-time setup: Settings > Secrets and variables > Actions > New repository secret
-#   OPENAI_API_KEY = your OpenAI API key
+#   OPENAI_API_KEY = your OpenAI API key   (OPEN_AI_API_KEY and similar spellings work too)
 # The key never appears in the repository or in the logs.
 name: Generate scene images
 
@@ -38,10 +38,10 @@ jobs:
 
       - name: Check that the API key secret exists
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || secrets.OPEN_AI_API_KEY || secrets.OPEN_AI_KEY || secrets.OPEN_AI_API || secrets.OPEN_AI || secrets.OPENAI_KEY || secrets.OPENAI_API }}
         run: |
           if [ -z "${OPENAI_API_KEY}" ]; then
-            echo "::error::Secret OPENAI_API_KEY is not set. It must be a *repository secret* of this repository: Settings > Secrets and variables > Actions > tab 'Secrets' > 'Repository secrets' > New repository secret, name OPENAI_API_KEY. A Variable, an Environment secret, a Dependabot/Codespaces secret, or a secret in another repository is not visible here."
+            echo "::error::Secret OPENAI_API_KEY is not set. It must be a *repository secret* of this repository: Settings > Secrets and variables > Actions > tab 'Secrets' > 'Repository secrets' > New repository secret, name OPENAI_API_KEY (OPEN_AI_API_KEY is accepted too). A Variable, an Environment secret, a Dependabot/Codespaces secret, or a secret in another repository is not visible here."
             exit 1
           fi
 
@@ -54,7 +54,7 @@ jobs:
 
       - name: Generate images
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || secrets.OPEN_AI_API_KEY || secrets.OPEN_AI_KEY || secrets.OPEN_AI_API || secrets.OPEN_AI || secrets.OPENAI_KEY || secrets.OPENAI_API }}
         run: python tools/gen_images.py --only "${{ inputs.only }}" --quality "${{ inputs.quality }}" --model "${{ inputs.model }}" --candidates "${{ inputs.candidates }}"
 
       - name: Public data check
