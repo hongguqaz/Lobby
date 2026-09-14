@@ -12,7 +12,16 @@
   "look-wave",
   "look-point",
   "look-blink",
-  "look-listen"
+  "look-listen",
+  "base-wave-mid",
+  "look-wave-mid",
+  "wave-mid-wave",
+  "base-point-mid",
+  "look-point-mid",
+  "point-mid-point"
  ],
- "via": {}
+ "via": {
+  "wave": "wave-mid",
+  "point": "point-mid"
+ }
 }
