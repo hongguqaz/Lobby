@@ -1,17 +1,19 @@
 /* The Fin Lab analyst.
-   assets/analyst.jpg is her resting pose. tools/gen_images.py derives keyframes from it
-   (assets/frames/{look,talk,wave,point,blink,listen}.jpg): the same woman at the same desk,
-   only the pose changed. tools/match_frames.py brings their exposure in line with the
-   portrait and tools/morph_frames.py builds evenly spaced in-between strips
-   (assets/frames/morph/<a>-<b>.webp, listed in manifest.js).
+   assets/analyst.jpg is her resting pose and assets/analyst-mid.jpg the attentive pose she
+   keeps while a conversation is open. Four video clips (assets/clips/: greet, ack, work,
+   bye) carry her voice: she says hello and waves when clicked, answers "yes, understood"
+   to a question, turns to the screen to look something up, and says goodbye when the
+   visitor leaves or falls silent. tools/prepare_clips.py fits the clips to the photographs'
+   framing and exposure and writes each clip's first and last frame as a pose
+   (assets/frames/<clip>-in.jpg, <clip>-out.jpg); tools/morph_frames.py builds in-between
+   strips between every pose the page moves between (assets/frames/morph/, manifest.js).
 
-   This script draws her on a canvas and moves between poses along those strips at a human
-   pace: a head turn takes about two thirds of a second, a blink closes fast and opens
-   slower, a hand takes most of a second to come up and then waves, and speech opens the
-   mouth to varying depths at syllable rhythm. Consecutive strip frames are blended, so the
-   motion is continuous whatever the frame rate. Without the strips the poses crossfade;
-   without the frames she still tilts toward the pointer, breathes and nods. Lines live in
-   LINES. */
+   So a clip never "starts": the canvas morphs from her current pose into the clip's first
+   frame, the clip plays on top, and the canvas takes over again from its last frame and
+   morphs on to the next pose. Between clips she blinks and glances at a human pace. If the
+   clips cannot play, the keyframe gestures (wave, point, talk, listen) stand in; without
+   the strips the poses crossfade; without the frames she still tilts toward the pointer,
+   breathes and nods. Lines live in LINES. */
 (function () {
   'use strict';
   var LINES = {
@@ -23,7 +25,9 @@
       board: 'The Market Board outside the gate will draw on what we gather here: series, snapshots and summaries, once the database is established.',
       rooms: 'Across the hall is the Legal Quarter. Maiden Hall is upstairs over the door, the Library is in the tower above us, and the Garden is outside.',
       react: ['Yes?', 'I am listening.', 'Careful, the coffee is hot.', 'The feeds are not in yet. Soon.', 'Shall I walk you to the board?'],
-      chips: { what: 'What is this room?', board: 'And the Market Board?', rooms: 'The other rooms', go: 'Take me to the board →' }
+      chips: { what: 'What is this room?', board: 'And the Market Board?', rooms: 'The other rooms', bye: 'That is all, thank you', go: 'Take me to the board →' },
+      hint: 'Click me and I will say hello.',
+      clips: { greet: 'Hello! Welcome to the Fin Lab. I am the analyst on duty.', ack: 'Yes, understood.', work: '(She turns to the screen to look it up.)', bye: 'See you again.' }
     },
     ko: {
       name: '당직 애널리스트',
@@ -32,12 +36,16 @@
       what: '이 방에는 시황과 애널리스트 분석자료가 날짜·주제·발행자별로 쌍입니다. 자료 소스와 링크는 정리 중입니다.',
       board: '정문 밖의 Market Board는 여기서 모은 자료에서 시계열과 요약을 뽑아 보여주게 됩니다. DB가 정립되면 연결합니다.',
       rooms: '복도 건너편은 Legal Quarter, 정문 위층은 Maiden Hall, 우리 위 탑은 Library, 밖은 Garden입니다.',
-      react: ['네?', '듣고 있어요.', '커피 조심하세요, 뜨거워요.', '피드는 아직이에요. 곷 연결됩니다.', 'Market Board로 안내해 드릴까요?'],
-      chips: { what: '이 방은 무엇인가요?', board: 'Market Board는요?', rooms: '다른 방들', go: 'Market Board로 →' }
+      react: ['네?', '듣고 있어요.', '커피 조심하세요, 뜨거워요.', '피드는 아직이에요. 곧 연결됩니다.', 'Market Board로 안내해 드릴까요?'],
+      chips: { what: '이 방은 무엇인가요?', board: 'Market Board는요?', rooms: '다른 방들', bye: '그럼 이만', go: 'Market Board로 →' },
+      hint: '저를 클릭하면 인사할게요.',
+      clips: { greet: '안녕하세요? 핀랩에 오신 것을 환영합니다. 당직 애널리스트입니다.', ack: '네, 알겠습니다.', work: '(화면을 보며 자료를 찾습니다.)', bye: '또 봐요.' }
     }
   };
   var FRAME_IDS = ['look', 'talk', 'wave', 'point', 'blink', 'listen', 'wave-mid', 'point-mid'];
+  var CLIP_NAMES = ['greet', 'ack', 'work', 'bye'];
   var FRAME_DIR = 'assets/frames/';
+  var MID_SRC = 'assets/analyst-mid.jpg';
   var MORPH_DIR = FRAME_DIR + 'morph/';
   var MANIFEST = window.LOBBY_MORPH || null;        // written by tools/morph_frames.py
 
@@ -46,6 +54,7 @@
   var bubbleText = document.getElementById('bubble-text');
   var chips = document.getElementById('chips');
   var nameEl = document.getElementById('fig-name');
+  var soundBtn = document.getElementById('fig-sound');
   if (!figure || !tilt || !bubbleText) return;
   var reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   var lang = 'en';
@@ -116,7 +125,8 @@
   }
   function preloadStrips() {
     if (!canvasMode) return;
-    var order = ['look-blink', 'base-look', 'base-blink', 'look-talk', 'look-wave', 'base-wave', 'look-point', 'base-point', 'look-listen', 'base-listen'];
+    var order = ['base-greet-in', 'greet-out-mid', 'mid-blink', 'base-mid', 'mid-ack-in', 'ack-out-work-in', 'work-out-mid', 'mid-bye-in', 'bye-out-base',
+                 'look-blink', 'base-look', 'base-blink', 'look-talk', 'look-wave', 'base-wave', 'look-point', 'base-point', 'look-listen', 'base-listen'];
     var queue = order.filter(function (k) { return MANIFEST.pairs.indexOf(k) >= 0; })
       .concat(MANIFEST.pairs.filter(function (k) { return order.indexOf(k) < 0; }));
     (function next() { var k = queue.shift(); if (k) loadStrip(k, next); })();
@@ -240,7 +250,7 @@
       });
     })();
   }
-  function restingPose() { return hovering ? 'look' : 'base'; }
+  function restingPose() { return mode === 'engaged' ? 'mid' : (hovering ? 'look' : 'base'); }
   function blink(then) {
     if (!has('blink')) { if (then) then(); return; }
     goTo('blink', 120, EASE.in_, function () {
@@ -248,12 +258,15 @@
     });
   }
   function preloadFrames() {
-    var left = FRAME_IDS.length;
-    FRAME_IDS.forEach(function (id) {
+    var wanted = FRAME_IDS.map(function (id) { return [id, FRAME_DIR + id + '.jpg']; });
+    wanted.push(['mid', MID_SRC]);
+    CLIP_NAMES.forEach(function (c) { wanted.push([c + '-in', FRAME_DIR + c + '-in.jpg'], [c + '-out', FRAME_DIR + c + '-out.jpg']); });
+    var left = wanted.length;
+    wanted.forEach(function (pair) {
       var img = new Image();
-      img.onload = function () { frames[id] = img; if (--left <= 0) scheduleIdle(); };
+      img.onload = function () { frames[pair[0]] = img; if (--left <= 0) scheduleIdle(); };
       img.onerror = function () { if (--left <= 0) scheduleIdle(); };
-      img.src = FRAME_DIR + id + '.jpg';
+      img.src = pair[1];
     });
   }
 
@@ -264,12 +277,17 @@
     idleTimer = setTimeout(idle, 3500 + Math.random() * 4500);
   }
   function idle() {
-    if (!talking && !hovering && !anim && pose === 'base') {
+    if (busy || talking || anim) { scheduleIdle(); return; }
+    if (mode === 'engaged' && pose === 'mid') {
+      var q = Math.random();
+      if (q < 0.7) blink();
+      else if (has('listen') && stripFor('mid', 'listen')) playPartial('listen', 0.25 + Math.random() * 0.25, 900, 1100);
+    } else if (!hovering && pose === 'base') {
       var r = Math.random();
       if (r < 0.5) blink();
       else if (r < 0.78 && has('look')) {
         goTo('look', 700, EASE.inOut, function () {
-          holdTimer = setTimeout(function () { if (!talking && !hovering) goTo('base', 850, EASE.inOut); }, 1400 + Math.random() * 1200);
+          holdTimer = setTimeout(function () { if (!talking && !hovering && !busy) goTo('base', 850, EASE.inOut); }, 1400 + Math.random() * 1200);
         });
       } else if (has('listen')) playPartial('listen', 0.3 + Math.random() * 0.3, 900, 1100);
     }
@@ -309,6 +327,7 @@
     if (anim) pending = { id: 'look', ms: 300, ease: EASE.out, then: settle }; else goTo('look', 300, EASE.out, settle);
   }
   function say(text, gesture) {
+    if (busy) return;
     if (typing) { clearInterval(typing); typing = null; }
     clearTimeout(talkTimer); clearTimeout(holdTimer); talking = false; figure.classList.remove('talking');
     bubbleText.textContent = '';
@@ -350,11 +369,25 @@
     [['what', null], ['board', 'point'], ['rooms', 'listen']].forEach(function (pair) {
       var b = document.createElement('button');
       b.type = 'button'; b.textContent = L.chips[pair[0]];
-      b.addEventListener('click', function () { say(L[pair[0]], pair[1]); });
+      b.addEventListener('click', function () { touch(); if (clipMode) answerWithClips(L[pair[0]]); else say(L[pair[0]], pair[1]); });
       chips.appendChild(b);
     });
+    if (clipMode) {
+      var bye = document.createElement('button');
+      bye.type = 'button'; bye.textContent = L.chips.bye; bye.className = 'bye';
+      bye.addEventListener('click', function () { if (mode === 'engaged') leave(); else caption(L.clips.bye); });
+      chips.appendChild(bye);
+    }
     var a = document.createElement('a');
     a.href = '../market-board-facade/'; a.textContent = L.chips.go;
+    a.addEventListener('click', function (e) {
+      if (!clipMode || mode !== 'engaged' || busy) return;
+      e.preventDefault();
+      var href = a.href, gone = false;
+      var go = function () { if (!gone) { gone = true; window.location.href = href; } };
+      leave(go);
+      setTimeout(go, 4500);
+    });
     chips.appendChild(a);
     nameEl.textContent = L.name;
   }
@@ -365,7 +398,8 @@
       b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === lang));
     });
     renderChips();
-    say(pick(LINES[lang].greet));
+    if (clipMode) { if (!busy) caption(mode === 'engaged' ? pick(LINES[lang].react) : LINES[lang].hint); }
+    else say(pick(LINES[lang].greet));
   }
   Array.prototype.forEach.call(document.querySelectorAll('.nameplate button'), function (b) {
     b.addEventListener('click', function () { setLang(b.getAttribute('data-lang')); });
@@ -397,14 +431,135 @@
   var guide = figure.closest('.guide') || figure;
   guide.addEventListener('pointerenter', function () {
     hovering = true; clearTimeout(leaveTimer);
-    if (!talking && has('look')) { clearTimeout(holdTimer); goTo('look', 650, EASE.inOut); }
+    if (mode === 'rest' && !busy && !talking && has('look')) { clearTimeout(holdTimer); goTo('look', 650, EASE.inOut); }
   });
   guide.addEventListener('pointerleave', function () {
     hovering = false;
-    if (!talking) { clearTimeout(holdTimer); leaveTimer = setTimeout(function () { if (!talking && !hovering) goTo('base', 800, EASE.inOut); }, 600); }
+    if (mode === 'rest' && !busy && !talking) { clearTimeout(holdTimer); leaveTimer = setTimeout(function () { if (!talking && !hovering && !busy && mode === 'rest') goTo('base', 800, EASE.inOut); }, 600); }
   });
 
-  function greetClick() { wave(); say(pick(LINES[lang].react), has('wave') ? 'wave' : null); }
+  // ---------------------------------------------------------------- the clips
+  var videos = {};
+  Array.prototype.forEach.call(figure.querySelectorAll('video.clip'), function (v) { videos[v.getAttribute('data-clip')] = v; });
+  var probe = videos.greet;
+  var clipMode = !!(canvasMode && probe && probe.canPlayType && MANIFEST.pairs.indexOf('base-greet-in') >= 0 &&
+    (probe.canPlayType('video/webm; codecs="vp9, opus"') || probe.canPlayType('video/mp4; codecs="avc1.640028, mp4a.40.2"')));
+  var mode = 'rest';          // 'rest' (portrait) or 'engaged' (attentive pose, conversation open)
+  var busy = false;           // a clip or a scripted sequence is running
+  var sound = true;
+  try { sound = localStorage.getItem('lobby-sound') !== 'off'; } catch (e) { /* ignore */ }
+  var quietTimer = null, byeAfterQuiet = 45000;
+
+  function setSound(on) {
+    sound = !!on;
+    try { localStorage.setItem('lobby-sound', sound ? 'on' : 'off'); } catch (e) { /* ignore */ }
+    if (soundBtn) { soundBtn.setAttribute('aria-pressed', String(sound)); soundBtn.textContent = sound ? '\uD83D\uDD0A' : '\uD83D\uDD07'; }
+    Object.keys(videos).forEach(function (k) { videos[k].muted = !sound; });
+  }
+  if (soundBtn) soundBtn.addEventListener('click', function () { setSound(!sound); });
+  setSound(sound);
+  if (!clipMode) { Object.keys(videos).forEach(function (k) { videos[k].removeAttribute('preload'); videos[k].preload = 'none'; }); if (soundBtn) soundBtn.hidden = true; }
+
+  function warmClips() {
+    ['ack', 'work', 'bye'].forEach(function (k) { var v = videos[k]; if (v && v.preload !== 'auto') { v.preload = 'auto'; try { v.load(); } catch (e) { /* ignore */ } } });
+  }
+  /* Morph into the clip's first frame, play it over the canvas, hand the last frame back to
+     the canvas. `then(ok)` runs at the end; ok is false when the clip could not play. */
+  function playClip(name, then) {
+    var v = videos[name];
+    if (!clipMode || !v || !has(name + '-in') || !has(name + '-out')) { if (then) then(false); return; }
+    goTo(name + '-in', 380, EASE.inOut, function () {
+      var done = false;
+      var finish = function (ok) {
+        if (done) return; done = true;
+        v.removeEventListener('ended', onEnded); v.removeEventListener('error', onError); v.removeEventListener('playing', onPlaying);
+        if (ok) { pose = name + '-out'; drawPose(pose, 1); }
+        v.classList.remove('on');
+        try { v.pause(); } catch (e) { /* ignore */ }
+        if (then) then(ok);
+      };
+      var onPlaying = function () { v.classList.add('on'); };
+      var onEnded = function () { finish(true); };
+      var onError = function () { finish(false); };
+      v.addEventListener('playing', onPlaying); v.addEventListener('ended', onEnded); v.addEventListener('error', onError);
+      v.muted = !sound;
+      try { v.currentTime = 0; } catch (e) { /* ignore */ }
+      var p = v.play();
+      if (p && p.catch) {
+        p.catch(function () {
+          // autoplay with sound refused: try muted once, else give up on the clip
+          v.muted = true;
+          var q = v.play();
+          if (q && q.catch) q.catch(function () { finish(false); });
+        });
+      }
+      // a clip that never starts should not hang the figure
+      setTimeout(function () { if (!done && v.paused && v.currentTime === 0) finish(false); }, 4000);
+    });
+  }
+  function caption(text) {
+    if (typing) { clearInterval(typing); typing = null; }
+    bubbleText.textContent = text;
+  }
+  function touch() {
+    clearTimeout(quietTimer);
+    if (mode === 'engaged') quietTimer = setTimeout(function () { if (mode === 'engaged' && !busy && !talking) leave(); }, byeAfterQuiet);
+  }
+  function engage(then) {
+    mode = 'engaged'; warmClips(); touch();
+    if (pose === 'mid') { if (then) then(); return; }
+    goTo('mid', 700, EASE.inOut, then);
+  }
+  /* Hello: from rest she looks up, waves and speaks, then settles into the attentive pose. */
+  function greetWithClip() {
+    if (busy) return;
+    busy = true; clearTimeout(holdTimer); clearTimeout(idleTimer);
+    caption(LINES[lang].clips.greet);
+    playClip('greet', function (ok) {
+      if (!ok) { busy = false; wave(); say(pick(LINES[lang].greet), has('wave') ? 'wave' : null); return; }
+      goTo('mid', 600, EASE.inOut, function () { busy = false; mode = 'engaged'; warmClips(); touch(); scheduleIdle(); });
+    });
+  }
+  /* A question: "yes, understood", then she turns to the screen while the answer appears. */
+  function answerWithClips(text) {
+    if (busy) return;
+    busy = true; clearTimeout(holdTimer); clearTimeout(idleTimer);
+    engage(function () {
+      caption(LINES[lang].clips.ack);
+      playClip('ack', function (ok) {
+        if (!ok) { busy = false; say(text); return; }
+        // the answer types while she looks it up
+        var i = 0; bubbleText.textContent = '';
+        typing = setInterval(function () { i++; bubbleText.textContent = text.slice(0, i); if (i >= text.length) { clearInterval(typing); typing = null; } }, 22);
+        playClip('work', function () {
+          goTo('mid', 650, EASE.inOut, function () { busy = false; touch(); scheduleIdle(); });
+        });
+      });
+    });
+  }
+  /* Goodbye: she says so and goes back to work. `after` runs when she has settled. */
+  function leave(after) {
+    if (busy && !after) return;
+    busy = true; clearTimeout(holdTimer); clearTimeout(idleTimer); clearTimeout(quietTimer);
+    var finish = function () { goTo('base', 800, EASE.inOut, function () { mode = 'rest'; busy = false; scheduleIdle(); setTimeout(function () { if (mode === 'rest' && !busy) caption(LINES[lang].hint); }, 2500); if (after) after(); }); };
+    engage(function () {
+      caption(LINES[lang].clips.bye);
+      playClip('bye', function (ok) { if (!ok) caption(LINES[lang].clips.bye); finish(); });
+    });
+  }
+
+  function greetClick() {
+    touch();
+    if (clipMode) {
+      if (mode === 'rest') { greetWithClip(); return; }
+      if (busy) return;
+      // already talking to her: a small acknowledgement
+      caption(pick(LINES[lang].react));
+      if (has('listen') && stripFor('mid', 'listen')) playPartial('listen', 0.5, 500, 600); else blink();
+      return;
+    }
+    wave(); say(pick(LINES[lang].react), has('wave') ? 'wave' : null);
+  }
   figure.addEventListener('click', greetClick);
   figure.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); greetClick(); } });
 
@@ -422,9 +577,20 @@
     if (greeted) return; greeted = true;
     wave(); say(pick(LINES[lang].greet), has('wave') ? 'wave' : null);
   }
-  // Greet once the wave frame and its strip are in, so the first movement is already smooth.
-  var waveStrip = canvasMode ? stripFor('base', 'wave') : null;
-  if (waveStrip) loadStrip(waveStrip.key, function () { var w = function () { if (ready('wave')) setTimeout(greet, 400); else setTimeout(w, 100); }; w(); });
-  setTimeout(greet, waveStrip ? 3000 : 600);
+  if (clipMode) {
+    // Her voice needs a click first (browsers only allow sound after a gesture), so she
+    // glances at the visitor and the bubble invites the click.
+    caption(LINES[lang].hint);
+    setTimeout(function () {
+      if (mode === 'rest' && !busy && !hovering && has('look')) {
+        goTo('look', 700, EASE.inOut, function () { holdTimer = setTimeout(function () { if (mode === 'rest' && !busy && !hovering) goTo('base', 850, EASE.inOut); }, 1800); });
+      }
+    }, 1600);
+  } else {
+    // Greet once the wave frame and its strip are in, so the first movement is already smooth.
+    var waveStrip = canvasMode ? stripFor('base', 'wave') : null;
+    if (waveStrip) loadStrip(waveStrip.key, function () { var w = function () { if (ready('wave')) setTimeout(greet, 400); else setTimeout(w, 100); }; w(); });
+    setTimeout(greet, waveStrip ? 3000 : 600);
+  }
   setTimeout(preloadStrips, 700);
 })();

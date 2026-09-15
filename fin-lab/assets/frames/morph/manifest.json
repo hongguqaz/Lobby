@@ -18,7 +18,20 @@
   "wave-mid-wave",
   "base-point-mid",
   "look-point-mid",
-  "point-mid-point"
+  "point-mid-point",
+  "base-mid",
+  "mid-blink",
+  "base-greet-in",
+  "greet-out-mid",
+  "mid-ack-in",
+  "ack-out-mid",
+  "ack-out-work-in",
+  "mid-work-in",
+  "base-work-in",
+  "work-out-mid",
+  "work-out-base",
+  "mid-bye-in",
+  "bye-out-base"
  ],
  "via": {
   "wave": "wave-mid",

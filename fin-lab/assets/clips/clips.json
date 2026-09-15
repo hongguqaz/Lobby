@@ -1,0 +1,56 @@
+{
+ "clips": {
+  "greet": {
+   "start": "base",
+   "end": "mid",
+   "reframe": true,
+   "scale": 0.866,
+   "shift": [
+    66,
+    125
+   ],
+   "luminance_gain": 0.996,
+   "mp4_kb": 1420,
+   "webm_kb": 728
+  },
+  "ack": {
+   "start": "mid",
+   "end": "mid",
+   "reframe": false,
+   "scale": 1.02,
+   "shift": [
+    -7,
+    -11
+   ],
+   "luminance_gain": 0.992,
+   "mp4_kb": 1714,
+   "webm_kb": 829
+  },
+  "work": {
+   "start": "base",
+   "end": "base",
+   "reframe": false,
+   "scale": 1.02,
+   "shift": [
+    -7,
+    -11
+   ],
+   "luminance_gain": 0.992,
+   "mp4_kb": 1583,
+   "webm_kb": 869
+  },
+  "bye": {
+   "start": "mid",
+   "end": "base",
+   "reframe": true,
+   "scale": 0.864,
+   "shift": [
+    47,
+    131
+   ],
+   "luminance_gain": 1.006,
+   "mp4_kb": 1741,
+   "webm_kb": 902
+  }
+ }
+}

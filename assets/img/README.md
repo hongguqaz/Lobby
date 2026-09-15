@@ -70,3 +70,12 @@ suffix when it is sent. Two composition rules are baked into them and must survi
   `fin-lab/assets/frames/morph/`. The page blends along those strips over time (a head turn
   takes about two thirds of a second, a hand most of a second); delete the folder to fall
   back to crossfades. A single keyframe can be regenerated with `only` = `frame:<id>`.
+- **Analyst clips.** Her voice comes from four short videos in `fin-lab/assets/clips/src/`
+  (`greet`, `ack`, `work`, `bye`; the greeting and goodbye speak Korean). The *Prepare
+  analyst clips* workflow runs `tools/prepare_clips.py`, which re-frames each clip to the
+  photographs' framing, matches its exposure, encodes MP4 and WebM copies with the audio,
+  and writes the first and last frame of each as poses (`frames/<clip>-in.jpg`,
+  `<clip>-out.jpg`) so the morph strips can join photo and clip without a cut. The page morphs
+  into a clip's first frame, plays it, and morphs on from its last frame; between clips she
+  holds `analyst-mid.jpg`, the attentive pose. To replace a clip, drop the new file over the
+  old one in `clips/src/` and run the workflow.

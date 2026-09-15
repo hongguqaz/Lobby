@@ -58,6 +58,8 @@ def main(argv: list[str] | None = None) -> int:
         return gains, offs, keep.mean()
 
     for p in sorted(FRAMES.glob("*.jpg")):
+        if p.stem.endswith(("-in", "-out")):
+            continue          # a clip's own first/last frame must stay identical to the clip
         frame = cv2.imread(str(p))
         if frame is None or abs(frame.shape[1] / frame.shape[0] - base.shape[1] / base.shape[0]) > 0.01:
             print(f"skip {p.name}: aspect ratio differs from the portrait"); continue

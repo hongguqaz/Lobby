@@ -4,7 +4,8 @@
     python3 tools/morph_frames.py            # every pair in PAIRS that has both keyframes
     python3 tools/morph_frames.py --k 12     # more in-betweens per transition
 
-For each pair of poses (the resting portrait and the keyframes in fin-lab/assets/frames/)
+For each pair of poses (the portraits analyst.jpg and analyst-mid.jpg, the keyframes and the
+clip end frames in fin-lab/assets/frames/)
 this computes optical flow between the two photographs and synthesises K frames that warp
 and dissolve one into the other, so a blink closes gradually, a head tilt turns, and a
 hand rises into view instead of appearing.  Where something new enters the picture (a
@@ -35,7 +36,14 @@ PAIRS = [   # every transition the page plays; b -> a is the same strip played b
     # with the mid-rise keyframes present, the hand travels in two legs instead of appearing
     ("base", "wave-mid"), ("look", "wave-mid"), ("wave-mid", "wave"),
     ("base", "point-mid"), ("look", "point-mid"), ("point-mid", "point"),
+    # the attentive pose she keeps between clips, and the clips' first and last frames
+    ("base", "mid"), ("mid", "blink"),
+    ("base", "greet-in"), ("greet-out", "mid"),
+    ("mid", "ack-in"), ("ack-out", "mid"), ("ack-out", "work-in"),
+    ("mid", "work-in"), ("base", "work-in"), ("work-out", "mid"), ("work-out", "base"),
+    ("mid", "bye-in"), ("bye-out", "base"),
 ]
+PHOTOS = {"base": "analyst.jpg", "mid": "analyst-mid.jpg"}   # poses that are photographs, not keyframes
 VIA = {"wave": "wave-mid", "point": "point-mid"}   # pose -> the mid pose to pass through when it exists
 RAISED = {"wave", "point", "wave-mid", "point-mid"}   # poses with a hand up: it rises into view, or sinks out
 RAISED_ORDER = {"wave-mid": 1, "wave": 2, "point-mid": 1, "point": 2}   # higher = hand higher
@@ -54,7 +62,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {exc}. pip install opencv-python-headless numpy pillow"); return 1
 
     def path(pose: str) -> Path:
-        return BASE if pose == "base" else FRAMES / f"{pose}.jpg"
+        return FRAMES.parent / PHOTOS[pose] if pose in PHOTOS else FRAMES / f"{pose}.jpg"
 
     def load(pose: str):
         im = cv2.imread(str(path(pose)))

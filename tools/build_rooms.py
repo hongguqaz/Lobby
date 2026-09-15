@@ -145,6 +145,10 @@ def fin_lab():
     .figure-photo.frame.instant { transition: none; }
     .figure-photo.morph { position: absolute; inset: 0; height: 100%; opacity: 0; pointer-events: none; }
     .figure-photo.morph.on { opacity: 1; }
+    .figure-photo.clip { position: absolute; inset: 0; height: 100%; opacity: 0; pointer-events: none; background: transparent; }
+    .figure-photo.clip.on { opacity: 1; }
+    .nameplate .sound { font: inherit; font-size: 12px; color: var(--room-muted); background: transparent; border: 1px solid var(--room-line); border-radius: 6px; padding: 2px 7px; cursor: pointer; margin-right: 6px; }
+    .nameplate .sound[aria-pressed="true"] { color: var(--room-ink); border-color: var(--room-accent); }
     @keyframes breathe { 50% { transform: scale(1.012) translateY(-1px); } }
     .figure-glow { position: absolute; inset: 0; background: radial-gradient(60% 45% at 18% 42%, rgba(79,163,255,0.28), rgba(79,163,255,0) 70%); mix-blend-mode: screen; animation: monitor 3.4s ease-in-out infinite alternate; pointer-events: none; }
     @keyframes monitor { to { opacity: 0.45; } }
@@ -187,12 +191,16 @@ def fin_lab():
             <img class="figure-photo frame" alt="" aria-hidden="true">
             <img class="figure-photo frame" alt="" aria-hidden="true">
             <canvas class="figure-photo morph" width="512" height="768" aria-hidden="true"></canvas>
+            <video class="figure-photo clip" data-clip="greet" playsinline preload="auto" aria-hidden="true"><source src="assets/clips/greet.webm" type="video/webm"><source src="assets/clips/greet.mp4" type="video/mp4"></video>
+            <video class="figure-photo clip" data-clip="ack" playsinline preload="metadata" aria-hidden="true"><source src="assets/clips/ack.webm" type="video/webm"><source src="assets/clips/ack.mp4" type="video/mp4"></video>
+            <video class="figure-photo clip" data-clip="work" playsinline preload="metadata" aria-hidden="true"><source src="assets/clips/work.webm" type="video/webm"><source src="assets/clips/work.mp4" type="video/mp4"></video>
+            <video class="figure-photo clip" data-clip="bye" playsinline preload="metadata" aria-hidden="true"><source src="assets/clips/bye.webm" type="video/webm"><source src="assets/clips/bye.mp4" type="video/mp4"></video>
             <div class="figure-glow"></div>
             <div class="figure-shine"></div>
           </div>
           <div class="figure-ring"></div>
         </div>
-        <div class="nameplate"><span id="fig-name">Analyst on duty</span><span class="lang" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="true">EN</button><button type="button" data-lang="ko" aria-pressed="false">KO</button></span></div>
+        <div class="nameplate"><span id="fig-name">Analyst on duty</span><span class="lang" role="group" aria-label="Language"><button type="button" class="sound" id="fig-sound" aria-pressed="true" title="Sound">&#128266;</button><button type="button" data-lang="en" aria-pressed="true">EN</button><button type="button" data-lang="ko" aria-pressed="false">KO</button></span></div>
         <div class="bubble" id="bubble" aria-live="polite"><span id="bubble-text"></span><span class="caret" aria-hidden="true"></span></div>
         <div class="chips" id="chips"></div>
       </aside>
