@@ -1,6 +1,7 @@
 {
  "clips": {
   "greet": {
+   "kind": "greet",
    "start": "base",
    "end": "mid",
    "reframe": true,
@@ -14,6 +15,7 @@
    "webm_kb": 728
   },
   "ack": {
+   "kind": "ack",
    "start": "mid",
    "end": "mid",
    "reframe": false,
@@ -27,6 +29,7 @@
    "webm_kb": 829
   },
   "work": {
+   "kind": "work",
    "start": "base",
    "end": "base",
    "reframe": false,
@@ -40,17 +43,102 @@
    "webm_kb": 869
   },
   "bye": {
-   "start": "mid",
+   "kind": "bye",
+   "start": "base",
    "end": "base",
    "reframe": true,
-   "scale": 0.864,
+   "scale": 0.861,
    "shift": [
-    47,
-    131
+    55,
+    133
    ],
-   "luminance_gain": 1.006,
-   "mp4_kb": 1741,
-   "webm_kb": 902
+   "luminance_gain": 0.999,
+   "mp4_kb": 1739,
+   "webm_kb": 899
+  },
+  "ack2": {
+   "kind": "ack",
+   "start": "mid",
+   "end": "mid",
+   "reframe": false,
+   "scale": 1.02,
+   "shift": [
+    -7,
+    -11
+   ],
+   "luminance_gain": 0.993,
+   "mp4_kb": 1868,
+   "webm_kb": 939
+  },
+  "ack3": {
+   "kind": "ack",
+   "start": "mid",
+   "end": "mid",
+   "reframe": false,
+   "scale": 1.02,
+   "shift": [
+    -7,
+    -11
+   ],
+   "luminance_gain": 0.993,
+   "mp4_kb": 2170,
+   "webm_kb": 1188
+  },
+  "ack4": {
+   "kind": "ack",
+   "start": "mid",
+   "end": "base",
+   "reframe": false,
+   "scale": 1.02,
+   "shift": [
+    -7,
+    -11
+   ],
+   "luminance_gain": 0.993,
+   "mp4_kb": 1853,
+   "webm_kb": 918
+  },
+  "work2": {
+   "kind": "work",
+   "start": "mid",
+   "end": "mid",
+   "reframe": false,
+   "scale": 1.02,
+   "shift": [
+    -7,
+    -11
+   ],
+   "luminance_gain": 0.993,
+   "mp4_kb": 1955,
+   "webm_kb": 974
+  },
+  "work3": {
+   "kind": "work",
+   "start": "base",
+   "end": "mid",
+   "reframe": false,
+   "scale": 1.02,
+   "shift": [
+    -7,
+    -11
+   ],
+   "luminance_gain": 0.992,
+   "mp4_kb": 1514,
+   "webm_kb": 809
+  },
+  "work4": {
+   "kind": "work",
+   "start": "mid",
+   "end": "base",
+   "reframe": false,
+   "scale": 1.02,
+   "shift": [
+    -7,
+    -11
+   ],
+   "luminance_gain": 0.993,
+   "mp4_kb": 2465,
+   "webm_kb": 1211
   }
  }
 }

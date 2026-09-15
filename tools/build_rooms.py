@@ -6,6 +6,7 @@ bedroom) from one template.  Run from the repository root:
 
 Each page shows assets/img/<room>.jpg when that file exists and the drawn SVG
 scene otherwise; film grain and a vignette are laid over either."""
+import json
 import random
 from pathlib import Path
 
@@ -191,10 +192,7 @@ def fin_lab():
             <img class="figure-photo frame" alt="" aria-hidden="true">
             <img class="figure-photo frame" alt="" aria-hidden="true">
             <canvas class="figure-photo morph" width="512" height="768" aria-hidden="true"></canvas>
-            <video class="figure-photo clip" data-clip="greet" playsinline preload="auto" aria-hidden="true"><source src="assets/clips/greet.webm" type="video/webm"><source src="assets/clips/greet.mp4" type="video/mp4"></video>
-            <video class="figure-photo clip" data-clip="ack" playsinline preload="metadata" aria-hidden="true"><source src="assets/clips/ack.webm" type="video/webm"><source src="assets/clips/ack.mp4" type="video/mp4"></video>
-            <video class="figure-photo clip" data-clip="work" playsinline preload="metadata" aria-hidden="true"><source src="assets/clips/work.webm" type="video/webm"><source src="assets/clips/work.mp4" type="video/mp4"></video>
-            <video class="figure-photo clip" data-clip="bye" playsinline preload="metadata" aria-hidden="true"><source src="assets/clips/bye.webm" type="video/webm"><source src="assets/clips/bye.mp4" type="video/mp4"></video>
+__VIDEOS__
             <div class="figure-glow"></div>
             <div class="figure-shine"></div>
           </div>
@@ -217,7 +215,24 @@ def fin_lab():
         placard('Analyst reports', 'Sell-side and in-house research, tagged by sector, issuer and author, with the key charts kept alongside.', 'Space reserved'),
         placard('Sources &amp; feeds', 'Where the material comes from and how it is refreshed: uploads, scheduled pulls, and links to be connected.', 'To be connected'),
         placard('Hand-off to the Market Board', 'What the lab extracts for the board outside: series, snapshots and summaries, once the database is established.', 'Planned'))
-    return shell('fin-lab', 'Fin Lab', palette, scene(inner, defs), body, extra_scripts='  <script src="assets/frames/morph/manifest.js"></script>\n  <script src="assets/figure.js"></script>')
+    body = body.replace('__VIDEOS__', clip_videos())
+    return shell('fin-lab', 'Fin Lab', palette, scene(inner, defs), body, extra_scripts='  <script src="assets/frames/morph/manifest.js"></script>\n  <script src="assets/clips/clips.js"></script>\n  <script src="assets/figure.js"></script>')
+
+
+def clip_videos():
+    """One <video> per clip listed in fin-lab/assets/clips/clips.json (the greeting preloads
+    fully, the rest wait for the conversation to open)."""
+    path = ROOT / 'fin-lab' / 'assets' / 'clips' / 'clips.json'
+    if not path.exists():
+        return ''
+    clips = json.loads(path.read_text())['clips']
+    tags = []
+    for name in sorted(clips):
+        preload = 'auto' if clips[name]['kind'] == 'greet' else 'metadata'
+        tags.append('            <video class="figure-photo clip" data-clip="%s" data-kind="%s" playsinline preload="%s" aria-hidden="true">'
+                    '<source src="assets/clips/%s.webm" type="video/webm"><source src="assets/clips/%s.mp4" type="video/mp4"></video>'
+                    % (name, clips[name]['kind'], preload, name, name))
+    return '\n'.join(tags)
 
 
 # ====================================================================== LEGAL QUARTER

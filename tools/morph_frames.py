@@ -36,13 +36,35 @@ PAIRS = [   # every transition the page plays; b -> a is the same strip played b
     # with the mid-rise keyframes present, the hand travels in two legs instead of appearing
     ("base", "wave-mid"), ("look", "wave-mid"), ("wave-mid", "wave"),
     ("base", "point-mid"), ("look", "point-mid"), ("point-mid", "point"),
-    # the attentive pose she keeps between clips, and the clips' first and last frames
+    # the attentive pose she keeps between clips; the clips' own pairs come from clips.json
     ("base", "mid"), ("mid", "blink"),
-    ("base", "greet-in"), ("greet-out", "mid"),
-    ("mid", "ack-in"), ("ack-out", "mid"), ("ack-out", "work-in"),
-    ("mid", "work-in"), ("base", "work-in"), ("work-out", "mid"), ("work-out", "base"),
-    ("mid", "bye-in"), ("bye-out", "base"),
 ]
+CLIPS_JSON = ROOT / "fin-lab" / "assets" / "clips" / "clips.json"
+
+
+def clip_pairs():
+    """Transitions the page plays around the clips: into each clip from the pose it starts
+    from, out of it to the attentive pose, and from every acknowledgement straight into
+    every piece of work."""
+    if not CLIPS_JSON.exists():
+        return []
+    clips = json.loads(CLIPS_JSON.read_text())["clips"]
+    by_kind = {}
+    for name, c in clips.items():
+        by_kind.setdefault(c["kind"], []).append(name)
+    pairs = []
+    for name, c in clips.items():
+        k = c["kind"]
+        if k == "greet":
+            pairs += [("base", f"{name}-in"), (f"{name}-out", "mid")]
+        elif k == "ack":
+            pairs += [("mid", f"{name}-in"), (f"{name}-out", "mid")]
+            pairs += [(f"{name}-out", f"{w}-in") for w in by_kind.get("work", [])]
+        elif k == "work":
+            pairs += [("mid", f"{name}-in"), (f"{name}-out", "mid")]
+        elif k == "bye":
+            pairs += [("mid", f"{name}-in"), (f"{name}-out", "base")]
+    return pairs
 PHOTOS = {"base": "analyst.jpg", "mid": "analyst-mid.jpg"}   # poses that are photographs, not keyframes
 VIA = {"wave": "wave-mid", "point": "point-mid"}   # pose -> the mid pose to pass through when it exists
 RAISED = {"wave", "point", "wave-mid", "point-mid"}   # poses with a hand up: it rises into view, or sinks out
@@ -53,6 +75,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--k", type=int, default=8, help="in-between frames per transition")
     ap.add_argument("--quality", type=int, default=80, help="WebP quality")
+    ap.add_argument("--force", action="store_true", help="rebuild strips even when they are newer than their poses")
     args = ap.parse_args(argv)
     try:
         import cv2
@@ -145,20 +168,23 @@ def main(argv: list[str] | None = None) -> int:
         return frames, mask is not None
 
     OUT.mkdir(parents=True, exist_ok=True)
-    wanted = {f"{a}-{b}.webp" for a, b in PAIRS}
+    pairs = PAIRS + [pr for pr in clip_pairs() if pr not in PAIRS]
+    wanted = {f"{a}-{b}.webp" for a, b in pairs}
     for stale in OUT.glob("*.webp"):
         if stale.name not in wanted:
             stale.unlink(); print(f"removed stale {stale.relative_to(ROOT)}")
     manifest = {"width": W, "height": H, "frames": args.k, "pairs": [], "via": {}}
-    for a_id, b_id in PAIRS:
+    for a_id, b_id in pairs:
         if not (path(a_id).exists() and path(b_id).exists()):
             print(f"skip {a_id}-{b_id}: keyframe missing"); continue
+        out = OUT / f"{a_id}-{b_id}.webp"
+        if out.exists() and not args.force and out.stat().st_mtime > max(path(a_id).stat().st_mtime, path(b_id).stat().st_mtime):
+            manifest["pairs"].append(f"{a_id}-{b_id}"); continue
         a, b = load(a_id), load(b_id)
         ra, rb = RAISED_ORDER.get(a_id, 0), RAISED_ORDER.get(b_id, 0)
         rise = "b" if rb > ra else "a" if ra > rb else None
         frames, wiped = inbetweens(a, b, args.k, rise)
         strip = cv2.cvtColor(cv2.hconcat(frames), cv2.COLOR_BGR2RGB)
-        out = OUT / f"{a_id}-{b_id}.webp"
         Image.fromarray(strip).save(out, "WEBP", quality=args.quality, method=6)
         manifest["pairs"].append(f"{a_id}-{b_id}")
         print(f"wrote {out.relative_to(ROOT)}  {strip.shape[1]}x{strip.shape[0]}  {out.stat().st_size // 1024} KB" + ("  (hand travel)" if wiped else ""))

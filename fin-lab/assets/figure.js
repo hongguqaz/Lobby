@@ -43,7 +43,8 @@
     }
   };
   var FRAME_IDS = ['look', 'talk', 'wave', 'point', 'blink', 'listen', 'wave-mid', 'point-mid'];
-  var CLIP_NAMES = ['greet', 'ack', 'work', 'bye'];
+  var CLIPS = (window.LOBBY_CLIPS && window.LOBBY_CLIPS.clips) || {};   // written by tools/prepare_clips.py
+  var CLIP_NAMES = Object.keys(CLIPS);
   var FRAME_DIR = 'assets/frames/';
   var MID_SRC = 'assets/analyst-mid.jpg';
   var MORPH_DIR = FRAME_DIR + 'morph/';
@@ -280,7 +281,17 @@
     if (busy || talking || anim) { scheduleIdle(); return; }
     if (mode === 'engaged' && pose === 'mid') {
       var q = Math.random();
-      if (q < 0.7) blink();
+      var quietFor = now() - lastTouch;
+      if (q < 0.22 && quietFor > 12000 && clipMode && variants('work').length) {
+        var w = pickVariant('work');
+        var v = videos[w];
+        if (v && v.readyState >= 3) {
+          busy = true; caption(LINES[lang].clips.work);
+          playClip(w, function () { goTo('mid', 650, EASE.inOut, function () { busy = false; queueNext(); }); });
+          scheduleIdle(); return;
+        }
+      }
+      if (q < 0.75) blink();
       else if (has('listen') && stripFor('mid', 'listen')) playPartial('listen', 0.25 + Math.random() * 0.25, 900, 1100);
     } else if (!hovering && pose === 'base') {
       var r = Math.random();
@@ -441,9 +452,34 @@
   // ---------------------------------------------------------------- the clips
   var videos = {};
   Array.prototype.forEach.call(figure.querySelectorAll('video.clip'), function (v) { videos[v.getAttribute('data-clip')] = v; });
-  var probe = videos.greet;
-  var clipMode = !!(canvasMode && probe && probe.canPlayType && MANIFEST.pairs.indexOf('base-greet-in') >= 0 &&
+  function variants(kind) { return CLIP_NAMES.filter(function (n) { return CLIPS[n].kind === kind && videos[n]; }); }
+  var probe = videos[variants('greet')[0]];
+  var clipMode = !!(canvasMode && probe && probe.canPlayType && MANIFEST.pairs.indexOf('base-' + variants('greet')[0] + '-in') >= 0 &&
     (probe.canPlayType('video/webm; codecs="vp9, opus"') || probe.canPlayType('video/mp4; codecs="avc1.640028, mp4a.40.2"')));
+  var lastPlayed = {};            // kind -> the variant used last time, so it is not repeated
+  var upNext = {};                // kind -> the variant chosen and loading for the next turn
+  function pickVariant(kind) {
+    var names = variants(kind);
+    if (!names.length) return null;
+    if (upNext[kind] && names.indexOf(upNext[kind]) >= 0) { var n = upNext[kind]; delete upNext[kind]; return n; }
+    var pool = names.length > 1 ? names.filter(function (n) { return n !== lastPlayed[kind]; }) : names;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+  function warm(name) {
+    var v = videos[name];
+    if (v && v.preload !== 'auto') { v.preload = 'auto'; try { v.load(); } catch (e) { /* ignore */ } }
+  }
+  function queueNext() {
+    // choose the next acknowledgement, piece of work and goodbye now and start fetching them
+    ['ack', 'work', 'bye'].forEach(function (kind) {
+      if (!upNext[kind]) {
+        var names = variants(kind);
+        var pool = names.length > 1 ? names.filter(function (n) { return n !== lastPlayed[kind]; }) : names;
+        if (pool.length) upNext[kind] = pool[Math.floor(Math.random() * pool.length)];
+      }
+      if (upNext[kind]) warm(upNext[kind]);
+    });
+  }
   var mode = 'rest';          // 'rest' (portrait) or 'engaged' (attentive pose, conversation open)
   var busy = false;           // a clip or a scripted sequence is running
   var sound = true;
@@ -460,14 +496,13 @@
   setSound(sound);
   if (!clipMode) { Object.keys(videos).forEach(function (k) { videos[k].removeAttribute('preload'); videos[k].preload = 'none'; }); if (soundBtn) soundBtn.hidden = true; }
 
-  function warmClips() {
-    ['ack', 'work', 'bye'].forEach(function (k) { var v = videos[k]; if (v && v.preload !== 'auto') { v.preload = 'auto'; try { v.load(); } catch (e) { /* ignore */ } } });
-  }
+  function warmClips() { queueNext(); }
   /* Morph into the clip's first frame, play it over the canvas, hand the last frame back to
      the canvas. `then(ok)` runs at the end; ok is false when the clip could not play. */
   function playClip(name, then) {
     var v = videos[name];
     if (!clipMode || !v || !has(name + '-in') || !has(name + '-out')) { if (then) then(false); return; }
+    if (CLIPS[name]) lastPlayed[CLIPS[name].kind] = name;
     goTo(name + '-in', 380, EASE.inOut, function () {
       var done = false;
       var finish = function (ok) {
@@ -501,7 +536,9 @@
     if (typing) { clearInterval(typing); typing = null; }
     bubbleText.textContent = text;
   }
+  var lastTouch = now();
   function touch() {
+    lastTouch = now();
     clearTimeout(quietTimer);
     if (mode === 'engaged') quietTimer = setTimeout(function () { if (mode === 'engaged' && !busy && !talking) leave(); }, byeAfterQuiet);
   }
@@ -515,7 +552,7 @@
     if (busy) return;
     busy = true; clearTimeout(holdTimer); clearTimeout(idleTimer);
     caption(LINES[lang].clips.greet);
-    playClip('greet', function (ok) {
+    playClip(pickVariant('greet'), function (ok) {
       if (!ok) { busy = false; wave(); say(pick(LINES[lang].greet), has('wave') ? 'wave' : null); return; }
       goTo('mid', 600, EASE.inOut, function () { busy = false; mode = 'engaged'; warmClips(); touch(); scheduleIdle(); });
     });
@@ -526,13 +563,15 @@
     busy = true; clearTimeout(holdTimer); clearTimeout(idleTimer);
     engage(function () {
       caption(LINES[lang].clips.ack);
-      playClip('ack', function (ok) {
+      var work = pickVariant('work');
+      if (work) warm(work);
+      playClip(pickVariant('ack'), function (ok) {
         if (!ok) { busy = false; say(text); return; }
         // the answer types while she looks it up
         var i = 0; bubbleText.textContent = '';
         typing = setInterval(function () { i++; bubbleText.textContent = text.slice(0, i); if (i >= text.length) { clearInterval(typing); typing = null; } }, 22);
-        playClip('work', function () {
-          goTo('mid', 650, EASE.inOut, function () { busy = false; touch(); scheduleIdle(); });
+        playClip(work, function () {
+          goTo('mid', 650, EASE.inOut, function () { busy = false; touch(); queueNext(); scheduleIdle(); });
         });
       });
     });
@@ -544,7 +583,7 @@
     var finish = function () { goTo('base', 800, EASE.inOut, function () { mode = 'rest'; busy = false; scheduleIdle(); setTimeout(function () { if (mode === 'rest' && !busy) caption(LINES[lang].hint); }, 2500); if (after) after(); }); };
     engage(function () {
       caption(LINES[lang].clips.bye);
-      playClip('bye', function (ok) { if (!ok) caption(LINES[lang].clips.bye); finish(); });
+      playClip(pickVariant('bye'), function (ok) { if (!ok) caption(LINES[lang].clips.bye); finish(); });
     });
   }
 
