@@ -150,11 +150,25 @@ GitHub 토큰은 Drive 저장소 하나에만, Contents 권한만 주도록 만�
 - **iPhone에서 폴더 선택이 안 됨**: *파일 선택* 버튼으로 여러 파일을 고르면 됩니다.
 - 전부 다시 올리고 싶을 때: ⚙ 설정 → *매니페스트 초기화*. 같은 경로에 덮어쓰며 삭제하지 않습니다.
 
+## 한 파일짜리 판 `drives-sync.html`
+
+같은 앱을 파일 하나에 담은 판입니다(스타일, 엔진, 화면 스크립트, 아이콘을 모두 안에 넣음). 어디에든 올려 쓸 수 있고,
+`node drives-sync/build-single.mjs`로 다시 만듭니다. 두 가지만 다릅니다.
+
+- 반드시 **웹 서버 주소**로 열어야 합니다. 파일을 더블클릭해 `file://`로 열면 Google 로그인이 되지 않습니다. 노트북에서는
+  파일이 있는 폴더에서 `python -m http.server 8000`을 실행하고 `http://localhost:8000/drives-sync.html`을 여세요
+  (Google Cloud의 승인된 JavaScript 원본에 `http://localhost:8000`을 추가).
+- 다른 주소에 올리면 ⚙ 설정에 표시되는 리디렉션 URI와 원본을 Google Cloud에 등록해야 합니다.
+
+claude.ai 안에 올린 미리 보기(artifact)는 외부 연결이 차단되는 곳이라 화면과 브레이크 동작만 보여 주고 동기화는 하지 못합니다.
+화면에 그렇게 표시됩니다.
+
 ## 개발
 
 | 파일 | 역할 |
 |---|---|
 | `index.html`, `drives-sync.css` | 화면. 기능별 바(0 사전 점검, 1, 2, 3, A 에이전트, ⚙ 설정). 색은 `../assets/tokens.css` |
+| `drives-sync.html`, `build-single.mjs` | 한 파일짜리 판과 그것을 만드는 스크립트 (`--preview`는 외부 연결이 막힌 곳용 조각) |
 | `core.js` | 엔진: Drive·GitHub 클라이언트, 사전 점검, Stock/Flow 동기화, 장부. 브라우저와 Node에서 같은 코드 |
 | `app.js` | 화면 연결, Google 로그인(GIS 토큰 + 선택적 refresh token), 폴더 핸들, 자동화 타이머, `window.DrivesSync` |
 | `sw.js`, `manifest.webmanifest`, `assets/` | 설치·오프라인 셸. 배포 시 `sw.js`의 `VERSION`을 올리세요 |
@@ -164,6 +178,8 @@ GitHub 토큰은 Drive 저장소 하나에만, Contents 권한만 주도록 만�
 ```bash
 node drives-sync/agent/test-core.mjs                       # 엔진 테스트
 PLAYWRIGHT_MODULE=$(npm root -g)/playwright node drives-sync/agent/test-ui.mjs   # 화면 테스트 (Chromium)
+TEST_TARGET=single PLAYWRIGHT_MODULE=$(npm root -g)/playwright node drives-sync/agent/test-ui.mjs   # 한 파일짜리 판 테스트
+node drives-sync/build-single.mjs                          # drives-sync.html 다시 만들기 (소스를 고친 뒤)
 python3 -m http.server 8000                                # 로컬 실행: http://localhost:8000/drives-sync/
 ```
 

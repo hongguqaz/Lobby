@@ -34,7 +34,9 @@ const server = http.createServer(async (req, res) => {
   } catch { res.writeHead(404); res.end('not found'); }
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const base = `http://127.0.0.1:${server.address().port}/drives-sync/`;
+// TEST_TARGET=single tests the one-file edition built by build-single.mjs instead of index.html.
+const SINGLE = process.env.TEST_TARGET === 'single';
+const base = `http://127.0.0.1:${server.address().port}/drives-sync/${SINGLE ? 'drives-sync.html' : ''}`;
 
 const world = makeFakeWorld();
 world.addFile('note.txt', world.rootId, 'hello from drive');
@@ -47,6 +49,8 @@ const page = await context.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
+const notFound = [];
+page.on('response', (r) => { if (r.status() === 404 && r.url().startsWith('http://127.0.0.1')) notFound.push(r.url()); }); // API 404s (no manifest yet, missing folder) are expected
 await page.route('https://accounts.google.com/**', (route) => route.fulfill({ status: 200, contentType: 'text/javascript', body: '/* gis stub */' }));
 await page.route(/^https:\/\/(www\.googleapis\.com|api\.github\.com|oauth2\.googleapis\.com)\//, async (route) => {
   const req = route.request();
@@ -69,7 +73,7 @@ async function test(name, fn) {
 }
 const api = (expr) => page.evaluate(expr);
 
-console.log('Drives Sync UI tests');
+console.log(`Drives Sync UI tests (${SINGLE ? 'one-file edition' : 'index.html'})`);
 
 await test('page loads with all feature bars and the agent API', async () => {
   await page.goto(base);
@@ -78,6 +82,8 @@ await test('page loads with all feature bars and the agent API', async () => {
   assert.equal(await page.title(), 'Drives Sync');
   assert.equal(await api('DrivesSync.version'), core.VERSION);
   assert.equal(await api('document.body.dataset.state'), 'idle');
+  assert.equal(await api('!!(window.DRIVES_SYNC_BUILD && window.DRIVES_SYNC_BUILD.single)'), SINGLE, 'build flag matches the edition under test');
+  if (SINGLE) assert.equal(await api("document.querySelector('link[rel=manifest]') && document.querySelector('link[rel=manifest]').href.startsWith('blob:')"), true, 'one-file edition offers its manifest from memory');
 });
 
 await test('brake: without logins, preflight fails and nothing runs', async () => {
@@ -214,9 +220,10 @@ await test('renders at phone width without horizontal overflow', async () => {
   console.log(`  screenshots in ${os.tmpdir()}/drives-sync-{desktop,phone}.png`);
 });
 
-await test('no page errors', () => {
+await test('no page errors, no missing files', () => {
   const real = errors.filter((e) => !/favicon|Failed to load resource/.test(e));
   assert.deepEqual(real, []);
+  assert.deepEqual(notFound.filter((u) => !/favicon\.ico$/.test(u)), []);
 });
 
 await browser.close();
