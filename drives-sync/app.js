@@ -5,6 +5,14 @@ import * as core from './core.js';
 
 const $ = (id) => document.getElementById(id);
 const APP_URL = location.origin + location.pathname.replace(/index\.html$/, '');
+/* Set by build-single.mjs for the one-file edition: { single, preview, icon192, icon512, iconMaskable }.
+   preview = hosted where outside connections are blocked (a claude.ai artifact): the UI works, syncing cannot. */
+const BUILD = window.DRIVES_SYNC_BUILD || {};
+const PREVIEW = !!BUILD.preview;
+const ICON_192 = BUILD.icon192 || 'assets/icon-192.png';
+const LIVE_URL = 'https://hongguqaz.github.io/Lobby/drives-sync/';
+const PREVIEW_REASON = `미리 보기 환경(claude.ai)에서는 Google·GitHub 등 외부 연결이 차단되어 실제 동기화를 할 수 없습니다. 실제 사용은 ${LIVE_URL} 또는 내려받은 drives-sync.html 파일을 웹 서버에서 여세요.`;
+const previewFetch = async () => new Response(JSON.stringify({ message: PREVIEW_REASON, error: { message: PREVIEW_REASON } }), { status: 403, headers: { 'content-type': 'application/json' } });
 const LS = {
   config: 'ds.config', gToken: 'ds.google.token', gRefresh: 'ds.google.refresh', ghToken: 'ds.github.token',
   logs: 'ds.logs', lastRuns: 'ds.lastRuns', pkce: 'ds.pkce', folders: 'ds.folders', automation: 'ds.automation',
@@ -192,6 +200,7 @@ class BrowserGoogleAuth {
 
   /** User-initiated login. Verifies the account before keeping the token. */
   async connect({ consent = true } = {}) {
+    if (PREVIEW) throw new Error('미리 보기에서는 Google 로그인을 할 수 없습니다. ' + PREVIEW_REASON);
     const data = await this._gisRequest({ prompt: consent ? 'consent' : '' });
     this._storeToken(data);
     const drive = new core.GoogleDrive(this, { log: (l, m) => log('app', l, m) });
@@ -294,7 +303,7 @@ async function folderReadiness(folder) {
 /* ------------------------------------------------------------------ engine glue */
 function makeCtx(section, signal) {
   return core.createContext({
-    config: state.config, googleAuth, githubAuth, signal,
+    config: state.config, googleAuth, githubAuth, signal, fetch: PREVIEW ? previewFetch : undefined,
     log: (level, msg, data) => log(section, level, msg, data),
     progress: (p) => renderProgress(section, p),
   });
@@ -518,7 +527,7 @@ async function updateWakeLock() {
 }
 function notify(title, body) {
   if (!state.config.automation.notify || !('Notification' in window) || Notification.permission !== 'granted') return;
-  try { new Notification(title, { body, icon: 'assets/icon-192.png' }); } catch { /* ignore */ }
+  try { new Notification(title, { body, icon: ICON_192 }); } catch { /* ignore */ }
 }
 
 /* ------------------------------------------------------------------ rendering */
@@ -956,8 +965,43 @@ window.DrivesSync = {
   on: (event, fn) => { if (!listeners.has(event)) listeners.set(event, new Set()); listeners.get(event).add(fn); return () => listeners.get(event).delete(fn); },
 };
 
+/* ------------------------------------------------------------------ single-file edition helpers */
+/** The one-file edition has no manifest.webmanifest, so it offers an equivalent one from memory. */
+function installSingleFileManifest() {
+  try {
+    const dir = location.href.split(/[?#]/)[0].replace(/[^/]*$/, '');
+    const manifest = {
+      name: 'Drives Sync', short_name: 'Drives Sync', description: 'Google Drive, GitHub Drive 저장소, 기기 폴더를 한 방향으로 누적 동기화합니다.',
+      start_url: location.href.split(/[?#]/)[0], scope: dir, display: 'standalone', lang: 'ko', background_color: '#f9f9f7', theme_color: '#2a78d6',
+      icons: [
+        { src: BUILD.icon192, sizes: '192x192', type: 'image/png' },
+        { src: BUILD.icon512, sizes: '512x512', type: 'image/png' },
+        { src: BUILD.iconMaskable || BUILD.icon512, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      ].filter((i) => i.src),
+    };
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }));
+    document.head.appendChild(link);
+  } catch { /* the page still works without an install manifest */ }
+}
+function showPreviewNote() {
+  const note = document.createElement('div');
+  note.className = 'banner';
+  note.id = 'preview-note';
+  note.innerHTML = '<span class="banner-text"><b>미리 보기입니다.</b> 화면, 설정, 사전 점검(브레이크)의 동작만 확인할 수 있습니다. </span>';
+  note.querySelector('.banner-text').append(PREVIEW_REASON);
+  document.querySelector('.wrap').prepend(note);
+  // file saves are inert inside the preview host
+  for (const id of ['btn-export-logs', 'btn-config-export']) { const b = $(id); b.disabled = true; b.title = '미리 보기에서는 파일 저장이 막혀 있습니다.'; }
+  $('config-import').disabled = true;
+}
+
 /* ------------------------------------------------------------------ boot */
 async function boot() {
+  if (!document.body.dataset.state) document.body.dataset.state = 'idle';
+  if (BUILD.single) installSingleFileManifest();
+  if (PREVIEW) showPreviewNote();
   renderForms();
   bindConfigInputs();
   bindButtons();
@@ -971,7 +1015,8 @@ async function boot() {
   try {
     if (await googleAuth.handleRedirect()) { log('app', 'info', 'Google 장기 인증을 저장했습니다.'); renderStatus(); }
   } catch (e) { log('app', 'error', e.message); showBanner(e.message, 'bad'); }
-  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch((e) => log('app', 'warn', `서비스 워커 등록 실패: ${e.message}`));
+  if ('serviceWorker' in navigator && location.protocol === 'https:' && !BUILD.single) navigator.serviceWorker.register('sw.js').catch((e) => log('app', 'warn', `서비스 워커 등록 실패: ${e.message}`));
+  if (location.protocol === 'file:') showBanner('파일을 직접 열면(file://) Google 로그인이 되지 않습니다. GitHub Pages 주소에서 열거나, 이 파일이 있는 폴더에서 "python -m http.server 8000"을 실행해 http://localhost:8000 으로 여세요.');
   if (googleAuth.hasAny() && store.get(LS.ghToken, null)) await guarded('preflight', () => doPreflight({ quiet: true }));
   if (state.config.automation.enabled) { log('automation', 'info', '앱을 다시 열어 자동화를 재개합니다.'); automation.start(); updateWakeLock(); }
   log('app', 'info', `Drives Sync v${core.VERSION} 준비 (${state.config.device.name})`);

@@ -1,0 +1,2797 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Drives Sync</title>
+  <!-- Drives Sync v1.0.0, one-file edition built 2026-09-17 by build-single.mjs from index.html, core.js and app.js. Source: https://github.com/hongguqaz/Lobby/tree/main/drives-sync -->
+  <meta name="description" content="Drives Sync: Google Drive와 GitHub Drive 저장소, 기기 폴더를 한 방향으로 누적 동기화하는 앱 (Stock Matching, Flow Matching, Matching Automation).">
+  <meta name="theme-color" content="#2a78d6">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Drives Sync">
+  <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiI+CiAgPHRpdGxlPkRyaXZlcyBTeW5jPC90aXRsZT4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzJhNzhkNiIvPgogIDxnIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzOCIgc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiPgogICAgPHBhdGggZD0iTSAxNDMgMjE1IEEgMTI3IDEyNyAwIDAgMSAzNjYgMTUyIi8+CiAgICA8cGF0aCBkPSJNIDM2OSAyOTcgQSAxMjcgMTI3IDAgMCAxIDE0NiAzNjAiLz4KICA8L2c+CiAgPGcgZmlsbD0iI2ZmZmZmZiI+CiAgICA8cGF0aCBkPSJNIDM3MiAxMTYgTCA0MTIgMTk2IEwgMzI2IDE4NiBaIi8+CiAgICA8cGF0aCBkPSJNIDE0MCAzOTYgTCAxMDAgMzE2IEwgMTg2IDMyNiBaIi8+CiAgPC9nPgo8L3N2Zz4K" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="data:image/png;base64,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">
+  <style>
+/* Lobby design tokens - shared by every page of the site.
+   Palette follows the reference data-viz palette.
+   Light values live on :root; dark values are redefined for the OS setting
+   (unless a light theme is stamped) and again for the explicit dark toggle. */
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.10);
+  --shadow: rgba(11, 11, 11, 0.14);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s8: #e34948;
+  --other: #a8a69f;
+  --accent: #2a78d6;
+  --accent-soft: #cde2fb;
+  --good: #006300;
+  --bad: #d03b3b;
+  --warn-bg: #fff4d6;
+  --warn-border: #f0d48a;
+  --focus: #2a78d6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --shadow: rgba(0, 0, 0, 0.5);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --other: #6b6a66;
+    --accent: #3987e5;
+    --accent-soft: #184f95;
+    --good: #0ca30c;
+    --bad: #e66767;
+    --warn-bg: #3a2f10;
+    --warn-border: #6b5a1e;
+    --focus: #3987e5;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255, 255, 255, 0.10);
+  --shadow: rgba(0, 0, 0, 0.5);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  --other: #6b6a66;
+  --accent: #3987e5;
+  --accent-soft: #184f95;
+  --good: #0ca30c;
+  --bad: #e66767;
+  --warn-bg: #3a2f10;
+  --warn-border: #6b5a1e;
+  --focus: #3987e5;
+}
+
+/* Drives Sync - layout and components. Colour tokens come from ../assets/tokens.css (light/dark). */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--page); color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; font-size: 15px; line-height: 1.5;
+  padding-bottom: env(safe-area-inset-bottom); }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+a { color: var(--accent); }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; background: var(--grid); padding: 1px 5px; border-radius: 4px; word-break: break-all; }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--surface); padding: 8px 12px; border-radius: 8px; z-index: 100; }
+.skip:focus { left: 8px; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px 48px; }
+
+/* ---------- header */
+.app-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 26px 0 10px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brand .logo { width: 40px; height: 40px; border-radius: 10px; flex: none; }
+.brand h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+.tagline { margin: 2px 0 0; color: var(--ink-2); font-size: 13px; }
+.head-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.device { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); }
+.device input { width: 120px; font-size: 13px; padding: 4px 8px; }
+.btn-ghost, .btn-ghost.link { font: inherit; font-size: 12px; color: var(--ink-2); background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; cursor: pointer; text-decoration: none; }
+.btn-ghost:hover { border-color: var(--axis); color: var(--ink); }
+
+/* ---------- chips */
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 14px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); white-space: nowrap; max-width: 100%; }
+.chip b { color: var(--ink); font-weight: 600; }
+.chip .chip-text { overflow: hidden; text-overflow: ellipsis; }
+.chip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--other); flex: none; }
+.chip[data-state="ok"]::before, .chip[data-state="on"]::before { background: var(--good); box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 20%, transparent); }
+.chip[data-state="fail"]::before, .chip[data-state="braked"]::before, .chip[data-state="error"]::before { background: var(--bad); }
+.chip[data-state="running"]::before { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+.chip[data-state="warn"]::before { background: var(--s4); }
+@keyframes pulse { 50% { opacity: 0.3; } }
+
+.banner { margin: 0 0 14px; padding: 12px 14px; border-radius: 10px; background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--ink); font-size: 14px; display: flex; gap: 12px; align-items: flex-start; }
+.banner.bad { background: color-mix(in srgb, var(--bad) 12%, var(--surface)); border-color: var(--bad); }
+.banner .banner-text { flex: 1; white-space: pre-wrap; }
+.banner button { flex: none; }
+
+/* ---------- bars */
+.bar { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 14px; box-shadow: 0 1px 2px var(--shadow); overflow: hidden; position: relative; }
+.bar::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--bar-color, var(--other)); }
+#bar-preflight { --bar-color: var(--s7); }
+#bar-stock { --bar-color: var(--s1); }
+#bar-flow { --bar-color: var(--s3); }
+#bar-automation { --bar-color: var(--s4); }
+#bar-agent { --bar-color: var(--s5); }
+#bar-settings { --bar-color: var(--muted); }
+.bar > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "num title chip" "num sub chip"; column-gap: 12px; row-gap: 2px; align-items: center; padding: 14px 16px 14px 20px; }
+.bar > summary::-webkit-details-marker { display: none; }
+.bar > summary:hover { background: color-mix(in srgb, var(--ink) 3%, transparent); }
+.bar-num { grid-area: num; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; background: var(--bar-color); color: #fff; }
+.bar-title { grid-area: title; font-weight: 700; font-size: 17px; }
+.bar-title small { font-weight: 500; color: var(--ink-2); font-size: 13px; margin-left: 6px; }
+.bar-sub { grid-area: sub; font-size: 13px; color: var(--ink-2); }
+.bar-chip { grid-area: chip; align-self: start; }
+.bar-body { padding: 4px 16px 18px 20px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
+.bar-body > :first-child { margin-top: 12px; }
+details.sub { border: 1px dashed var(--border); border-radius: 10px; padding: 8px 12px; }
+details.sub > summary { cursor: pointer; font-size: 13px; color: var(--ink-2); font-weight: 600; }
+details.sub[open] > summary { margin-bottom: 8px; }
+
+/* ---------- forms */
+fieldset { border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px 14px; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+legend { font-weight: 600; font-size: 13px; color: var(--ink-2); padding: 0 6px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink-2); min-width: 0; }
+label.inline { flex-direction: row; align-items: center; gap: 6px; }
+label.inline input[type="number"] { width: 72px; }
+label.check { cursor: pointer; }
+input[type="text"], input[type="email"], input[type="password"], input[type="number"], select { font: inherit; font-size: 14px; color: var(--ink); background: var(--page); border: 1px solid var(--axis); border-radius: 8px; padding: 7px 10px; min-width: 0; width: 100%; }
+input:disabled, select:disabled { opacity: 0.6; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.row.tight { gap: 4px; flex-wrap: nowrap; }
+.row.tight b { color: var(--muted); }
+.hint { margin: 0; font-size: 12.5px; color: var(--muted); }
+.hint b { color: var(--ink-2); }
+.btn, .btn-secondary, .btn-danger, .file-btn { font: inherit; font-size: 14px; font-weight: 600; border-radius: 9px; padding: 8px 14px; cursor: pointer; border: 1px solid transparent; white-space: nowrap; }
+.btn { background: var(--accent); color: #fff; }
+.btn:hover { filter: brightness(1.08); }
+.btn-secondary, .file-btn { background: var(--surface); color: var(--ink); border-color: var(--axis); }
+.btn-secondary:hover, .file-btn:hover { border-color: var(--ink-2); }
+.btn-danger { background: transparent; color: var(--bad); border-color: var(--bad); }
+.btn-danger:hover { background: color-mix(in srgb, var(--bad) 10%, transparent); }
+button:disabled, .btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+.btn.small, .btn-secondary.small, .btn-danger.small { font-size: 12px; padding: 5px 9px; }
+.file-btn { display: inline-flex; align-items: center; }
+
+/* switch */
+.switch { flex-direction: row; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: var(--ink); font-weight: 600; }
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.switch .track { width: 42px; height: 24px; border-radius: 999px; background: var(--axis); position: relative; transition: background 0.2s; flex: none; }
+.switch .track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+.switch input:checked + .track { background: var(--good); }
+.switch input:checked + .track::after { transform: translateX(18px); }
+.switch input:focus-visible + .track { outline: 2px solid var(--focus); outline-offset: 2px; }
+.auto-row { gap: 16px; }
+
+/* ---------- path line */
+.path-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; padding: 8px 12px; border-radius: 10px; background: var(--page); border: 1px solid var(--border); }
+.path-line span:not(.path-arrow) { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; word-break: break-all; }
+.path-arrow { color: var(--muted); }
+.path-from { color: var(--s2); }
+.path-mid { color: var(--s4); }
+.path-to { color: var(--s1); }
+
+/* ---------- checks */
+.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.checks li { display: grid; grid-template-columns: 22px auto 1fr; gap: 8px; align-items: baseline; font-size: 13.5px; padding: 6px 8px; border-radius: 8px; background: var(--page); }
+.checks li .mark { font-weight: 700; }
+.checks li.ok .mark { color: var(--good); }
+.checks li.fail { background: color-mix(in srgb, var(--bad) 8%, var(--page)); }
+.checks li.fail .mark { color: var(--bad); }
+.checks li .label { font-weight: 600; white-space: nowrap; }
+.checks li .detail { color: var(--ink-2); word-break: break-word; }
+.checks li.fail .detail { color: var(--ink); }
+.checks .empty { color: var(--muted); font-size: 13px; }
+
+/* ---------- progress, summary, logs */
+.progress { display: flex; align-items: center; gap: 10px; }
+.progress-bar { flex: 1; height: 8px; border-radius: 999px; background: var(--grid); overflow: hidden; }
+.progress-bar span { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+.progress-bar.indeterminate span { width: 30%; animation: slide 1.2s ease-in-out infinite; }
+@keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+.progress-text { font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.summary { font-size: 13.5px; padding: 10px 12px; border-radius: 10px; background: var(--page); border: 1px solid var(--border); }
+.summary.braked { background: color-mix(in srgb, var(--bad) 8%, var(--page)); border-color: var(--bad); }
+.summary ul { margin: 6px 0 0; padding-left: 18px; }
+.summary li { margin: 2px 0; }
+.log { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.45; background: var(--page); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; max-height: 220px; overflow: auto; white-space: pre-wrap; word-break: break-word; color: var(--ink-2); }
+.log:empty::before { content: "로그 없음"; color: var(--muted); }
+.log.tall { max-height: 360px; }
+.log .warn { color: var(--s4); }
+.log .error, .log .brake { color: var(--bad); font-weight: 600; }
+.doc { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-word; margin: 0; color: var(--ink-2); }
+
+/* ---------- folder list */
+.add-form { border: 1px solid var(--accent); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: var(--page); }
+.folder-list { display: flex; flex-direction: column; gap: 8px; }
+.folder { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--page); }
+.folder .f-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.folder .f-label { font-weight: 700; }
+.folder .f-mode { font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--axis); color: var(--muted); }
+.folder .f-meta { font-size: 12.5px; color: var(--ink-2); grid-column: 1; display: flex; gap: 12px; flex-wrap: wrap; }
+.folder .f-meta code { font-size: 12px; }
+.folder .f-actions { grid-row: 1 / span 2; grid-column: 2; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; align-content: start; }
+.folder.not-ready { border-color: var(--warn-border); background: var(--warn-bg); }
+.folder .f-state { font-size: 12.5px; }
+.folder .f-state.ok { color: var(--good); }
+.folder .f-state.warn { color: var(--s4); font-weight: 600; }
+
+footer { margin-top: 24px; color: var(--muted); font-size: 12px; }
+
+@media (max-width: 720px) {
+  .two, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .bar > summary { grid-template-columns: auto 1fr; grid-template-areas: "num title" "num sub" "num chip"; padding-left: 16px; }
+  .bar-chip { justify-self: start; margin-top: 4px; }
+  .bar-body { padding-left: 16px; }
+  .folder { grid-template-columns: 1fr; }
+  .folder .f-actions { grid-row: auto; grid-column: 1; justify-content: flex-start; }
+  .app-head { padding-top: 18px; }
+  .brand h1 { font-size: 22px; }
+  .progress-text { max-width: 50%; }
+}
+@media (prefers-reduced-motion: reduce) { .chip::before, .progress-bar span { animation: none !important; transition: none; } }
+</style>
+  <script>
+    try {
+      var t = localStorage.getItem('lobby-theme');
+      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  </script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body data-state="idle">
+  <a class="skip" href="#main">본문으로</a>
+  <div class="wrap">
+    <header class="app-head">
+      <div class="brand">
+        <img class="logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiI+CiAgPHRpdGxlPkRyaXZlcyBTeW5jPC90aXRsZT4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzJhNzhkNiIvPgogIDxnIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzOCIgc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiPgogICAgPHBhdGggZD0iTSAxNDMgMjE1IEEgMTI3IDEyNyAwIDAgMSAzNjYgMTUyIi8+CiAgICA8cGF0aCBkPSJNIDM2OSAyOTcgQSAxMjcgMTI3IDAgMCAxIDE0NiAzNjAiLz4KICA8L2c+CiAgPGcgZmlsbD0iI2ZmZmZmZiI+CiAgICA8cGF0aCBkPSJNIDM3MiAxMTYgTCA0MTIgMTk2IEwgMzI2IDE4NiBaIi8+CiAgICA8cGF0aCBkPSJNIDE0MCAzOTYgTCAxMDAgMzE2IEwgMTg2IDMyNiBaIi8+CiAgPC9nPgo8L3N2Zz4K" alt="" width="40" height="40">
+        <div>
+          <h1>Drives Sync</h1>
+          <p class="tagline">한 방향으로 정렬된 드라이브 간 동기화와 자료의 누적. 삭제는 절대 반영하지 않습니다.</p>
+        </div>
+      </div>
+      <div class="head-tools">
+        <label class="device">기기 이름 <input id="device-name" type="text" maxlength="40" autocomplete="off" spellcheck="false"></label>
+        <button id="install-btn" class="btn-ghost" type="button" hidden>앱으로 설치</button>
+        <button id="theme-toggle" class="btn-ghost" type="button" aria-label="밝은/어두운 테마 전환">테마</button>
+        <a class="btn-ghost link" href="https://hongguqaz.github.io/Lobby/">Lobby</a>
+      </div>
+    </header>
+
+    <div class="chips" aria-live="polite">
+      <span class="chip" id="status-google" data-state="off"><b>Google Drive</b> <span class="chip-text">연결 안 됨</span></span>
+      <span class="chip" id="status-github" data-state="off"><b>GitHub</b> <span class="chip-text">토큰 없음</span></span>
+      <span class="chip" id="status-run" data-state="idle"><b>상태</b> <span class="chip-text">대기</span></span>
+    </div>
+
+    <div id="banner" class="banner" hidden role="alert"></div>
+
+    <main id="main">
+
+      <!-- ===================================================== 0. Preflight -->
+      <details class="bar" id="bar-preflight" open>
+        <summary>
+          <span class="bar-num" aria-hidden="true">0</span>
+          <span class="bar-title">연결 및 사전 점검 <small>Preflight</small></span>
+          <span class="bar-sub">모든 기능은 실행 직전에 이 점검을 다시 통과해야 합니다. 하나라도 실패하면 작업하지 않고 사유를 알립니다.</span>
+          <span class="chip bar-chip" id="chip-preflight" data-state="idle">점검 전</span>
+        </summary>
+        <div class="bar-body">
+          <div class="two">
+            <fieldset>
+              <legend>Google Drive</legend>
+              <label>동기화 계정 (예상)
+                <input id="google-expected" type="email" placeholder="honggusangjoon@gmail.com" autocomplete="off" spellcheck="false">
+              </label>
+              <p class="hint" id="google-state">이 기기에서 Google Drive에 로그인되어 있지 않습니다.</p>
+              <div class="row">
+                <button id="btn-google-connect" class="btn" type="button">Google Drive 연결</button>
+                <button id="btn-google-disconnect" class="btn-secondary" type="button">연결 해제</button>
+              </div>
+              <p class="hint">Google Cloud의 OAuth 클라이언트 ID가 설정(⚙)에 입력되어 있어야 합니다. 첫 연결에서 "Google Drive의 모든 파일 보기, 수정, 생성, 삭제" 권한을 승인하세요. 이 앱은 Drive에서 아무것도 삭제하지 않습니다.</p>
+            </fieldset>
+            <fieldset>
+              <legend>GitHub</legend>
+              <label>토큰 (fine-grained, Contents: Read and write)
+                <span class="row">
+                  <input id="github-token" type="password" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
+                  <button id="btn-github-save" class="btn" type="button">저장</button>
+                </span>
+              </label>
+              <p class="hint" id="github-state">저장된 GitHub 토큰이 없습니다.</p>
+              <div class="grid-2">
+                <label>계정 (예상) <input id="github-expected" type="text" placeholder="hongguqaz" spellcheck="false"></label>
+                <label>저장소 <span class="row tight"><input id="github-owner" type="text" placeholder="hongguqaz" spellcheck="false"><b>/</b><input id="github-repo" type="text" placeholder="Drive" spellcheck="false"></span></label>
+                <label>브랜치 <input id="github-branch" type="text" placeholder="(비우면 기본 브랜치)" spellcheck="false"></label>
+                <label>대상 폴더 <input id="github-target" type="text" placeholder="fin-lab/FinResearchRaw" spellcheck="false"></label>
+              </div>
+            </fieldset>
+          </div>
+          <div class="row">
+            <button id="btn-preflight" class="btn" type="button">사전 점검 실행</button>
+            <button id="btn-create-target" class="btn-secondary" type="button" hidden>대상 폴더 만들기 (README 커밋)</button>
+            <span class="hint" id="preflight-time"></span>
+          </div>
+          <ul class="checks" id="preflight-result" aria-live="polite"></ul>
+        </div>
+      </details>
+
+      <!-- ===================================================== 1. Stock Matching -->
+      <details class="bar" id="bar-stock" open>
+        <summary>
+          <span class="bar-num" aria-hidden="true">1</span>
+          <span class="bar-title">Stock Matching <small>드라이브 간 동기화</small></span>
+          <span class="bar-sub">Google Drive의 파일을 GitHub Drive 저장소의 폴더로 복사해 누적합니다. Drive에서 지운 파일은 GitHub에 그대로 남습니다.</span>
+          <span class="chip bar-chip" id="chip-stock" data-state="idle">대기</span>
+        </summary>
+        <div class="bar-body">
+          <div class="path-line">
+            <span class="path-from" id="stock-from">Google Drive · 내 드라이브 전체</span>
+            <span class="path-arrow" aria-hidden="true">→</span>
+            <span class="path-to" id="stock-to">hongguqaz/Drive : fin-lab/FinResearchRaw</span>
+          </div>
+          <div class="grid-2">
+            <label>Drive 원본 폴더 ID <input id="stock-source-id" type="text" placeholder="root (내 드라이브 전체)" spellcheck="false">
+              <span class="hint">폴더 URL의 마지막 부분(…/folders/<b>ID</b>)을 붙여 넣으세요. <code>root</code>는 내 드라이브 전체입니다.</span></label>
+            <label>표시 이름 <input id="stock-source-name" type="text" placeholder="내 드라이브 전체"></label>
+          </div>
+          <details class="sub">
+            <summary>Google 문서 내보내기 형식</summary>
+            <div class="grid-4">
+              <label>문서 <select id="export-document"><option value="docx">.docx</option><option value="pdf">.pdf</option><option value="md">.md (Markdown)</option><option value="txt">.txt</option><option value="html">.html</option></select></label>
+              <label>스프레드시트 <select id="export-spreadsheet"><option value="xlsx">.xlsx</option><option value="pdf">.pdf</option><option value="csv">.csv (첫 시트)</option></select></label>
+              <label>프레젠테이션 <select id="export-presentation"><option value="pptx">.pptx</option><option value="pdf">.pdf</option><option value="txt">.txt</option></select></label>
+              <label>드로잉 <select id="export-drawing"><option value="png">.png</option><option value="svg">.svg</option><option value="pdf">.pdf</option></select></label>
+            </div>
+            <p class="hint">Google 형식 파일은 바이트가 없어 내보내기로 저장합니다(최대 10 MB). 폼·사이트·지도·바로가기는 건너뜁니다.</p>
+          </details>
+          <div class="row">
+            <button id="btn-stock-run" class="btn" type="button">동기화 실행</button>
+            <button id="btn-stock-dry" class="btn-secondary" type="button">미리 보기 (쓰지 않음)</button>
+            <button id="btn-stock-stop" class="btn-danger" type="button" hidden>중지</button>
+            <span class="hint" id="stock-last"></span>
+          </div>
+          <div class="progress" id="stock-progress" hidden><div class="progress-bar"><span></span></div><span class="progress-text"></span></div>
+          <div class="summary" id="stock-summary" hidden></div>
+          <pre class="log" id="stock-log" aria-live="polite"></pre>
+        </div>
+      </details>
+
+      <!-- ===================================================== 2. Flow Matching -->
+      <details class="bar" id="bar-flow" open>
+        <summary>
+          <span class="bar-num" aria-hidden="true">2</span>
+          <span class="bar-title">Flow Matching <small>드라이브 업로드 간 동기화</small></span>
+          <span class="bar-sub">이 기기의 지정 폴더에 새로 쌓인 파일을 Google Drive에 올리고, 바로 GitHub에도 동기화합니다. 추가만 하고 삭제하지 않습니다.</span>
+          <span class="chip bar-chip" id="chip-flow" data-state="idle">대기</span>
+        </summary>
+        <div class="bar-body">
+          <div class="path-line">
+            <span class="path-from" id="flow-from">이 기기의 폴더</span>
+            <span class="path-arrow" aria-hidden="true">→</span>
+            <span class="path-mid" id="flow-mid">Google Drive · DrivesSync/기기/폴더</span>
+            <span class="path-arrow" aria-hidden="true">→</span>
+            <span class="path-to" id="flow-to">hongguqaz/Drive : fin-lab/FinResearchRaw/DrivesSync/…</span>
+          </div>
+          <p class="hint" id="flow-capability"></p>
+          <div class="row">
+            <button id="btn-flow-add" class="btn" type="button">폴더 추가</button>
+            <label class="inline">Drive 상위 폴더 <input id="flow-drive-sub" type="text" placeholder="DrivesSync" spellcheck="false"></label>
+          </div>
+          <form id="flow-add-form" class="add-form" hidden>
+            <div class="grid-3">
+              <label>이름(라벨) <input id="flow-add-label" type="text" placeholder="예: 휴대폰 카메라, 스캔, 리서치 메모" required maxlength="60"></label>
+              <label>Drive 경로 <input id="flow-add-path" type="text" placeholder="(비우면 DrivesSync/기기/라벨)" spellcheck="false"></label>
+              <label>접근 방식
+                <select id="flow-add-mode">
+                  <option value="handle">지속 접근 (폴더를 한 번 선택하면 계속 사용)</option>
+                  <option value="oneshot">실행할 때마다 선택 (휴대폰 등)</option>
+                </select>
+              </label>
+            </div>
+            <div class="row">
+              <button id="flow-add-confirm" class="btn" type="submit">폴더 선택하고 추가</button>
+              <button id="flow-add-cancel" class="btn-secondary" type="button">취소</button>
+            </div>
+          </form>
+          <input id="flow-oneshot-input" type="file" webkitdirectory multiple hidden>
+          <input id="flow-oneshot-files" type="file" multiple hidden>
+          <div class="folder-list" id="flow-folder-list"><p class="hint empty">아직 지정된 폴더가 없습니다. "폴더 추가"로 이 기기의 폴더를 지정하세요. 여러 폴더를 지정하면 병렬로 업로드합니다.</p></div>
+          <div class="row">
+            <button id="btn-flow-run-all" class="btn" type="button">모든 폴더 업로드</button>
+            <button id="btn-flow-dry" class="btn-secondary" type="button">미리 보기 (쓰지 않음)</button>
+            <button id="btn-flow-stop" class="btn-danger" type="button" hidden>중지</button>
+            <span class="hint" id="flow-last"></span>
+          </div>
+          <div class="progress" id="flow-progress" hidden><div class="progress-bar"><span></span></div><span class="progress-text"></span></div>
+          <div class="summary" id="flow-summary" hidden></div>
+          <pre class="log" id="flow-log" aria-live="polite"></pre>
+        </div>
+      </details>
+
+      <!-- ===================================================== 3. Matching Automation -->
+      <details class="bar" id="bar-automation" open>
+        <summary>
+          <span class="bar-num" aria-hidden="true">3</span>
+          <span class="bar-title">Matching Automation <small>자동화</small></span>
+          <span class="bar-sub">켜 두면 정해진 주기마다 기능 2(Flow Matching)를 자동으로 실행합니다. 선결 조건이 하나라도 빠지면 실행하지 않고 사유를 남깁니다.</span>
+          <span class="chip bar-chip" id="chip-automation" data-state="off">꺼짐</span>
+        </summary>
+        <div class="bar-body">
+          <div class="row auto-row">
+            <label class="switch"><input id="auto-toggle" type="checkbox"><span class="track" aria-hidden="true"></span><span>자동 실행</span></label>
+            <label class="inline">주기 <input id="auto-interval" type="number" min="1" max="1440" step="1" value="30"> 분</label>
+            <button id="btn-auto-check" class="btn-secondary" type="button">선결 조건 점검</button>
+            <button id="btn-auto-run-now" class="btn-secondary" type="button">지금 한 번 실행</button>
+          </div>
+          <p class="hint" id="auto-next">다음 실행: —</p>
+          <ul class="checks" id="auto-prereqs"></ul>
+          <div class="row">
+            <label class="inline check"><input id="auto-keepawake" type="checkbox"> 화면 켜짐 유지 (지원 기기)</label>
+            <label class="inline check"><input id="auto-notify" type="checkbox"> 중단·완료 알림</label>
+          </div>
+          <p class="hint">브라우저 앱은 이 페이지(또는 설치한 앱 창)가 열려 있는 동안만 자동 실행됩니다. 창을 닫거나 기기가 잠들면 멈추고, 다시 열면 밀린 실행을 바로 처리합니다. Google 로그인 토큰은 1시간마다 갱신되며, 갱신에 실패하면 실행을 멈추고 재로그인을 요청합니다. 하루 이상 무인 실행하려면 설정의 "장기 인증"을 켜 두세요.</p>
+          <pre class="log" id="auto-log" aria-live="polite"></pre>
+        </div>
+      </details>
+
+      <!-- ===================================================== Agent -->
+      <details class="bar" id="bar-agent">
+        <summary>
+          <span class="bar-num" aria-hidden="true">A</span>
+          <span class="bar-title">Agent 인터페이스 <small>window.DrivesSync</small></span>
+          <span class="bar-sub">에이전트(자동화 도구, Claude 등)가 이 앱을 조작할 때 쓰는 API와 상태. 같은 사전 점검(브레이크)이 그대로 적용됩니다.</span>
+          <span class="chip bar-chip" data-state="idle">API</span>
+        </summary>
+        <div class="bar-body">
+          <div class="row">
+            <button id="btn-copy-state" class="btn-secondary" type="button">상태 JSON 복사</button>
+            <button id="btn-export-logs" class="btn-secondary" type="button">로그 내려받기</button>
+            <button id="btn-clear-logs" class="btn-secondary" type="button">로그 비우기</button>
+          </div>
+          <pre class="log tall" id="agent-state"></pre>
+          <details class="sub">
+            <summary>API 요약</summary>
+<pre class="doc">await DrivesSync.preflight()                      // 사전 점검 → { ok, reasons[], checks[] }
+await DrivesSync.runStock({ dryRun })             // 기능 1 → 결과 또는 { ok:false, braked:true, reasons[] }
+await DrivesSync.runFlow({ folderIds, dryRun })   // 기능 2 (지속 접근 폴더만 무인 실행 가능)
+await DrivesSync.automation.enable({ intervalMinutes })   // 기능 3 → 선결 조건 미충족 시 { ok:false, reasons[] }
+DrivesSync.automation.disable() / .status()
+DrivesSync.getState()                             // 설정(토큰 제외), 마지막 점검·실행 결과, 폴더, 자동화 상태
+DrivesSync.config.get() / .set({ github: { targetPath } })
+DrivesSync.folders.list() / .remove(id)
+DrivesSync.tokens.setGitHub(token)                // Google 로그인은 사용자 동작이 필요 (또는 장기 인증)
+DrivesSync.logs.get(200)
+document.body.dataset.state                       // idle | running | braked | error
+&lt;pre id="agent-state"&gt;                            // 위 getState()의 JSON이 항상 표시됨
+
+명령줄에서는 agent/drives-sync-cli.mjs (Node 18+) 가 같은 엔진과 같은 브레이크로 동작합니다.</pre>
+          </details>
+        </div>
+      </details>
+
+      <!-- ===================================================== Settings -->
+      <details class="bar" id="bar-settings">
+        <summary>
+          <span class="bar-num" aria-hidden="true">⚙</span>
+          <span class="bar-title">설정 <small>Settings</small></span>
+          <span class="bar-sub">Google OAuth 클라이언트, 장기 인증, 용량 제한, 설정 백업, 초기화.</span>
+          <span class="chip bar-chip" data-state="idle">설정</span>
+        </summary>
+        <div class="bar-body">
+          <fieldset>
+            <legend>Google OAuth 클라이언트 (Google Cloud Console)</legend>
+            <div class="grid-2">
+              <label>클라이언트 ID <input id="google-client-id" type="text" placeholder="xxxx.apps.googleusercontent.com" spellcheck="false" autocomplete="off"></label>
+              <label>클라이언트 보안 비밀 (장기 인증에만 필요) <input id="google-client-secret" type="password" placeholder="GOCSPX-..." autocomplete="off"></label>
+            </div>
+            <p class="hint">승인된 JavaScript 원본: <code id="origin-uri"></code> · 승인된 리디렉션 URI: <code id="redirect-uri"></code></p>
+          </fieldset>
+          <fieldset>
+            <legend>장기 인증 (refresh token) — 무인 자동화용</legend>
+            <p class="hint" id="google-longrun-state">꺼짐. 기본 연결은 1시간짜리 토큰을 쓰며, 만료 시 조용히 갱신을 시도하고 실패하면 재로그인을 요청합니다.</p>
+            <div class="row">
+              <button id="btn-google-longrun" class="btn-secondary" type="button">장기 인증 시작 (Google로 이동)</button>
+              <button id="btn-google-longrun-clear" class="btn-secondary" type="button">장기 인증 지우기</button>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>제한</legend>
+            <div class="grid-3">
+              <label>파일 최대 크기 (MB) <input id="limit-max-mb" type="number" min="1" max="100" step="1"></label>
+              <label>커밋당 파일 수 <input id="limit-batch-files" type="number" min="1" max="200" step="1"></label>
+              <label>동시 전송 수 <input id="limit-concurrency" type="number" min="1" max="8" step="1"></label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>백업 · 초기화</legend>
+            <div class="row">
+              <button id="btn-config-export" class="btn-secondary" type="button">설정 내보내기 (JSON)</button>
+              <label class="btn-secondary file-btn">설정 가져오기 <input id="config-import" type="file" accept="application/json" hidden></label>
+              <button id="btn-manifest-reset" class="btn-danger" type="button">매니페스트 초기화 (전체 재동기화)</button>
+              <button id="btn-reset-all" class="btn-danger" type="button">이 기기의 앱 데이터 지우기</button>
+            </div>
+            <p class="hint">토큰은 이 브라우저의 저장소에만 보관되며 저장소(GitHub)나 서버로 전송되지 않습니다. 공용 기기에서는 사용 후 "앱 데이터 지우기"를 누르세요.</p>
+          </fieldset>
+        </div>
+      </details>
+    </main>
+
+    <footer>
+      <p>Drives Sync <span id="app-version"></span> · 소스: <a href="https://github.com/hongguqaz/Lobby/tree/main/drives-sync">hongguqaz/Lobby/drives-sync</a> · 데이터: <a href="https://github.com/hongguqaz/Drive/tree/HEAD/fin-lab/FinResearchRaw" id="target-link">hongguqaz/Drive/fin-lab/FinResearchRaw</a></p>
+    </footer>
+  </div>
+
+  <script>window.DRIVES_SYNC_BUILD = {"single":true,"preview":false,"version":"1.0.0","builtAt":"2026-09-17T16:11:04.483Z","icon192":"data:image/png;base64,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","icon512":"data:image/png;base64,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","iconMaskable":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD0eNT6AAAX20lEQVR42u3dv4pkR5YHYL1BPkL55ZS5ZjnyEz1BvkBDujNWrSd5iWCcsRK1OU4aMkeQhqyBgXLEzoJoamlGCAa0xYphh4WFmjq1mb2pUnVW/rl/IuJ8Fz6zu6viZmf8bsQ5cT+5/M2/fUIRJo+uH00f3WwsH6133D96ACjU/bPvrOXO99l08x038X1fBoMwvKtHs81/iPgPcutLA0jodvMdeLP5TrwyPwgALU72CxM9wMHBYCEUCAA1TvjzRyvL9QCdbSusNt+tAoEAUNS+/XSzz3XnPypA7+4237lT9QQCwBiT/myTSP1nBBjXavOdLAwIAL0x6QPUEQbMWQJAJ3v6S/v5ANXVDSzVDAgApy7xq9oHaKOrwBaBALDXxab1xNM+QJurAovNd705TwD4xTK//yAAOdgeSB4A4kjKtf8IAGmtN3OBAGDiB0AQEABa3OPXxgfAvjbCCwGgrar+hQ82AAdaZOgaaH3yn6vqB+DEroG5AFDnPr8+fgC6OEfgWgCw3A+AbQEBoDBTy/0A9LwtMBUAynrqV90PwJDdAhMBYPy9/jsfRgAGdld7bUDNk7+9fgBKqA0QAC6HO9BHhT8AJXUKXAgACv0AUCAoAHToxgcMgMLdCACq/AHQJSAA2O8HQF2AAHCIK/v9AFReF3AlACj2A0BxoACwx8wHBoDGzAQAkz8AQoAAsGPuwwFA4+YCwC8tfSgASGIpAJj8ARACUgYAy/4A2A5IFgAU/AGgMDBZADD5A8CIIWCsQ37ccAD4f9PWA4DjfQHg1wY/NnjoF/uY/AHg4yHgorUAEK9F9FY/ANjv9nKgVwkPFQBWbioAHGTVSgC4cTMB4Cg3tQcAFf8AUGBngKI/AEhYFNhnAFD0BwDnFwVWFQAWbhoAdGJRSwC4drMAoFPXpQeA6F28c6MAoFN3lx2fD6DfHwASng+g5Q8AErYGdrn0r+UPAPpvDZyUFABU/QNARV0Bqv4BIGFXgAN/AKA+t2MHgLmbAACjmI8VABT+AUClBYEK/wAgYUHgOW/6M/AAML6LIQOAE/8AoAyroQKAtj8AqLwt8JQAsDbQAFCUdd8BwNM/ADSwCuDpHwASrgIcM/lfGVwAKNpVHwFgaWABoGjLrgOAvn8AaOhcAKf+AUBbFl0FAGf+A0A9DnpHwCEBYGYwAaAqsy4CwK2BBICq3J4bALT+AUCDLYFa/wAgYUvgawFA8R8A1FsMeFIAUPwHAI0WA+4LACsDBwBVWx0bACYGDQCaMDkmAFj+B4CGtwEs/wNAwm0Ay/8AkHAb4KUAMDVQANCU6SEBYGmgAKApy0MCwJ2BAoCm3L0WAJz9DwBtutoXAOYGCACaNN8XALT/AUCCdkAv/wGAHO4/FgDs/wNAkjoAx/8CQB6zlwLAwsAAQNMWLwWAWwMDAE27fSkAGBgAaN8vAoACQABIVAioABAAEhYCbgPAjQEBgBRudgPA2oAAQArr3QCgAwAAEnUC6AAAgISdADH5TwwEAKQyiQBwbSAAIJXrCABTAwEAqUy1AAJAwlZAAQAAkgaApYEAgFSWDgECgHzWAgAACAAAQJYAcG8gACCVe8cAA0BCAgAACAAAgAAAAAgAAIAAAAAIAACAAAAACAAAgAAAAAgAAIAAAAAIAACAAAAACAAAgAAAAAgAAIAAAAAIAAAgAAAAAgAAIAAAAAIAACAAAAACAAAgAAAAAgAAIAAAAAIAACAAAAACAAAgAAAAAgAAIAAAAAIAACAAAIAAAAAIAACAAAAACAAAgAAAAAgAAIAAAAAIAACAAAAACABARz778t3D7Pf/8cHv/vi3g+z+mfg7jCUIAEBhE/ybt++fJu3Vn+8f/vTu7w9/+eEfD31d8XfHvxH/Vvyb8W8LCCAAAD2Kp/HPv/7xafLtc5I/JxzEzxY/Y/ys7hkIAMAJtk/28cRd6xU/+3alwD0FAQD4yHJ+PD3XPOEfEgjid7RtAAIApJ/0v/r2p4e//uf/PGS74neO310YAAEAUvj0i+/TTvqvhYEYG58REACgGf/yr//+8Ns//FBk8V6JxYQxVjFmPjsgAEC1T/tRGf9f//2/ZvYjrxizGDurAiAAQFUtey0X841RPKi1EAQAKJZl/mG2B3zWQACAYiZ+RX3DFg0KAiAAwKhL/Sb+cYOArQEQAMAevxoBQACAftr5ojLdVeYV90b7IAgA0Kk4wlY7Xx3tg3GvfGZBAICzxFG1Kvvr7BhwzDAIAHCSeJOdq+4r7qHPMggA4KnfagAgAICnfqsBIABA+gp/rX05WgZ1CoAAAB/6+lX45+oUcG4ACABo7zMjJr20CyIAGAQc6uNKejk8CAEAkk3+qvxdu10CQgACACRo8bPf73qpLkCrIAIAKPZzKQ4EAQBaEO+Pz37F63OjDW4frzd+ePqs+D+DAAAm/6p63KOoLQ68efP2/dPT7Dl72/Fn4++Ivyv+zvi7s5yVIAQgAIDJv9jCta++/enp9/v0i+8HH9f4N+Pfjp+h1YJKIQABAEz+RSzfx2QbT+MlVqzHzxQ/W/yMLW0jCAEIAGDyH2XSj6X3GqvT42eOn72FMCAEIACAyX+QSvR4im6pJS1+l/idau7AEAIQAMDk31sBX4ZJJn7HWgsJhQAEACi4z7+2KyrrMx5AE79zjUcxOycAAQCc8Hf2xD9G9X5pYgxqCgJODEQAgMIq0GuZ/E389QeB+Kx5dwACABQw+dfQhx773p4cD1vJqaFGwAuEEABgZKU/NUYbXPTHu1fHiTErvYUwPnvuFQIAjODzr38seoKI1jdPieet7sQYlnzFZ9C9QgAAFf8fnvpVi3d7r0teDXCvEQBA0Z+n/oSrAYoCEQBgICUWicUkYK9/mNqAEsNffCb7Kop03xEA4FGcL19iRbjWvmFbBkvs/IjPZtfdEH0FCxAAqK5FTCU4JXeAnPvEHlsJu7+XAIAAAI9Ke+pTAa4T5KXVoHN+l+fbGwIAAgCW/gta+o8vaS+GKUfci5LqAo7dCtjX5SAAIABg6d9Z8LzyGSkpBBzyGYlahtcKWrusKwABAEv/Jn8hYMStgGNaGgUABADs8Zr8qSwEvFQjcux2hQCAAIADf0z+VBYCdg8Iin3+U1ayBAAEALR5mfypMAR8893PT0o4WwAEAKpQwln/Jn8hoKXDhUAAoAolHPer1a+NFkEBAAQAPP075EchaVWXzyECAKmM/epXx/uqJynl8qphBAAs2VZwlCvOkxAAEACgwqf/KBjzVr92xb2trShQAEAAwNP/AFe8a959aFvcYwEABAAs0X644mhW9yCHQ4/hFQAQAKDxyv/Ydtie2Eb74l6PXWgqACAAQAF9/75kBU4BAAEARirOsvSPrYBfX06iRABAj7alfxJuBbhPCAA0/SU8VmuWqn9K7wpwjxAA0PrX8RU1B8af2GMv+WwA9wgBAK1/9lbpuO7knNf0CgAIAFBh8Z+z/nNvOcUb9mo5EdA9QwCg6SXYmJCH/EJ23G/e7aZa+v8FAAQA0n1B970s6+k/Z8gc85wJAQABAI5Ypo33oPdRH+DpP9fnqNbXAG9fTuU+IgCQuk4gDmzpYunW038eNe3z61RBAICe6wVU/ufo669tn18AQACAHusFfJm2v1JU6z6/zywCAPRYLxCBwXg5TEoAAAGARPUCiqlybA+1svQvACAAQEf1At74p9dfAAABgKTbBMZBF4AAAAIAkCT41RwEosjVfUQAADijNqTGA4EivLh/CAAAyYKAAIAAANBxgWgNZwYIAAgAAD0FgT7eNyEAIAAAaB0UABAAAEoPAiV1DAgACAAACVsHBQAEAIARgkCcIDnmFe+4cC8QAACStQ5GkaJ7gAAAMKLPvnw3eOugAIAAAJDwDAEBAAEAoDBv3r7vvXVQAEAAAEh4hoAAgAAAkLB1UABAAABIGAQEAAQAgIStg9F5YDwRAAAqDALffPfzyQHAGCIAACRsHTR2CAAAjQSBYzoGjBkCAEDC1kFjhQAA0KB42c++jgFjhAAAkLB10PggAAAkCALPWweNCwIATXy5GQc4/AyBWBEwHggAVC++zOJLLb7cjAcIzQgAJLF7RRDw5QYgAJAsAMQVKwJR+CQIAAgAJAoAu0EgWqGMEYAAQKIAsL3iUJQ4HMVYAQgAJAoAu0HAK1ABBACSBYDtFS9OEQQABACSBYDtFa9S1ToIIABQoc++fPdw7uUMAQABgMrEUn4Xl9ZBAAGAhAFAEAAQAEgcALQOAggAJA4Au0Hgzdv3xhpAACBTANA6CCAAkDgA7AaB6Dww9gACAIkCgNZBAAGAAsTLfsa8vvr2Jx0DAAIAQ4uWvbEvrYMAAgAJA8BuENA6CCAAkCwAOEMAQAAgcQDYXn/54R9aBwEBALIFAGcIAAIAJA4AWgcBAQASBwBBABAAoCPffPfzQ42X1kFAAIAzxP56zdc2CLiXuQh+CACQPABoHcwpTpCM8BfbQQpEEQAgcQDYDQImhPbF5P/8vkcoUBuCAABJA8D2shrQrri3r50fEe+4sE2AAACJAkD8Pp4CfWa3VxS5CoMIANB4DcCbt+/d08Z99uW7k4tF1QsgAIAuACoVk3gXYVG9AAIAiqmeFVPVdiCQfd48YsLu430T6gUQAEip1n1+S7me/ru+1AsgACAA6PUnwdO/egEEAAQAx/6S/On/Y5c6AQQABICRrliW9SWs8n+MK+oDjD8CAALACE/9lmAZs1PFdhMCAALASJe+fuIzMFYAteWEAIAAMGLRny/hvOLex2dgrBZT9wABAHurI15xYIt7lVPc+7EudScIADQt9thruNQC+GwOfc6Ee4AAgC9ZWwEkWvoXOBEAEABsBZBw6V/rHwIAAoCuABJV/Wv9QwBAACj8REDFWe2Kezvmy6li28F9QABAACj0skTbrri3nv5BAEAA0KOdyFhn/Xv6RwAgpXgPeq1X/Ozuoc+hyn8EADhBvGGv5suSbf3iHo596ftHAEAAqOyKgrE4zdC9rFPcuzGL/jz9IwAgAJxwxWt6gxBAzZO/ehIEAASAI6rwt09McWJbCV/iQoDJ/9TPjRMmEQAQAA74snxpz72UQkIhwOSvkBQBADoOAHE0674npbH7t4UAk7/zJBAAoMMAENXRh5y8V9JrhYUAk/8hl88IAgCpxQT/sUNRjq2MLqmj4GPbFYzX6lfS5B+fVfcFAQAB4NnEec6+aClbAfZ4HfJj6R8BAA4MANEOdW5FdElbAdq8xjf28b6W/hEAYE8ACF1+KZZ4uFA89XmL4HBirEtbDbL0jwAAz57Yh6wtGLsuIN417773K8a4pP1+x/0iAMCASjkg6JSWRk6/5zG2pR4Z7Z4jAMBASn7V8CldDuy/1zGmpV7uNQIAJK8AtxqQ56lfJwgCAKgEf3U1QG3AaXv9JT/16wBBAIACnhJLrAh/qUhMi9hhhaMlFnm+1PlhdQcBABQFHvXUqGXw5da+0ldzFP0hAEChT461hABBoM6J37sgEABAZ0CnQSDjhBK/c00Tv4p/BAAoXLwYpsYr9r0zvGAofsca9vhfurwACgEAhIBel5ij9a2lVYH4XeJ3qmmLxuSPAABCwKgthHG+fI1hIH7m+NlLb+Uz+SMAgBBQfBiIp+jojy+xAj1+pvjZ4mdsYdI3+SMAgBBQbB96TLbx+43RTRD/Zvzb8TPUcA6DyR8EAISAZq8orovK+lh6j6fxqFg/Z7Ug/mz8HfF3xd8Zf3etBXwmfxAAEALSXrE0HxP4Pi0t35v8QQCAD+cE1FyJ7uq/A0OfPwIAODHQlWzyd8IfAgA0rpYXCLmGK6h0tj8CACQKATUeRevq9orPgMkfAQAS+vzrH82CSa+49/4PIACA4kAzomI/EAAg45ZAlh73zFfcY0v+IADAr8SBN642r7i3PuMgAMDeVkFdAm1V+WvxAwEArAZ46gcEALAa4KkfBABgT7ugToE6Kvy194EAAA4PcqgPIABAd+cGaBksq7VPXz8IADBoEPD63PGuGHsTPwgAMJp4f7wgMOzEH2PuswcCABQTBHQM9FvZb+IHAQDUCNjjBwQAKM+nX3z/VJmuffC0dr4YuxhDnyUQAKDa9kHbA8ct82vnAwEAmlsV+OrbnxQNPivqizHxtA8CAKQQR9VmDQPbSd9xvSAAQPowEEfYtlw8GL9b/I4mfRAAgI948/b905vsag4E8bPH7xC/i3sKAgBwYmthPD1HZXyJxYTxM8XPFj+jlj0QAICetw22KwUx+cYTd5/hIP7u+Dfi39o+2VvOBwEAKDAgxNP4Vkzah9j9MyZ4EAAAAAEAABAAAAABAAAQAAAAAQAAEAAAAAEAABAAAAABAAAQAAAAAQAAEAAAAAEAABAAAEAAAAAEAABAAAAABAAAQAAAAAQAAEAAAAAEAABAAAAABAAAQAAAAAQAAEAAAAAEAABAAAAABAAAQAAAAAHAQACAAAAACAAAgAAAAAgAAIAAAAAIAACAAAAACAAAgAAAAAgAAIAAAAAIAADAmQHg3kAAQCr3EQDWBgIAUlkLAAAgAAAAWQLA0kAAQCrLCAA3BgIAUrkRAAAgaQCYGggASGUaAeDaQABAKtcRACYGAgBSmUQAcBwwAOTyyTYA3BoMAEjhdjcArA0IAKSw3g0AWgEBIEkL4G4AmBkQAEhhthsArgwIAKRwtRsAdAIAQJIOgOcBQCcAACToAHgeABYGBgCatngpACgEBIAEBYDPA4BCQABIUAD4PACEe4MDAE26353znweAlQECgCat9gWAuQECgCbN9wUAdQAA0Pj+/0sBINwZJABoyt3z+f6lALA0UADQlOUhAWBqoACgKdNDAsDEQAFAUyaHBADtgADQaPvfawFgZsAAoAmzYwKAbQAAaHT5f18AsA0AAI0u/78WAGwDAECDy/+vBQAvBwKAet3vm+NfCwBLAwgAVVqeEwC8GwAA6nR1TgAItwYRAKpy+9r8fkgAUAwIAI0U/x0TACaKAQGgquK/SRcBICwMKABUYXHI3H5oALgwoABQhYsuA4CWQACovPXv1ACgJRAAKm79OzUAhLXBBYAirY+Z048NANcGGACKdN1nALAKAACVP/2fGgCsAgBAxU//pwaAsDLYAFCE1Slz+akBwLkAAFBR339XAcDpgAAwvsWp8/g5AcA7AgBgPAed+d9HAAhzNwAARjE/Zw4/NwCEWzcBAAZ1e+783UUA0BYIAIW3/fURABQEAkAFhX99BAAFgQBQeOFfHwEgTN0YAOjVtKt5u8sA4IRAAOjPqss5u+sAEMsSd24SAHTqrqul/74CgK4AACiw6n+IAKArAAAKq/ofKgA4IAgAznfb1zzdZwC40BoIAGe1/F3UGAC0BgJAAS1/YwSAcOMmAsBRbvqen4cIAM4HAICR+v3HDgATRYEAcFDR36SlAKAoEABGLPobMwCEKyEAAF6c/K+GnJOHDgA6AwBg4Ir/UgJAmLnZAPBkNsZcPFYAEAIAYKTJf+wAEOZuPgBJzcecg8cOAGHpQwBAMsux598SAoAQAIDJP2kAsB0AgGX/pAFAYSAACv6SBgAhAACTf9IAsD0syImBANTu/nKEQ35qDgCODQaghcn/qtR5tuQAsH2BkLcIAlCb28sBX+zTYgDYvkp45cMEQCVWlwO90rf1ALB140MFQOFuaplXawoAigMBUOyXNACoCwDAfn/SALC18KEDYGSLWufRmgNAuH505wMIwMDuNnPQJwKALgEAVPkLAAoEAVDoJwAMuRqgNgCAPvb6Jy3Nma0FgN3aAJ0CAHRR4X/d4lzZagDYmtsWAODE5f55y3Nk6wHAtgAA6Zf7swaA3QOEdAsAsK+6/yLLvJgpAOzWB6x90AHYWLe6zy8ACAIAmPgFgGeuHi39RwBIY7n57k89/wkAv6wRWOgaAGi2qn+RaY9fADita2B26RwBgFb6+GcZqvoFgH62B6wKANT1tG+ZXwDozEwbIUDxbXwz85UA0PcWgTAAUM6kb4lfABg8DEw3S013/iMC9O5u8507NekLAKXVDMw3iVTdAEA3+/mrzXerPX0BoKpAMNu0nugqADisan+x+e404QsATYaCm8v/O4VKMACyTvTrzXehyV4ASF9PcL3Z17rZWG7+g2zZVgBKX67f/c5a7nyfTTffcfbtC/FPNV8gosxP8ogAAAAASUVORK5CYII="};</script>
+  <script type="module">
+const core = (() => {
+/* Drives Sync - core engine.
+   Shared by the web app (app.js), the window.DrivesSync agent API and the Node agent CLI
+   (agent/drives-sync-cli.mjs). Runs in any modern browser and in Node 18+. No dependencies.
+
+   One-way, additive synchronisation:
+     Stock Matching   Google Drive folder  -> GitHub repository folder   (never deletes)
+     Flow Matching    device folder        -> Google Drive -> GitHub     (never deletes)
+   Every operation starts with a preflight; if any check fails the operation is "braked":
+   nothing is written and the reasons are returned to whoever asked (person or agent). */
+
+const VERSION = '1.0.0';
+const MANIFEST_DIR = '.drives-sync';
+const MANIFEST_FILE = '.drives-sync/manifest.json';
+
+const GOOGLE_SCOPE_DRIVE = 'https://www.googleapis.com/auth/drive';
+const GOOGLE_SCOPE_DRIVE_READONLY = 'https://www.googleapis.com/auth/drive.readonly';
+const GOOGLE_SCOPE_EMAIL = 'https://www.googleapis.com/auth/userinfo.email';
+const GOOGLE_SCOPES = [GOOGLE_SCOPE_DRIVE, GOOGLE_SCOPE_EMAIL];
+
+const GOOGLE_FOLDER = 'application/vnd.google-apps.folder';
+const GOOGLE_SHORTCUT = 'application/vnd.google-apps.shortcut';
+
+const DRIVE_API = 'https://www.googleapis.com/drive/v3';
+const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const GOOGLE_TOKENINFO_URL = 'https://oauth2.googleapis.com/tokeninfo';
+const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GITHUB_API = 'https://api.github.com';
+
+/** Export formats for Google-native documents (they have no bytes of their own). */
+const GOOGLE_EXPORTS = {
+  'application/vnd.google-apps.document': {
+    key: 'document', label: 'Google 문서', default: 'docx',
+    formats: {
+      docx: { mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', ext: 'docx' },
+      pdf: { mime: 'application/pdf', ext: 'pdf' },
+      md: { mime: 'text/markdown', ext: 'md' },
+      txt: { mime: 'text/plain', ext: 'txt' },
+      html: { mime: 'text/html', ext: 'html' },
+    },
+  },
+  'application/vnd.google-apps.spreadsheet': {
+    key: 'spreadsheet', label: 'Google 스프레드시트', default: 'xlsx',
+    formats: {
+      xlsx: { mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', ext: 'xlsx' },
+      pdf: { mime: 'application/pdf', ext: 'pdf' },
+      csv: { mime: 'text/csv', ext: 'csv' },
+    },
+  },
+  'application/vnd.google-apps.presentation': {
+    key: 'presentation', label: 'Google 프레젠테이션', default: 'pptx',
+    formats: {
+      pptx: { mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', ext: 'pptx' },
+      pdf: { mime: 'application/pdf', ext: 'pdf' },
+      txt: { mime: 'text/plain', ext: 'txt' },
+    },
+  },
+  'application/vnd.google-apps.drawing': {
+    key: 'drawing', label: 'Google 드로잉', default: 'png',
+    formats: {
+      png: { mime: 'image/png', ext: 'png' },
+      svg: { mime: 'image/svg+xml', ext: 'svg' },
+      pdf: { mime: 'application/pdf', ext: 'pdf' },
+    },
+  },
+  'application/vnd.google-apps.script': {
+    key: 'script', label: 'Apps Script', default: 'json',
+    formats: { json: { mime: 'application/vnd.google-apps.script+json', ext: 'json' } },
+  },
+  'application/vnd.google-apps.jam': {
+    key: 'jam', label: 'Jamboard', default: 'pdf',
+    formats: { pdf: { mime: 'application/pdf', ext: 'pdf' } },
+  },
+};
+
+const DEFAULT_CONFIG = {
+  google: {
+    clientId: '',
+    clientSecret: '',
+    expectedEmail: 'honggusangjoon@gmail.com',
+    sourceFolderId: 'root',          // 'root' = the whole "My Drive"
+    sourceFolderName: '내 드라이브 전체',
+    exports: { document: 'docx', spreadsheet: 'xlsx', presentation: 'pptx', drawing: 'png', script: 'json', jam: 'pdf' },
+  },
+  github: {
+    owner: 'hongguqaz',
+    repo: 'Drive',
+    branch: '',                      // '' = the repository's default branch
+    targetPath: 'fin-lab/FinResearchRaw',
+    expectedLogin: 'hongguqaz',
+  },
+  flow: {
+    driveSubPath: 'DrivesSync',      // under the Stock source folder: DrivesSync/<device>/<folder label>
+  },
+  limits: {
+    maxFileBytes: 100 * 1024 * 1024, // GitHub refuses larger blobs
+    exportMaxBytes: 10 * 1024 * 1024, // Google export limit
+    batchFiles: 20,
+    batchBytes: 48 * 1024 * 1024,
+    concurrency: 3,
+    uploadChunkBytes: 16 * 1024 * 1024, // multiple of 256 KiB
+  },
+  automation: { enabled: false, intervalMinutes: 30, keepAwake: false, notify: false },
+  device: { id: '', name: '' },
+};
+
+/* ------------------------------------------------------------------ small helpers */
+
+function nowIso() { return new Date().toISOString(); }
+
+function deepMerge(base, patch) {
+  if (patch === undefined || patch === null) return base;
+  if (Array.isArray(base) || Array.isArray(patch) || typeof base !== 'object' || typeof patch !== 'object' || base === null) return patch;
+  const out = { ...base };
+  for (const [k, v] of Object.entries(patch)) out[k] = k in base ? deepMerge(base[k], v) : v;
+  return out;
+}
+
+function withDefaults(config) { return deepMerge(structuredClone(DEFAULT_CONFIG), config || {}); }
+
+function sleep(ms, signal) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(resolve, ms);
+    if (signal) signal.addEventListener('abort', () => { clearTimeout(t); reject(abortError()); }, { once: true });
+  });
+}
+
+function abortError() {
+  const e = new Error('중지되었습니다.');
+  e.name = 'AbortError';
+  return e;
+}
+
+function throwIfAborted(signal) { if (signal && signal.aborted) throw abortError(); }
+
+/** Run async jobs with at most `n` in flight. */
+function pLimit(n) {
+  let active = 0;
+  const queue = [];
+  const next = () => {
+    if (active >= n || !queue.length) return;
+    active++;
+    const { fn, resolve, reject } = queue.shift();
+    Promise.resolve().then(fn).then(resolve, reject).finally(() => { active--; next(); });
+  };
+  return (fn) => new Promise((resolve, reject) => { queue.push({ fn, resolve, reject }); next(); });
+}
+
+function formatBytes(n) {
+  if (!Number.isFinite(n)) return '?';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  let v = n;
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+  return `${i === 0 ? v : v.toFixed(v < 10 ? 2 : 1)} ${units[i]}`;
+}
+
+async function blobToBase64(blob) {
+  if (typeof Buffer !== 'undefined') return Buffer.from(await blob.arrayBuffer()).toString('base64');
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onerror = () => reject(r.error || new Error('파일을 읽을 수 없습니다.'));
+    r.onload = () => resolve(String(r.result).split(',', 2)[1] || '');
+    r.readAsDataURL(blob);
+  });
+}
+
+function utf8ToBase64(str) {
+  if (typeof Buffer !== 'undefined') return Buffer.from(str, 'utf8').toString('base64');
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+function base64UrlEncode(bytes) {
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  const b64 = typeof btoa === 'function' ? btoa(bin) : Buffer.from(bin, 'binary').toString('base64');
+  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function randomId(len = 16) {
+  const bytes = new Uint8Array(len);
+  globalThis.crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** A path segment that git, Windows and macOS all accept. */
+function sanitizeSegment(name) {
+  let s = String(name ?? '')
+    .replace(/[\\/:*?"<>|\u0000-\u001f\u007f]/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[. ]+$/g, '');
+  if (!s || s === '.' || s === '..') s = '_';
+  if (s.startsWith('.git')) s = '_' + s;
+  return s.length > 180 ? s.slice(0, 180) : s;
+}
+
+function splitPath(p) { return String(p ?? '').split('/').map((s) => s.trim()).filter((s) => s && s !== '.'); }
+
+function joinPath(...parts) { return parts.flatMap(splitPath).join('/'); }
+
+function isSyncNoise(name) {
+  return /^(\.DS_Store|Thumbs\.db|desktop\.ini|\.~lock\..*#|~\$.*|.*\.(tmp|crdownload|part|partial|download|swp))$/i.test(name) || name.startsWith('._');
+}
+
+const MIME_BY_EXT = {
+  pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', heic: 'image/heic',
+  svg: 'image/svg+xml', mp4: 'video/mp4', mov: 'video/quicktime', mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav',
+  txt: 'text/plain', md: 'text/markdown', csv: 'text/csv', json: 'application/json', html: 'text/html', xml: 'application/xml',
+  zip: 'application/zip', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt: 'application/vnd.ms-powerpoint', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  hwp: 'application/x-hwp', hwpx: 'application/hwp+zip',
+};
+
+function guessMime(name, fallback = 'application/octet-stream') {
+  const ext = String(name).split('.').pop().toLowerCase();
+  return MIME_BY_EXT[ext] || fallback;
+}
+
+class HttpError extends Error {
+  constructor(status, url, body, message) {
+    super(message || `HTTP ${status} (${shortUrl(url)})`);
+    this.name = 'HttpError';
+    this.status = status;
+    this.url = url;
+    this.body = body;
+  }
+}
+
+/** Thrown when a brake stops an operation before anything is written. */
+class BrakeError extends Error {
+  constructor(reasons, preflight) {
+    const list = Array.isArray(reasons) ? reasons : [reasons];
+    super('작업이 중단되었습니다: ' + list.join(' / '));
+    this.name = 'BrakeError';
+    this.reasons = list;
+    this.preflight = preflight || null;
+  }
+}
+
+function shortUrl(url) {
+  try { const u = new URL(url); return u.host + u.pathname; } catch { return String(url); }
+}
+
+function noop() {}
+
+/** fetch with retries for network errors, 429 and 5xx. */
+async function fetchRetry(fetchImpl, url, init = {}, { retries = 3, signal, log = noop, label } = {}) {
+  let attempt = 0;
+  for (;;) {
+    throwIfAborted(signal);
+    let res;
+    try {
+      res = await fetchImpl(url, { ...init, signal });
+    } catch (e) {
+      if (e && e.name === 'AbortError') throw abortError();
+      if (attempt >= retries) throw new HttpError(0, url, null, `네트워크 오류 (${shortUrl(url)}): ${e.message}`);
+      attempt++;
+      log('warn', `네트워크 오류, ${attempt}번째 재시도: ${label || shortUrl(url)}`);
+      await sleep(1000 * 2 ** (attempt - 1), signal);
+      continue;
+    }
+    if ((res.status === 429 || res.status === 502 || res.status === 503 || res.status === 504 || res.status === 500) && attempt < retries) {
+      attempt++;
+      const ra = Number(res.headers.get('retry-after'));
+      const wait = Number.isFinite(ra) && ra > 0 ? Math.min(ra * 1000, 60000) : 1000 * 2 ** (attempt - 1);
+      log('warn', `HTTP ${res.status}, ${Math.round(wait / 1000)}초 후 재시도: ${label || shortUrl(url)}`);
+      await sleep(wait, signal);
+      continue;
+    }
+    return res;
+  }
+}
+
+async function readError(res) {
+  let body = null;
+  try {
+    const text = await res.text();
+    try { body = JSON.parse(text); } catch { body = text; }
+  } catch { /* ignore */ }
+  const msg = body && typeof body === 'object'
+    ? (body.error && (body.error.message || body.error)) || body.message || res.statusText
+    : (body || res.statusText);
+  return new HttpError(res.status, res.url, body, `HTTP ${res.status} (${shortUrl(res.url)}): ${typeof msg === 'string' ? msg : JSON.stringify(msg)}`);
+}
+
+function qs(params) {
+  const u = new URLSearchParams();
+  for (const [k, v] of Object.entries(params || {})) if (v !== undefined && v !== null && v !== '') u.set(k, String(v));
+  const s = u.toString();
+  return s ? '?' + s : '';
+}
+
+/* ------------------------------------------------------------------ Google OAuth helpers */
+
+async function pkcePair() {
+  const bytes = new Uint8Array(32);
+  globalThis.crypto.getRandomValues(bytes);
+  const verifier = base64UrlEncode(bytes);
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  return { verifier, challenge: base64UrlEncode(new Uint8Array(digest)) };
+}
+
+function googleAuthUrl({ clientId, redirectUri, scopes = GOOGLE_SCOPES, state, codeChallenge, loginHint }) {
+  const p = new URLSearchParams({
+    client_id: clientId, redirect_uri: redirectUri, response_type: 'code', scope: scopes.join(' '),
+    access_type: 'offline', prompt: 'consent', include_granted_scopes: 'true',
+  });
+  if (state) p.set('state', state);
+  if (codeChallenge) { p.set('code_challenge', codeChallenge); p.set('code_challenge_method', 'S256'); }
+  if (loginHint) p.set('login_hint', loginHint);
+  return `${GOOGLE_AUTH_URL}?${p}`;
+}
+
+async function googleTokenRequest(fetchImpl, params, { signal } = {}) {
+  const res = await fetchRetry(fetchImpl, GOOGLE_TOKEN_URL, {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(params).toString(),
+  }, { signal, retries: 1 });
+  if (!res.ok) throw await readError(res);
+  return res.json();
+}
+
+async function googleTokenInfo(fetchImpl, accessToken, { signal } = {}) {
+  const res = await fetchRetry(fetchImpl, GOOGLE_TOKENINFO_URL + qs({ access_token: accessToken }), {}, { signal, retries: 1 });
+  if (!res.ok) throw await readError(res);
+  return res.json();
+}
+
+/** Google auth from a refresh token (browser long-running mode and the Node CLI). */
+class RefreshTokenGoogleAuth {
+  constructor({ clientId, clientSecret, refreshToken, accessToken, expiresAt, scope, fetch: fetchImpl, onUpdate }) {
+    this.clientId = clientId;
+    this.clientSecret = clientSecret;
+    this.refreshToken = refreshToken;
+    this.accessToken = accessToken || null;
+    this.expiresAt = expiresAt || 0;
+    this.scope = scope || '';
+    this.fetch = fetchImpl || globalThis.fetch.bind(globalThis);
+    this.onUpdate = onUpdate || noop;
+    this.mode = 'refresh';
+  }
+  describe() { return '장기 인증 (refresh token)'; }
+  async getAccessToken() {
+    if (!this.refreshToken) return null;
+    if (this.accessToken && Date.now() < this.expiresAt - 60000) return { token: this.accessToken, scope: this.scope };
+    const data = await googleTokenRequest(this.fetch, {
+      client_id: this.clientId, client_secret: this.clientSecret, refresh_token: this.refreshToken, grant_type: 'refresh_token',
+    });
+    this.accessToken = data.access_token;
+    this.expiresAt = Date.now() + (data.expires_in || 3600) * 1000;
+    if (data.scope) this.scope = data.scope;
+    this.onUpdate({ accessToken: this.accessToken, expiresAt: this.expiresAt, scope: this.scope });
+    return { token: this.accessToken, scope: this.scope };
+  }
+}
+
+/** Google auth from a plain access token (e.g. GOOGLE_ACCESS_TOKEN in an agent's environment). */
+class StaticGoogleAuth {
+  constructor({ accessToken, scope, fetch: fetchImpl }) {
+    this.accessToken = accessToken || null;
+    this.scope = scope || '';
+    this.fetch = fetchImpl || globalThis.fetch.bind(globalThis);
+    this.mode = 'static';
+  }
+  describe() { return '액세스 토큰'; }
+  async getAccessToken() {
+    if (!this.accessToken) return null;
+    if (!this.scope) {
+      try { const info = await googleTokenInfo(this.fetch, this.accessToken); this.scope = info.scope || ''; } catch { this.scope = ''; }
+    }
+    return { token: this.accessToken, scope: this.scope };
+  }
+}
+
+class StaticGitHubAuth {
+  constructor(token) { this.token = token || null; }
+  async getToken() { return this.token; }
+}
+
+/* ------------------------------------------------------------------ Google Drive client */
+
+function driveQuote(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+class GoogleDrive {
+  constructor(auth, { fetch: fetchImpl, log, signal, chunkBytes } = {}) {
+    this.auth = auth;
+    this.fetch = fetchImpl || globalThis.fetch.bind(globalThis);
+    this.log = log || noop;
+    this.signal = signal;
+    this.chunkBytes = chunkBytes || DEFAULT_CONFIG.limits.uploadChunkBytes;
+    this._folderCache = new Map();
+    this._rootId = null;
+  }
+
+  async _headers(extra = {}) {
+    const t = await this.auth.getAccessToken();
+    if (!t) throw new BrakeError('Google Drive에 로그인되어 있지 않습니다.');
+    return { Authorization: `Bearer ${t.token}`, ...extra };
+  }
+
+  async api(path, { method = 'GET', query, body, headers, raw = false, retries = 3 } = {}) {
+    const url = (path.startsWith('http') ? path : `${DRIVE_API}/${path}`) + qs(query);
+    const init = { method, headers: await this._headers(headers) };
+    if (body !== undefined) {
+      init.headers['Content-Type'] = 'application/json; charset=UTF-8';
+      init.body = JSON.stringify(body);
+    }
+    const res = await fetchRetry(this.fetch, url, init, { retries, signal: this.signal, log: this.log });
+    if (!res.ok) throw await readError(res);
+    if (raw) return res;
+    if (res.status === 204) return null;
+    return res.json();
+  }
+
+  async about() {
+    const data = await this.api('about', { query: { fields: 'user(emailAddress,displayName,permissionId),storageQuota(limit,usage)' } });
+    return { email: data.user?.emailAddress || '', name: data.user?.displayName || '', quota: data.storageQuota || null };
+  }
+
+  async getFile(id, fields = 'id,name,mimeType,modifiedTime,size,md5Checksum,parents') {
+    return this.api(`files/${encodeURIComponent(id)}`, { query: { fields } });
+  }
+
+  async rootId() {
+    if (!this._rootId) this._rootId = (await this.getFile('root', 'id')).id;
+    return this._rootId;
+  }
+
+  /** Every non-trashed file the account can see, in one paged listing. */
+  async listAll({ onPage } = {}) {
+    const files = [];
+    let pageToken;
+    do {
+      throwIfAborted(this.signal);
+      const data = await this.api('files', {
+        query: {
+          q: 'trashed = false', spaces: 'drive', pageSize: 1000, pageToken,
+          fields: 'nextPageToken,files(id,name,mimeType,modifiedTime,size,md5Checksum,parents)',
+          includeItemsFromAllDrives: 'false', supportsAllDrives: 'false',
+        },
+      });
+      files.push(...(data.files || []));
+      pageToken = data.nextPageToken;
+      if (onPage) onPage(files.length);
+    } while (pageToken);
+    return files;
+  }
+
+  async listChildren(parentId, { foldersOnly = false } = {}) {
+    const out = [];
+    let pageToken;
+    let q = `'${driveQuote(parentId)}' in parents and trashed = false`;
+    if (foldersOnly) q += ` and mimeType = '${GOOGLE_FOLDER}'`;
+    do {
+      const data = await this.api('files', { query: { q, pageSize: 1000, pageToken, fields: 'nextPageToken,files(id,name,mimeType,modifiedTime,size,md5Checksum)' } });
+      out.push(...(data.files || []));
+      pageToken = data.nextPageToken;
+    } while (pageToken);
+    return out;
+  }
+
+  async findChild(parentId, name, { folder = false } = {}) {
+    let q = `name = '${driveQuote(name)}' and '${driveQuote(parentId)}' in parents and trashed = false`;
+    if (folder) q += ` and mimeType = '${GOOGLE_FOLDER}'`;
+    const data = await this.api('files', { query: { q, pageSize: 10, fields: 'files(id,name,mimeType,modifiedTime,size,md5Checksum)' } });
+    const files = data.files || [];
+    files.sort((a, b) => (a.modifiedTime < b.modifiedTime ? 1 : -1));
+    return files[0] || null;
+  }
+
+  async ensureFolder(parentId, name) {
+    const key = `${parentId}/${name}`;
+    if (this._folderCache.has(key)) return this._folderCache.get(key);
+    let f = await this.findChild(parentId, name, { folder: true });
+    if (!f) {
+      f = await this.api('files', { method: 'POST', query: { fields: 'id,name' }, body: { name, mimeType: GOOGLE_FOLDER, parents: [parentId] } });
+      this.log('info', `Drive 폴더 생성: ${name}`);
+    }
+    this._folderCache.set(key, f.id);
+    return f.id;
+  }
+
+  async ensureFolderPath(parentId, segments) {
+    let id = parentId;
+    for (const seg of segments) id = await this.ensureFolder(id, seg);
+    return id;
+  }
+
+  async download(id) {
+    const res = await this.api(`files/${encodeURIComponent(id)}`, { query: { alt: 'media' }, raw: true });
+    return res.blob();
+  }
+
+  async export(id, mimeType) {
+    const res = await this.api(`files/${encodeURIComponent(id)}/export`, { query: { mimeType }, raw: true });
+    return res.blob();
+  }
+
+  /** Resumable upload; creates a new file, or replaces the content of `fileId`. */
+  async uploadFile({ parentId, name, blob, mimeType, fileId, modifiedTime }) {
+    const type = mimeType || blob.type || guessMime(name);
+    const fields = 'id,name,mimeType,md5Checksum,modifiedTime,size';
+    const meta = fileId ? {} : { name, parents: [parentId] };
+    if (modifiedTime) meta.modifiedTime = modifiedTime;
+    const initUrl = (fileId ? `${DRIVE_UPLOAD}/${encodeURIComponent(fileId)}` : DRIVE_UPLOAD) + qs({ uploadType: 'resumable', fields });
+    const init = await fetchRetry(this.fetch, initUrl, {
+      method: fileId ? 'PATCH' : 'POST',
+      headers: await this._headers({ 'Content-Type': 'application/json; charset=UTF-8', 'X-Upload-Content-Type': type }),
+      body: JSON.stringify(meta),
+    }, { signal: this.signal, log: this.log, label: `upload init ${name}` });
+    if (!init.ok) throw await readError(init);
+    const session = init.headers.get('location') || init.headers.get('Location');
+    if (!session) throw new Error(`업로드 세션을 시작하지 못했습니다: ${name}`);
+
+    const total = blob.size;
+    if (total === 0) {
+      const res = await fetchRetry(this.fetch, session, { method: 'PUT', headers: { 'Content-Type': type, 'Content-Length': '0' } }, { signal: this.signal, log: this.log });
+      if (!res.ok) throw await readError(res);
+      return res.json();
+    }
+    let start = 0;
+    let failures = 0;
+    while (start < total) {
+      throwIfAborted(this.signal);
+      const end = Math.min(start + this.chunkBytes, total);
+      let res;
+      try {
+        res = await this.fetch(session, {
+          method: 'PUT', signal: this.signal,
+          headers: await this._headers({ 'Content-Type': type, 'Content-Range': `bytes ${start}-${end - 1}/${total}` }),
+          body: await blob.slice(start, end).arrayBuffer(),
+        });
+      } catch (e) {
+        if (e && e.name === 'AbortError') throw abortError();
+        res = null;
+      }
+      if (res && res.status === 308) {
+        const range = res.headers.get('range') || res.headers.get('Range');
+        const m = range && /bytes=\d+-(\d+)/.exec(range);
+        start = m ? Number(m[1]) + 1 : end;
+        failures = 0;
+        continue;
+      }
+      if (res && res.ok) return res.json();
+      if (res && res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) throw await readError(res);
+      if (++failures > 5) throw new Error(`업로드가 반복해서 실패했습니다: ${name}`);
+      this.log('warn', `업로드 중단(${res ? 'HTTP ' + res.status : '네트워크'}), 이어서 재시도: ${name}`);
+      await sleep(1000 * 2 ** failures, this.signal);
+      // ask the session where to resume
+      let status = null;
+      try {
+        status = await this.fetch(session, { method: 'PUT', signal: this.signal, headers: await this._headers({ 'Content-Range': `bytes */${total}` }) });
+      } catch (e) { if (e && e.name === 'AbortError') throw abortError(); }
+      if (status && status.ok) return status.json();
+      if (status && status.status === 308) {
+        const range = status.headers.get('range') || status.headers.get('Range');
+        const m = range && /bytes=\d+-(\d+)/.exec(range);
+        start = m ? Number(m[1]) + 1 : 0;
+      } else if (status && status.status === 404) {
+        throw new Error(`업로드 세션이 만료되었습니다: ${name}`);
+      }
+    }
+    throw new Error(`업로드가 완료되지 않았습니다: ${name}`);
+  }
+}
+
+/** Files under `sourceId`, walking the parent links of a full listing. */
+function collectUnder(files, sourceId) {
+  const byParent = new Map();
+  for (const f of files) {
+    for (const p of f.parents || []) {
+      if (!byParent.has(p)) byParent.set(p, []);
+      byParent.get(p).push(f);
+    }
+  }
+  const items = [];
+  let folders = 0;
+  const seen = new Set();
+  const stack = [{ id: sourceId, dir: [] }];
+  while (stack.length) {
+    const { id, dir } = stack.pop();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const children = (byParent.get(id) || []).slice().sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+    for (const f of children) {
+      if (f.mimeType === GOOGLE_FOLDER) { folders++; stack.push({ id: f.id, dir: [...dir, f.name] }); } else items.push({ file: f, dir });
+    }
+  }
+  items.sort((a, b) => a.dir.join('/').localeCompare(b.dir.join('/')) || a.file.name.localeCompare(b.file.name) || a.file.id.localeCompare(b.file.id));
+  return { items, folders };
+}
+
+/* ------------------------------------------------------------------ GitHub client */
+
+class GitHubRepo {
+  constructor(auth, { owner, repo, branch, fetch: fetchImpl, log, signal } = {}) {
+    this.auth = auth;
+    this.owner = owner;
+    this.repo = repo;
+    this.branch = branch || '';
+    this.fetch = fetchImpl || globalThis.fetch.bind(globalThis);
+    this.log = log || noop;
+    this.signal = signal;
+    this._info = null;
+  }
+
+  get fullName() { return `${this.owner}/${this.repo}`; }
+  get base() { return `${GITHUB_API}/repos/${encodeURIComponent(this.owner)}/${encodeURIComponent(this.repo)}`; }
+
+  async _headers(extra = {}) {
+    const token = await this.auth.getToken();
+    if (!token) throw new BrakeError('GitHub 토큰이 없습니다.');
+    return { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', ...extra };
+  }
+
+  async api(path, { method = 'GET', body, headers, raw = false, retries = 3, allow = [] } = {}) {
+    const url = path.startsWith('http') ? path : (path.startsWith('/') ? GITHUB_API + path : (path ? `${this.base}/${path}` : this.base));
+    const init = { method, headers: await this._headers(headers) };
+    if (body !== undefined) { init.headers['Content-Type'] = 'application/json'; init.body = JSON.stringify(body); }
+    const res = await fetchRetry(this.fetch, url, init, { retries, signal: this.signal, log: this.log });
+    if (!res.ok && !allow.includes(res.status)) throw await readError(res);
+    if (raw) return res;
+    if (res.status === 204 || res.status === 404) return null;
+    return res.json();
+  }
+
+  async user() { return this.api('/user'); }
+
+  async repoInfo() {
+    if (!this._info) this._info = await this.api('');
+    return this._info;
+  }
+
+  async resolveBranch() {
+    if (this.branch) return this.branch;
+    const info = await this.repoInfo();
+    this.branch = info.default_branch;
+    return this.branch;
+  }
+
+  async branchHead() {
+    const branch = await this.resolveBranch();
+    const ref = await this.api(`git/ref/${encodeURI('heads/' + branch)}`);
+    const commit = await this.api(`git/commits/${ref.object.sha}`);
+    return { branch, commitSha: ref.object.sha, treeSha: commit.tree.sha };
+  }
+
+  _contentsUrl(path, ref) {
+    const p = splitPath(path).map(encodeURIComponent).join('/');
+    return `contents/${p}${qs({ ref })}`;
+  }
+
+  async contents(path, ref) {
+    return this.api(this._contentsUrl(path, ref || await this.resolveBranch()), { allow: [404] });
+  }
+
+  async readText(path, ref) {
+    const res = await this.api(this._contentsUrl(path, ref || await this.resolveBranch()), { raw: true, allow: [404], headers: { Accept: 'application/vnd.github.raw+json' } });
+    if (res.status === 404) return null;
+    return res.text();
+  }
+
+  async createBlobBase64(base64) { return (await this.api('git/blobs', { method: 'POST', body: { content: base64, encoding: 'base64' } })).sha; }
+
+  async createBlobText(text) { return (await this.api('git/blobs', { method: 'POST', body: { content: text, encoding: 'utf-8' } })).sha; }
+
+  /** A harmless write: an unreferenced blob, garbage-collected by GitHub. Proves Contents: write. */
+  async probeWrite() { return this.createBlobText(`Drives Sync write check ${nowIso()}\n`); }
+
+  async createTree(baseTree, tree) { return (await this.api('git/trees', { method: 'POST', body: { base_tree: baseTree, tree } })).sha; }
+
+  async createCommit(message, tree, parents) { return this.api('git/commits', { method: 'POST', body: { message, tree, parents } }); }
+
+  async updateRef(sha) {
+    const branch = await this.resolveBranch();
+    const res = await this.api(`git/refs/${encodeURI('heads/' + branch)}`, { method: 'PATCH', body: { sha, force: false }, raw: true, allow: [422, 409] });
+    if (res.status === 422 || res.status === 409) return false;
+    return true;
+  }
+
+  /**
+   * One commit on the branch. `buildEntries({head, attempt})` returns tree entries
+   * ({path, sha} for blobs already created, or {path, content} for text). When another
+   * writer moved the branch in between, it is called again against the new head.
+   */
+  async commitEntries({ message, buildEntries, maxAttempts = 4 }) {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      throwIfAborted(this.signal);
+      const head = await this.branchHead();
+      const entries = await buildEntries({ head, attempt });
+      const tree = entries.map((e) => (e.content !== undefined
+        ? { path: e.path, mode: '100644', type: 'blob', content: e.content }
+        : { path: e.path, mode: '100644', type: 'blob', sha: e.sha }));
+      const treeSha = await this.createTree(head.treeSha, tree);
+      const commit = await this.createCommit(message, treeSha, [head.commitSha]);
+      if (await this.updateRef(commit.sha)) return { sha: commit.sha, url: commit.html_url, branch: head.branch, files: entries.length, attempt };
+      this.log('warn', `브랜치가 그 사이 바뀌어 커밋을 다시 만듭니다 (${attempt + 1}/${maxAttempts})`);
+      await sleep(500 * (attempt + 1), this.signal);
+    }
+    throw new Error('브랜치가 계속 바뀌어 커밋하지 못했습니다. 잠시 후 다시 시도하세요.');
+  }
+}
+
+/* ------------------------------------------------------------------ manifest */
+
+function emptyManifest(config) {
+  const at = nowIso();
+  return {
+    app: 'Drives Sync', version: 1, createdAt: at, updatedAt: at,
+    source: { account: config.google.expectedEmail, folderId: config.google.sourceFolderId || 'root' },
+    target: { repo: `${config.github.owner}/${config.github.repo}`, path: config.github.targetPath },
+    files: {},        // Google Drive file id -> { path, fingerprint, kind, size, modifiedTime, syncedAt, by }
+    stock: { lastRun: null, runs: [] },
+    devices: {},      // device id -> { name, folders: { folder id -> { label, drivePath, lastRun, uploaded: { relPath -> {...} } } } }
+  };
+}
+
+async function loadManifest(github, targetPath, config) {
+  const path = joinPath(targetPath, MANIFEST_FILE);
+  const text = await github.readText(path);
+  if (!text) return { manifest: emptyManifest(config), existed: false, path };
+  try {
+    const manifest = JSON.parse(text);
+    manifest.files ||= {};
+    manifest.stock ||= { lastRun: null, runs: [] };
+    manifest.devices ||= {};
+    return { manifest, existed: true, path };
+  } catch (e) {
+    throw new Error(`매니페스트(${path})가 손상되었습니다: ${e.message}. 설정에서 매니페스트를 초기화하거나 파일을 고치세요.`);
+  }
+}
+
+function manifestText(manifest) { return JSON.stringify(manifest, null, 1) + '\n'; }
+
+/** Serialises batched commits. Each entry carries an `apply(manifest)` that records it;
+    `eachApply(manifest)` (the run's own bookkeeping) is applied in every commit, so the
+    last batch always carries the final state and no extra manifest-only commit is needed. */
+class Committer {
+  constructor(ctx, { manifest, manifestPath, message, eachApply }) {
+    this.ctx = ctx;
+    this.manifest = manifest;
+    this.manifestPath = manifestPath;
+    this.message = message;
+    this.eachApply = eachApply || noop;
+    this.pending = [];
+    this.pendingBytes = 0;
+    this.chain = Promise.resolve();
+    this.commits = [];
+    this.committed = 0;
+  }
+
+  add(entry) {
+    this.pending.push(entry);
+    this.pendingBytes += entry.size || 0;
+    const { batchFiles, batchBytes } = this.ctx.config.limits;
+    if (this.pending.length >= batchFiles || this.pendingBytes >= batchBytes) return this.flush();
+    return this.chain;
+  }
+
+  flush() {
+    const batch = this.pending;
+    this.pending = [];
+    this.pendingBytes = 0;
+    if (!batch.length) return this.chain;
+    this.chain = this.chain.then(() => this._commit(batch));
+    return this.chain;
+  }
+
+  async _commit(batch) {
+    const ctx = this.ctx;
+    const res = await ctx.github.commitEntries({
+      message: `${this.message} (+${batch.length})`,
+      buildEntries: async ({ attempt }) => {
+        if (attempt > 0) {
+          const reloaded = await loadManifest(ctx.github, ctx.config.github.targetPath, ctx.config);
+          this.manifest = reloaded.manifest;
+        }
+        for (const e of batch) e.apply(this.manifest);
+        this.eachApply(this.manifest);
+        this.manifest.updatedAt = nowIso();
+        return [...batch.map((e) => ({ path: e.path, sha: e.sha })), { path: this.manifestPath, content: manifestText(this.manifest) }];
+      },
+    });
+    this.committed += batch.length;
+    this.commits.push({ sha: res.sha, url: res.url, files: batch.length });
+    ctx.log('info', `GitHub 커밋 ${res.sha.slice(0, 7)}: 파일 ${batch.length}개`, { url: res.url });
+    ctx.progress({ phase: 'commit', committed: this.committed });
+  }
+}
+
+/* ------------------------------------------------------------------ context + preflight */
+
+/**
+ * ctx = { config, google: GoogleDrive, github: GitHubRepo, googleAuth, githubAuth, log, progress, signal, env }
+ */
+function createContext({ config, googleAuth, githubAuth, fetch: fetchImpl, log, progress, signal, env } = {}) {
+  const cfg = withDefaults(config);
+  const f = fetchImpl || globalThis.fetch.bind(globalThis);
+  const logger = log || noop;
+  return {
+    config: cfg,
+    googleAuth,
+    githubAuth,
+    google: new GoogleDrive(googleAuth, { fetch: f, log: logger, signal, chunkBytes: cfg.limits.uploadChunkBytes }),
+    github: new GitHubRepo(githubAuth, { owner: cfg.github.owner, repo: cfg.github.repo, branch: cfg.github.branch, fetch: f, log: logger, signal }),
+    log: logger,
+    progress: progress || noop,
+    signal,
+    env: env || {},
+  };
+}
+
+/**
+ * The brake. scope: 'stock' (read Drive, write GitHub), 'flow' (also write Drive),
+ * 'automation' (flow + the caller's extra checks). Never throws for a failed check.
+ */
+async function preflight(ctx, { scope = 'stock', extraChecks = [] } = {}) {
+  const cfg = ctx.config;
+  const checks = [];
+  const add = (id, label, ok, detail, extra = {}) => { checks.push({ id, label, ok: !!ok, detail, ...extra }); return ok; };
+
+  // ---- Google Drive
+  let gtoken = null;
+  let gerr = null;
+  try { gtoken = ctx.googleAuth ? await ctx.googleAuth.getAccessToken() : null; } catch (e) { gerr = e; }
+  if (!gtoken) {
+    add('google.token', 'Google Drive 로그인', false, gerr
+      ? `Google 토큰을 갱신할 수 없습니다: ${gerr.message}. 다시 로그인하세요.`
+      : '이 기기에 Google Drive가 로그인되어 있지 않습니다. "Google Drive 연결"로 로그인하세요.', { needLogin: true });
+  } else {
+    add('google.token', 'Google Drive 로그인', true, `토큰 확인 (${ctx.googleAuth.describe ? ctx.googleAuth.describe() : '토큰'})`);
+    try {
+      const about = await ctx.google.about();
+      const expected = (cfg.google.expectedEmail || '').trim();
+      if (!about.email) add('google.account', 'Google 계정 일치', false, 'Google 계정 이메일을 확인할 수 없습니다.');
+      else if (expected && about.email.toLowerCase() !== expected.toLowerCase()) {
+        add('google.account', 'Google 계정 일치', false,
+          `다른 Google 계정(${about.email})이 로그인되어 있습니다. 설정된 동기화 계정은 ${expected}입니다. 연결을 해제하고 올바른 계정으로 다시 연결하세요.`,
+          { mismatch: true, actual: about.email, expected });
+      } else add('google.account', 'Google 계정 일치', true, about.email, { actual: about.email });
+    } catch (e) {
+      add('google.account', 'Google 계정 일치', false, e.status === 401
+        ? 'Google 토큰이 만료되었거나 취소되었습니다. 다시 로그인하세요.'
+        : `Google 계정을 확인할 수 없습니다: ${e.message}`, { needLogin: e.status === 401 });
+    }
+    const scopes = String(gtoken.scope || '').split(/\s+/).filter(Boolean);
+    const full = scopes.includes(GOOGLE_SCOPE_DRIVE);
+    const readonly = full || scopes.includes(GOOGLE_SCOPE_DRIVE_READONLY);
+    if (scope === 'stock') add('google.scope', 'Drive 읽기 권한', readonly || scopes.length === 0, readonly ? '읽기 권한 확인' : (scopes.length ? '토큰에 Drive 읽기 권한이 없습니다. 다시 연결하면서 권한을 승인하세요.' : '권한 범위를 알 수 없어 실제 호출로 확인합니다.'));
+    else add('google.scope', 'Drive 쓰기 권한', full, full ? '쓰기 권한 확인' : '토큰에 Drive 쓰기 권한이 없습니다(업로드 불가). 다시 연결하면서 "Google Drive의 모든 파일 보기, 수정, 생성, 삭제" 권한을 승인하세요.');
+    try {
+      const id = cfg.google.sourceFolderId || 'root';
+      const f = await ctx.google.getFile(id, 'id,name,mimeType');
+      if (f.mimeType !== GOOGLE_FOLDER) add('google.source', 'Drive 원본 폴더', false, `원본(${f.name})이 폴더가 아닙니다.`);
+      else add('google.source', 'Drive 원본 폴더', true, `${id === 'root' ? '내 드라이브 전체' : f.name} (${f.id})`);
+    } catch (e) {
+      add('google.source', 'Drive 원본 폴더', false, `원본 폴더에 접근할 수 없습니다 (${cfg.google.sourceFolderId || 'root'}): ${e.message}`);
+    }
+  }
+
+  // ---- GitHub
+  const ghToken = ctx.githubAuth ? await ctx.githubAuth.getToken() : null;
+  if (!ghToken) {
+    add('github.token', 'GitHub 로그인', false, '이 기기에 GitHub 토큰이 저장되어 있지 않습니다. GitHub 토큰(fine-grained, Contents: Read and write)을 입력하세요.', { needLogin: true });
+  } else {
+    add('github.token', 'GitHub 로그인', true, '토큰 확인');
+    const expected = (cfg.github.expectedLogin || '').trim();
+    try {
+      const u = await ctx.github.user();
+      if (expected && u.login.toLowerCase() !== expected.toLowerCase()) {
+        add('github.account', 'GitHub 계정 일치', false, `다른 GitHub 계정(${u.login})의 토큰입니다. 설정된 계정은 ${expected}입니다.`, { mismatch: true, actual: u.login, expected });
+      } else add('github.account', 'GitHub 계정 일치', true, u.login, { actual: u.login });
+    } catch (e) {
+      if (e.status === 401) add('github.account', 'GitHub 계정 일치', false, 'GitHub 토큰이 유효하지 않거나 만료되었습니다(401). 새 토큰을 입력하세요.', { needLogin: true });
+      else if (e.status === 403 && ctx.env.githubActions) add('github.account', 'GitHub 계정 일치', true, 'GitHub Actions 토큰 (계정 조회 불가, 저장소 권한으로 확인)');
+      else add('github.account', 'GitHub 계정 일치', false, `GitHub 계정을 확인할 수 없습니다: ${e.message}`);
+    }
+    let repoOk = false;
+    try {
+      const info = await ctx.github.repoInfo();
+      const branch = await ctx.github.resolveBranch();
+      repoOk = true;
+      add('github.repo', 'GitHub 저장소', true, `${info.full_name} (${info.private ? 'private' : 'public'}), 브랜치 ${branch}`);
+    } catch (e) {
+      add('github.repo', 'GitHub 저장소', false, e.status === 404
+        ? `저장소 ${ctx.github.fullName}에 접근할 수 없습니다(404). 토큰의 저장소 접근 범위와 이름을 확인하세요.`
+        : `저장소를 확인할 수 없습니다: ${e.message}`);
+    }
+    if (repoOk) {
+      try { await ctx.github.probeWrite(); add('github.write', 'GitHub 쓰기 권한', true, 'Contents: write 확인'); } catch (e) {
+        add('github.write', 'GitHub 쓰기 권한', false, e.status === 403 || e.status === 404
+          ? '저장소에 쓰기 권한이 없습니다. 토큰에 Contents: Read and write 권한이 필요합니다.'
+          : `쓰기 권한을 확인할 수 없습니다: ${e.message}`);
+      }
+      try { const head = await ctx.github.branchHead(); add('github.branch', 'GitHub 브랜치', true, `${head.branch} @ ${head.commitSha.slice(0, 7)}`); } catch (e) {
+        add('github.branch', 'GitHub 브랜치', false, `브랜치 ${ctx.github.branch || '(기본)'}을(를) 찾을 수 없습니다: ${e.message}`);
+      }
+      const target = joinPath(cfg.github.targetPath);
+      if (!target) add('github.target', 'GitHub 대상 폴더', false, '대상 폴더 경로가 비어 있습니다(저장소 루트 전체 동기화는 허용하지 않습니다).');
+      else {
+        try {
+          const c = await ctx.github.contents(target);
+          if (c === null) add('github.target', 'GitHub 대상 폴더', false, `대상 폴더가 저장소에 없습니다: ${target}. 경로를 확인하거나 먼저 폴더를 만드세요.`, { missingTarget: true });
+          else if (!Array.isArray(c)) add('github.target', 'GitHub 대상 폴더', false, `대상 경로가 폴더가 아니라 파일입니다: ${target}`);
+          else add('github.target', 'GitHub 대상 폴더', true, `${target}/ (항목 ${c.length}개)`);
+        } catch (e) { add('github.target', 'GitHub 대상 폴더', false, `대상 폴더를 확인할 수 없습니다: ${e.message}`); }
+      }
+    }
+  }
+
+  for (const c of extraChecks) add(c.id, c.label, c.ok, c.detail, c.extra || {});
+
+  const failed = checks.filter((c) => !c.ok);
+  return {
+    ok: failed.length === 0, scope, at: nowIso(), checks,
+    reasons: failed.map((c) => `${c.label}: ${c.detail}`),
+    needLogin: failed.some((c) => c.needLogin), mismatch: failed.some((c) => c.mismatch), missingTarget: failed.some((c) => c.missingTarget),
+  };
+}
+
+function braked(pf, extraReasons = []) {
+  const reasons = [...(pf ? pf.reasons : []), ...extraReasons];
+  return { ok: false, braked: true, reasons, preflight: pf || null, at: nowIso() };
+}
+
+/* ------------------------------------------------------------------ Stock Matching: Drive -> GitHub */
+
+function exportPlanFor(file, cfg) {
+  const ex = GOOGLE_EXPORTS[file.mimeType];
+  if (!ex) return null;
+  const chosen = (cfg.google.exports && cfg.google.exports[ex.key]) || ex.default;
+  const fmt = ex.formats[chosen] || ex.formats[ex.default];
+  return { key: ex.key, format: fmt, label: ex.label };
+}
+
+/** Decide what a Stock run would do, without touching anything. */
+function planStock(items, manifest, cfg) {
+  const targetPath = joinPath(cfg.github.targetPath);
+  const toSync = [];
+  const skipped = [];
+  let unchanged = 0;
+  const used = new Map();
+  for (const [id, m] of Object.entries(manifest.files)) if (m && m.path) used.set(m.path, id);
+
+  for (const item of items) {
+    const f = item.file;
+    if (f.mimeType === GOOGLE_SHORTCUT) { skipped.push({ id: f.id, name: f.name, reason: '바로가기(shortcut)는 건너뜀' }); continue; }
+    let kind = 'binary';
+    let name = f.name;
+    let mime = null;
+    let size = Number(f.size || 0);
+    let fingerprint;
+    if (f.mimeType.startsWith('application/vnd.google-apps.')) {
+      const plan = exportPlanFor(f, cfg);
+      if (!plan) { skipped.push({ id: f.id, name: f.name, reason: `내보내기를 지원하지 않는 Google 형식 (${f.mimeType.replace('application/vnd.google-apps.', '')})` }); continue; }
+      kind = 'export';
+      mime = plan.format.mime;
+      if (!name.toLowerCase().endsWith('.' + plan.format.ext)) name = `${name}.${plan.format.ext}`;
+      size = 0;
+      fingerprint = `${f.modifiedTime}|${mime}`;
+    } else {
+      if (size > cfg.limits.maxFileBytes) { skipped.push({ id: f.id, name: f.name, reason: `크기 초과 (${formatBytes(size)} > ${formatBytes(cfg.limits.maxFileBytes)})` }); continue; }
+      fingerprint = f.md5Checksum || `${f.modifiedTime}|${size}`;
+    }
+    let path = joinPath(targetPath, ...item.dir.map(sanitizeSegment), sanitizeSegment(name));
+    if (used.has(path) && used.get(path) !== f.id) {
+      const dot = path.lastIndexOf('.');
+      const slash = path.lastIndexOf('/');
+      const suffix = ` [${f.id.slice(-6)}]`;
+      path = dot > slash ? path.slice(0, dot) + suffix + path.slice(dot) : path + suffix;
+    }
+    used.set(path, f.id);
+    const prev = manifest.files[f.id];
+    if (prev && prev.fingerprint === fingerprint && prev.path === path) { unchanged++; continue; }
+    toSync.push({ file: f, dir: item.dir, path, kind, mime, size, fingerprint, previous: prev ? { path: prev.path } : null });
+  }
+  return { toSync, skipped, unchanged, total: items.length };
+}
+
+async function runStockMatching(ctx, { dryRun = false, trigger = 'manual' } = {}) {
+  const cfg = ctx.config;
+  const started = nowIso();
+  const t0 = Date.now();
+  ctx.log('info', `Stock Matching 시작 (${trigger})`);
+  const pf = await preflight(ctx, { scope: 'stock' });
+  if (!pf.ok) {
+    ctx.log('brake', '사전 점검 실패로 작업을 진행하지 않습니다.', { reasons: pf.reasons });
+    return braked(pf);
+  }
+  const targetPath = joinPath(cfg.github.targetPath);
+  const { manifest, existed, path: manifestPath } = await loadManifest(ctx.github, targetPath, cfg);
+  ctx.log('info', existed ? `매니페스트 로드: 기록된 파일 ${Object.keys(manifest.files).length}개` : '매니페스트가 없어 새로 만듭니다.');
+
+  ctx.progress({ phase: 'list', detail: 'Google Drive 파일 목록을 읽는 중' });
+  const rootId = await ctx.google.rootId();
+  const sourceId = !cfg.google.sourceFolderId || cfg.google.sourceFolderId === 'root' ? rootId : cfg.google.sourceFolderId;
+  const all = await ctx.google.listAll({ onPage: (n) => ctx.progress({ phase: 'list', listed: n, detail: `Drive 목록 ${n}개` }) });
+  const { items, folders } = collectUnder(all, sourceId);
+  const plan = planStock(items, manifest, cfg);
+  ctx.log('info', `Drive 파일 ${items.length}개 (폴더 ${folders}개): 동기화 대상 ${plan.toSync.length}, 변경 없음 ${plan.unchanged}, 건너뜀 ${plan.skipped.length}`);
+  for (const s of plan.skipped) ctx.log('warn', `건너뜀: ${s.name} - ${s.reason}`);
+  for (const t of plan.toSync) if (t.previous && t.previous.path !== t.path) ctx.log('info', `이동/이름 변경 감지: ${t.previous.path} -> ${t.path} (이전 파일은 그대로 둡니다)`);
+
+  const summary = {
+    ok: true, dryRun, trigger, startedAt: started, listed: items.length, folders, planned: plan.toSync.length, unchanged: plan.unchanged,
+    skipped: plan.skipped, synced: 0, failed: [], bytes: 0, commits: [],
+  };
+  if (dryRun) {
+    summary.plan = plan.toSync.map((t) => ({ id: t.file.id, name: t.file.name, path: t.path, kind: t.kind, size: t.size }));
+    summary.durationMs = Date.now() - t0;
+    return summary;
+  }
+  if (!plan.toSync.length) {
+    ctx.log('info', '동기화할 변경이 없습니다.');
+    summary.durationMs = Date.now() - t0;
+    summary.finishedAt = nowIso();
+    return summary;
+  }
+
+  const device = cfg.device.name || cfg.device.id || 'unknown';
+  const committer = new Committer(ctx, {
+    manifest, manifestPath, message: `Drives Sync (Stock): Google Drive -> ${targetPath}`,
+    eachApply: (m) => {
+      m.stock.lastRun = nowIso();
+      const run = { startedAt: started, at: m.stock.lastRun, by: device, trigger, synced: summary.synced, failed: summary.failed.length, listed: items.length };
+      const runs = (m.stock.runs || []).filter((r) => r.startedAt !== started);
+      m.stock.runs = [...runs.slice(-19), run];
+    },
+  });
+  const limit = pLimit(cfg.limits.concurrency);
+  let done = 0;
+  const total = plan.toSync.length;
+  const chunks = [];
+  for (let i = 0; i < plan.toSync.length; i += cfg.limits.batchFiles) chunks.push(plan.toSync.slice(i, i + cfg.limits.batchFiles));
+
+  for (const chunk of chunks) {
+    throwIfAborted(ctx.signal);
+    const results = await Promise.all(chunk.map((t) => limit(async () => {
+      throwIfAborted(ctx.signal);
+      ctx.progress({ phase: 'transfer', done, total, current: t.path });
+      try {
+        const blob = t.kind === 'export' ? await ctx.google.export(t.file.id, t.mime) : await ctx.google.download(t.file.id);
+        if (blob.size > cfg.limits.maxFileBytes) throw new Error(`크기 초과 (${formatBytes(blob.size)})`);
+        const sha = await ctx.github.createBlobBase64(await blobToBase64(blob));
+        const size = blob.size;
+        return {
+          path: t.path, sha, size,
+          apply: (m) => { m.files[t.file.id] = { path: t.path, fingerprint: t.fingerprint, kind: t.kind, size, modifiedTime: t.file.modifiedTime, name: t.file.name, syncedAt: nowIso(), by: device }; },
+        };
+      } catch (e) {
+        if (e.name === 'AbortError') throw e;
+        ctx.log('error', `실패: ${t.path} - ${e.message}`);
+        summary.failed.push({ id: t.file.id, name: t.file.name, path: t.path, error: e.message });
+        return null;
+      } finally { done++; }
+    })));
+    for (const r of results) if (r) { summary.synced++; summary.bytes += r.size; await committer.add(r); }
+    ctx.progress({ phase: 'transfer', done, total });
+  }
+  await committer.flush();
+  summary.commits = committer.commits;
+  summary.finishedAt = nowIso();
+  summary.durationMs = Date.now() - t0;
+  ctx.log('info', `Stock Matching 완료: ${summary.synced}개 동기화, ${summary.failed.length}개 실패, ${formatBytes(summary.bytes)}, 커밋 ${summary.commits.length}개`);
+  return summary;
+}
+
+/* ------------------------------------------------------------------ Flow Matching: device folder -> Drive -> GitHub */
+
+/**
+ * folders: [{ id, label, driveSubPath, source: { list(): Promise<[{relPath, name, size, lastModified, read(): Promise<Blob>}]> } }]
+ * Uploads what is new since the folder's last run (by path + size + mtime), never deletes.
+ */
+async function runFlowMatching(ctx, { folders = [], dryRun = false, trigger = 'manual', extraChecks = [] } = {}) {
+  const cfg = ctx.config;
+  const started = nowIso();
+  const t0 = Date.now();
+  ctx.log('info', `Flow Matching 시작 (${trigger}): 폴더 ${folders.length}개`);
+  const checks = [...extraChecks];
+  if (!folders.length) checks.push({ id: 'flow.folders', label: '기기 폴더 지정', ok: false, detail: '업로드할 기기 폴더가 지정되지 않았습니다. 기능 2에서 폴더를 추가하세요.' });
+  const pf = await preflight(ctx, { scope: 'flow', extraChecks: checks });
+  if (!pf.ok) {
+    ctx.log('brake', '사전 점검 실패로 작업을 진행하지 않습니다.', { reasons: pf.reasons });
+    return braked(pf);
+  }
+  const targetPath = joinPath(cfg.github.targetPath);
+  const { manifest, path: manifestPath } = await loadManifest(ctx.github, targetPath, cfg);
+  const deviceId = cfg.device.id || 'device';
+  const deviceName = cfg.device.name || deviceId;
+  const dev = (manifest.devices[deviceId] ||= { name: deviceName, folders: {} });
+  dev.name = deviceName;
+  const rootId = await ctx.google.rootId();
+  const sourceId = !cfg.google.sourceFolderId || cfg.google.sourceFolderId === 'root' ? rootId : cfg.google.sourceFolderId;
+  const committer = new Committer(ctx, {
+    manifest, manifestPath, message: `Drives Sync (Flow): ${deviceName} -> Google Drive -> ${targetPath}`,
+    eachApply: (m) => {
+      const d = (m.devices[deviceId] ||= { name: deviceName, folders: {} });
+      d.name = deviceName;
+      for (const fd of folders) {
+        const st = (d.folders[fd.id] ||= { label: fd.label, lastRun: null, uploaded: {} });
+        st.label = fd.label;
+        st.lastRun = nowIso();
+        st.lastTrigger = trigger;
+      }
+    },
+  });
+  const limit = pLimit(cfg.limits.concurrency);
+  const summary = { ok: true, dryRun, trigger, startedAt: started, device: deviceName, folders: [], uploaded: 0, failed: 0, bytes: 0, commits: [] };
+
+  const processFolder = async (fd) => {
+    const res = { id: fd.id, label: fd.label, scanned: 0, fresh: 0, uploaded: 0, failed: [], skipped: [], bytes: 0 };
+    const state = (dev.folders[fd.id] ||= { label: fd.label, lastRun: null, uploaded: {} });
+    state.label = fd.label;
+    const driveSub = splitPath(fd.driveSubPath || joinPath(cfg.flow.driveSubPath, deviceName, fd.label));
+    state.drivePath = driveSub.join('/');
+    let entries;
+    try { entries = await fd.source.list(); } catch (e) {
+      ctx.log('error', `폴더를 읽을 수 없습니다 (${fd.label}): ${e.message}`);
+      res.error = e.message;
+      return res;
+    }
+    res.scanned = entries.length;
+    const fresh = [];
+    for (const e of entries) {
+      if (isSyncNoise(e.name)) continue;
+      if (e.size > cfg.limits.maxFileBytes) { res.skipped.push({ relPath: e.relPath, reason: `크기 초과 (${formatBytes(e.size)})` }); continue; }
+      const prev = state.uploaded[e.relPath];
+      if (prev && prev.size === e.size && prev.mtime === e.lastModified) continue;
+      fresh.push(e);
+    }
+    res.fresh = fresh.length;
+    ctx.log('info', `[${fd.label}] 파일 ${entries.length}개 중 새 파일 ${fresh.length}개 (Drive: ${driveSub.join('/')})`);
+    if (dryRun) { res.plan = fresh.map((e) => ({ relPath: e.relPath, size: e.size })); return res; }
+    let done = 0;
+    await Promise.all(fresh.map((e) => limit(async () => {
+      throwIfAborted(ctx.signal);
+      ctx.progress({ phase: 'upload', folder: fd.label, done, total: fresh.length, current: e.relPath });
+      try {
+        const relDir = splitPath(e.relPath).slice(0, -1);
+        const parentId = await ctx.google.ensureFolderPath(sourceId, [...driveSub, ...relDir]);
+        const existing = await ctx.google.findChild(parentId, e.name);
+        const blob = await e.read();
+        const mime = blob.type || guessMime(e.name);
+        const up = await ctx.google.uploadFile({ parentId, name: e.name, blob, mimeType: mime, fileId: existing ? existing.id : undefined, modifiedTime: new Date(e.lastModified).toISOString() });
+        const ghPath = joinPath(targetPath, ...driveSub.map(sanitizeSegment), ...relDir.map(sanitizeSegment), sanitizeSegment(e.name));
+        const sha = await ctx.github.createBlobBase64(await blobToBase64(blob));
+        const size = blob.size;
+        const fingerprint = up.md5Checksum || `${up.modifiedTime}|${size}`;
+        await committer.add({
+          path: ghPath, sha, size,
+          apply: (m) => {
+            m.files[up.id] = { path: ghPath, fingerprint, kind: 'binary', size, modifiedTime: up.modifiedTime, name: e.name, syncedAt: nowIso(), by: deviceName, via: 'flow' };
+            const d = (m.devices[deviceId] ||= { name: deviceName, folders: {} });
+            const st = (d.folders[fd.id] ||= { label: fd.label, drivePath: driveSub.join('/'), lastRun: null, uploaded: {} });
+            st.uploaded[e.relPath] = { size, mtime: e.lastModified, driveFileId: up.id, path: ghPath, at: nowIso() };
+          },
+        });
+        res.uploaded++;
+        res.bytes += size;
+        ctx.log('info', `[${fd.label}] 업로드: ${e.relPath} (${formatBytes(size)})${existing ? ' - Drive의 기존 파일을 갱신' : ''}`);
+      } catch (err) {
+        if (err.name === 'AbortError') throw err;
+        ctx.log('error', `[${fd.label}] 실패: ${e.relPath} - ${err.message}`);
+        res.failed.push({ relPath: e.relPath, error: err.message });
+      } finally { done++; }
+    })));
+    return res;
+  };
+
+  const results = await Promise.all(folders.map(processFolder));
+  await committer.flush();
+  const finishedAt = nowIso();
+  for (const r of results) {
+    summary.folders.push(r);
+    summary.uploaded += r.uploaded;
+    summary.failed += r.failed.length;
+    summary.bytes += r.bytes;
+    if (r.error) summary.ok = false;
+  }
+  summary.commits = committer.commits;
+  summary.finishedAt = finishedAt;
+  summary.durationMs = Date.now() - t0;
+  ctx.log('info', `Flow Matching 완료: ${summary.uploaded}개 업로드, ${summary.failed}개 실패, ${formatBytes(summary.bytes)}, 커밋 ${summary.commits.length}개`);
+  return summary;
+}
+
+/* ------------------------------------------------------------------ Matching Automation prerequisites */
+
+/** Everything Flow needs plus what unattended runs need. Pure check, writes nothing. */
+async function automationPreflight(ctx, { folders = [], intervalMinutes, extraChecks = [] } = {}) {
+  const checks = [...extraChecks];
+  if (!folders.length) checks.push({ id: 'flow.folders', label: '기기 폴더 지정', ok: false, detail: '자동화할 기기 폴더가 없습니다. 기능 2에서 폴더를 추가하세요.' });
+  else checks.push({ id: 'flow.folders', label: '기기 폴더 지정', ok: true, detail: folders.map((f) => f.label).join(', ') });
+  const mins = Number(intervalMinutes);
+  if (!Number.isFinite(mins) || mins < 1) checks.push({ id: 'automation.interval', label: '실행 주기', ok: false, detail: '실행 주기(분)가 정의되지 않았습니다. 1분 이상으로 설정하세요.' });
+  else checks.push({ id: 'automation.interval', label: '실행 주기', ok: true, detail: `${mins}분마다` });
+  const pf = await preflight(ctx, { scope: 'automation', extraChecks: checks });
+  return pf;
+}
+
+/* ------------------------------------------------------------------ folder sources */
+
+/** A source from a static list of {relPath, size, lastModified, read} entries (tests, one-shot pickers). */
+function listFolderSource(name, entries) {
+  return { kind: 'list', name, list: async () => entries.map((e) => ({ ...e, name: e.name || splitPath(e.relPath).pop() })) };
+}
+
+return { VERSION, MANIFEST_DIR, MANIFEST_FILE, GOOGLE_SCOPE_DRIVE, GOOGLE_SCOPE_DRIVE_READONLY, GOOGLE_SCOPE_EMAIL, GOOGLE_SCOPES, GOOGLE_FOLDER, GOOGLE_SHORTCUT, GOOGLE_EXPORTS, DEFAULT_CONFIG, nowIso, deepMerge, withDefaults, sleep, abortError, throwIfAborted, pLimit, formatBytes, blobToBase64, utf8ToBase64, base64UrlEncode, randomId, sanitizeSegment, splitPath, joinPath, isSyncNoise, guessMime, HttpError, BrakeError, fetchRetry, pkcePair, googleAuthUrl, googleTokenRequest, googleTokenInfo, RefreshTokenGoogleAuth, StaticGoogleAuth, StaticGitHubAuth, GoogleDrive, collectUnder, GitHubRepo, emptyManifest, loadManifest, createContext, preflight, planStock, runStockMatching, runFlowMatching, automationPreflight, listFolderSource };
+})();
+/* Drives Sync - the web app. Binds the engine in core.js to the page, keeps settings and
+   tokens in this browser only, holds device-folder handles, runs the automation timer and
+   exposes window.DrivesSync for agents. Every operation goes through the same preflight brake. */
+
+const $ = (id) => document.getElementById(id);
+const APP_URL = location.origin + location.pathname.replace(/index\.html$/, '');
+/* Set by build-single.mjs for the one-file edition: { single, preview, icon192, icon512, iconMaskable }.
+   preview = hosted where outside connections are blocked (a claude.ai artifact): the UI works, syncing cannot. */
+const BUILD = window.DRIVES_SYNC_BUILD || {};
+const PREVIEW = !!BUILD.preview;
+const ICON_192 = BUILD.icon192 || 'assets/icon-192.png';
+const LIVE_URL = 'https://hongguqaz.github.io/Lobby/drives-sync/';
+const PREVIEW_REASON = `미리 보기 환경(claude.ai)에서는 Google·GitHub 등 외부 연결이 차단되어 실제 동기화를 할 수 없습니다. 실제 사용은 ${LIVE_URL} 또는 내려받은 drives-sync.html 파일을 웹 서버에서 여세요.`;
+const previewFetch = async () => new Response(JSON.stringify({ message: PREVIEW_REASON, error: { message: PREVIEW_REASON } }), { status: 403, headers: { 'content-type': 'application/json' } });
+const LS = {
+  config: 'ds.config', gToken: 'ds.google.token', gRefresh: 'ds.google.refresh', ghToken: 'ds.github.token',
+  logs: 'ds.logs', lastRuns: 'ds.lastRuns', pkce: 'ds.pkce', folders: 'ds.folders', automation: 'ds.automation',
+};
+
+const store = {
+  get(key, fallback = null) { try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
+  set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { log('app', 'warn', `저장 실패 (${key}): ${e.message}`); } },
+  del(key) { try { localStorage.removeItem(key); } catch { /* ignore */ } },
+};
+
+/* ------------------------------------------------------------------ IndexedDB for folder handles */
+function idb() {
+  return new Promise((resolve, reject) => {
+    const r = indexedDB.open('drives-sync', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('handles');
+    r.onsuccess = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+  });
+}
+async function idbOp(mode, fn) {
+  const db = await idb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('handles', mode);
+    const req = fn(tx.objectStore('handles'));
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+const handles = {
+  cache: new Map(),
+  async get(id) { if (this.cache.has(id)) return this.cache.get(id); const h = await idbOp('readonly', (s) => s.get(id)).catch(() => null); if (h) this.cache.set(id, h); return h || null; },
+  async set(id, h) { this.cache.set(id, h); await idbOp('readwrite', (s) => s.put(h, id)); },
+  async del(id) { this.cache.delete(id); await idbOp('readwrite', (s) => s.delete(id)).catch(() => null); },
+};
+
+/* ------------------------------------------------------------------ state */
+const state = {
+  config: core.withDefaults(store.get(LS.config, {})),
+  folders: store.get(LS.folders, []),
+  logs: store.get(LS.logs, []),
+  lastRuns: store.get(LS.lastRuns, { preflight: null, stock: null, flow: null, automation: null }),
+  automation: store.get(LS.automation, { nextRunAt: null, lastBrake: null, lastRunAt: null }),
+  running: null,
+  oneshot: new Map(),       // folder id -> FileList chosen for this run
+  google: { email: null, mode: 'gis' },
+  github: { login: null },
+  installPrompt: null,
+  wakeLock: null,
+};
+const listeners = new Map();
+function emit(event, data) { for (const fn of listeners.get(event) || []) { try { fn(data); } catch { /* listener error */ } } }
+
+/** Keeps every path and limit in the shape the engine expects, wherever the config came from. */
+function normalizeConfig(cfg) {
+  cfg.github.targetPath = core.joinPath(cfg.github.targetPath);
+  cfg.github.owner = (cfg.github.owner || '').trim();
+  cfg.github.repo = (cfg.github.repo || '').trim();
+  cfg.github.branch = (cfg.github.branch || '').trim();
+  cfg.google.sourceFolderId = (cfg.google.sourceFolderId || '').trim() || 'root';
+  cfg.flow.driveSubPath = core.joinPath(cfg.flow.driveSubPath) || 'DrivesSync';
+  cfg.limits.maxFileBytes = Math.min(100 * 1048576, Math.max(1048576, Number(cfg.limits.maxFileBytes) || 100 * 1048576));
+  cfg.limits.batchFiles = Math.min(200, Math.max(1, Number(cfg.limits.batchFiles) || 20));
+  cfg.limits.concurrency = Math.min(8, Math.max(1, Number(cfg.limits.concurrency) || 3));
+  cfg.automation.intervalMinutes = Math.max(1, Number(cfg.automation.intervalMinutes) || 30);
+  return cfg;
+}
+normalizeConfig(state.config);
+if (!state.config.device.id) state.config.device.id = 'dev-' + core.randomId(6);
+if (!state.config.device.name) state.config.device.name = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ? '휴대폰' : '노트북';
+saveConfig();
+
+function saveConfig() { store.set(LS.config, state.config); }
+function saveFolders() { store.set(LS.folders, state.folders); }
+function saveLastRuns() { store.set(LS.lastRuns, state.lastRuns); }
+function saveAutomation() { store.set(LS.automation, state.automation); }
+
+/* ------------------------------------------------------------------ logging */
+const logEls = { preflight: null, stock: 'stock-log', flow: 'flow-log', automation: 'auto-log', app: null };
+function log(section, level, msg, data) {
+  const entry = { t: core.nowIso(), section, level, msg, ...(data && Object.keys(data).length ? { data } : {}) };
+  state.logs.push(entry);
+  if (state.logs.length > 1500) state.logs.splice(0, state.logs.length - 1500);
+  store.set(LS.logs, state.logs.slice(-500));
+  renderLog(section);
+  if (level === 'brake' || level === 'error') renderChip('status-run', level === 'brake' ? 'braked' : 'error', msg.slice(0, 80));
+  emit('log', entry);
+  return entry;
+}
+function renderLog(section) {
+  const id = logEls[section];
+  if (!id) return;
+  const el = $(id);
+  const lines = state.logs.filter((l) => l.section === section).slice(-200);
+  el.innerHTML = lines.map((l) => `<span class="${l.level}">${fmtTime(l.t, true)} ${escapeHtml(l.msg)}</span>`).join('\n');
+  el.scrollTop = el.scrollHeight;
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function fmtTime(iso, short = false) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return String(iso);
+  return short ? d.toLocaleTimeString('ko-KR', { hour12: false }) : d.toLocaleString('ko-KR', { hour12: false });
+}
+
+/* ------------------------------------------------------------------ Google auth (browser) */
+class BrowserGoogleAuth {
+  constructor() { this.token = store.get(LS.gToken, null); this.refresh = store.get(LS.gRefresh, null); this._refresher = null; }
+  get mode() { return this.refresh && this.refresh.refresh_token ? 'refresh' : 'gis'; }
+  describe() { return this.mode === 'refresh' ? '장기 인증 (refresh token)' : 'Google 로그인 (1시간 토큰)'; }
+  hasAny() { return !!((this.token && this.token.access_token) || (this.refresh && this.refresh.refresh_token)); }
+  isValid() { return !!(this.token && this.token.access_token && Date.now() < this.token.expires_at - 60000); }
+
+  _storeToken(data) {
+    this.token = { access_token: data.access_token, expires_at: Date.now() + (data.expires_in || 3600) * 1000, scope: data.scope || '' };
+    store.set(LS.gToken, this.token);
+  }
+
+  async getAccessToken() {
+    const cfg = state.config.google;
+    if (this.mode === 'refresh') {
+      if (!cfg.clientId || !cfg.clientSecret) throw new Error('장기 인증에는 클라이언트 ID와 보안 비밀이 필요합니다 (설정).');
+      if (!this._refresher || this._refresher.refreshToken !== this.refresh.refresh_token) {
+        this._refresher = new core.RefreshTokenGoogleAuth({
+          clientId: cfg.clientId, clientSecret: cfg.clientSecret, refreshToken: this.refresh.refresh_token,
+          accessToken: this.token && this.token.access_token, expiresAt: this.token && this.token.expires_at, scope: this.token && this.token.scope,
+          onUpdate: (t) => { this.token = { access_token: t.accessToken, expires_at: t.expiresAt, scope: t.scope }; store.set(LS.gToken, this.token); },
+        });
+      }
+      try { return await this._refresher.getAccessToken(); } catch (e) {
+        if (e.status === 400 || e.status === 401) { log('app', 'error', `장기 인증이 더 이상 유효하지 않습니다: ${e.message}`); this.clearRefresh(); }
+        throw e;
+      }
+    }
+    if (this.isValid()) return { token: this.token.access_token, scope: this.token.scope };
+    if (!this.token) return null;
+    try {
+      const data = await this._gisRequest({ prompt: '', silent: true });
+      this._storeToken(data);
+      log('app', 'info', 'Google 토큰을 조용히 갱신했습니다.');
+      return { token: this.token.access_token, scope: this.token.scope };
+    } catch (e) {
+      log('app', 'warn', `Google 토큰 갱신 실패: ${e.message}`);
+      return null;
+    }
+  }
+
+  async _gis() {
+    for (let i = 0; i < 100; i++) {
+      if (window.google && google.accounts && google.accounts.oauth2) return google.accounts.oauth2;
+      await core.sleep(100);
+    }
+    throw new Error('Google 로그인 스크립트를 불러오지 못했습니다 (네트워크 또는 차단 확장 프로그램 확인).');
+  }
+
+  async _gisRequest({ prompt, silent = false }) {
+    const cfg = state.config.google;
+    if (!cfg.clientId) throw new Error('설정에 Google OAuth 클라이언트 ID가 없습니다.');
+    const oauth2 = await this._gis();
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error(silent ? '조용한 갱신 시간 초과' : '로그인 시간 초과')); } }, silent ? 20000 : 180000);
+      const client = oauth2.initTokenClient({
+        client_id: cfg.clientId,
+        scope: core.GOOGLE_SCOPES.join(' '),
+        hint: cfg.expectedEmail || undefined,
+        login_hint: cfg.expectedEmail || undefined,
+        callback: (resp) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (resp && resp.access_token) resolve(resp); else reject(new Error(resp && resp.error ? `${resp.error}: ${resp.error_description || ''}` : '토큰을 받지 못했습니다.'));
+        },
+        error_callback: (err) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          const type = err && err.type;
+          reject(new Error(type === 'popup_failed_to_open' ? '로그인 팝업이 차단되었습니다. 이 사이트의 팝업을 허용하거나 다시 누르세요.' : type === 'popup_closed' ? '로그인 창이 닫혔습니다.' : (err && err.message) || '로그인 오류'));
+        },
+      });
+      client.requestAccessToken({ prompt });
+    });
+  }
+
+  /** User-initiated login. Verifies the account before keeping the token. */
+  async connect({ consent = true } = {}) {
+    if (PREVIEW) throw new Error('미리 보기에서는 Google 로그인을 할 수 없습니다. ' + PREVIEW_REASON);
+    const data = await this._gisRequest({ prompt: consent ? 'consent' : '' });
+    this._storeToken(data);
+    const drive = new core.GoogleDrive(this, { log: (l, m) => log('app', l, m) });
+    const about = await drive.about();
+    const expected = (state.config.google.expectedEmail || '').trim().toLowerCase();
+    if (expected && about.email.toLowerCase() !== expected) {
+      await this.disconnect();
+      throw new Error(`다른 Google 계정(${about.email})으로 로그인했습니다. 설정된 동기화 계정은 ${state.config.google.expectedEmail}입니다. 토큰을 폐기했습니다.`);
+    }
+    state.google.email = about.email;
+    return about;
+  }
+
+  async disconnect() {
+    const tok = this.token && this.token.access_token;
+    this.token = null;
+    store.del(LS.gToken);
+    this.clearRefresh();
+    state.google.email = null;
+    if (tok) { try { const oauth2 = await this._gis(); oauth2.revoke(tok, () => {}); } catch { /* offline */ } }
+  }
+
+  clearRefresh() { this.refresh = null; this._refresher = null; store.del(LS.gRefresh); }
+
+  async startLongRun() {
+    const cfg = state.config.google;
+    if (!cfg.clientId || !cfg.clientSecret) throw new Error('장기 인증에는 클라이언트 ID와 클라이언트 보안 비밀이 모두 필요합니다.');
+    const { verifier, challenge } = await core.pkcePair();
+    const st = core.randomId(12);
+    store.set(LS.pkce, { verifier, state: st, at: Date.now() });
+    location.href = core.googleAuthUrl({ clientId: cfg.clientId, redirectUri: APP_URL, codeChallenge: challenge, state: st, loginHint: cfg.expectedEmail || undefined });
+  }
+
+  async handleRedirect() {
+    const params = new URLSearchParams(location.search);
+    if (!params.get('code') && !params.get('error')) return false;
+    const pk = store.get(LS.pkce, null);
+    store.del(LS.pkce);
+    history.replaceState(null, '', APP_URL);
+    if (params.get('error')) throw new Error(`Google 인증 거부: ${params.get('error')}`);
+    if (!pk || pk.state !== params.get('state')) throw new Error('인증 상태(state)가 일치하지 않아 코드를 무시했습니다.');
+    const cfg = state.config.google;
+    const data = await core.googleTokenRequest(fetch.bind(window), {
+      code: params.get('code'), client_id: cfg.clientId, client_secret: cfg.clientSecret, redirect_uri: APP_URL, grant_type: 'authorization_code', code_verifier: pk.verifier,
+    });
+    if (!data.refresh_token) throw new Error('Google이 refresh token을 주지 않았습니다. Google 계정 > 보안 > 타사 액세스에서 이 앱을 제거한 뒤 다시 시도하세요.');
+    this.refresh = { refresh_token: data.refresh_token, at: core.nowIso() };
+    store.set(LS.gRefresh, this.refresh);
+    this._refresher = null;
+    this._storeToken(data);
+    return true;
+  }
+}
+const googleAuth = new BrowserGoogleAuth();
+const githubAuth = { async getToken() { return store.get(LS.ghToken, null); } };
+
+/* ------------------------------------------------------------------ device folder sources */
+class HandleSource {
+  constructor(handle, label) { this.handle = handle; this.name = label; this.kind = 'handle'; }
+  async list() {
+    const out = [];
+    const walk = async (dir, prefix) => {
+      for await (const [name, h] of dir.entries()) {
+        if (h.kind === 'directory') { if (!name.startsWith('.')) await walk(h, prefix + name + '/'); continue; }
+        let file;
+        try { file = await h.getFile(); } catch { continue; }
+        out.push({ relPath: prefix + name, name, size: file.size, lastModified: file.lastModified, read: async () => h.getFile() });
+      }
+    };
+    await walk(this.handle, '');
+    return out;
+  }
+}
+class FileListSource {
+  constructor(files, label) { this.files = Array.from(files); this.name = label; this.kind = 'oneshot'; }
+  async list() {
+    return this.files.map((f) => {
+      const rel = f.webkitRelativePath ? f.webkitRelativePath.split('/').slice(1).join('/') || f.name : f.name;
+      return { relPath: rel, name: f.name, size: f.size, lastModified: f.lastModified, read: async () => f };
+    });
+  }
+}
+const supportsHandles = 'showDirectoryPicker' in window;
+
+async function folderReadiness(folder) {
+  if (folder.mode === 'handle') {
+    if (!supportsHandles) return { ready: false, reason: '이 브라우저는 폴더 지속 접근을 지원하지 않습니다. 폴더를 "실행할 때마다 선택" 방식으로 다시 추가하세요.' };
+    const h = await handles.get(folder.id);
+    if (!h) return { ready: false, reason: '저장된 폴더 접근 권한이 없습니다. 폴더를 다시 선택하세요.', reselect: true };
+    let perm = 'prompt';
+    try { perm = await h.queryPermission({ mode: 'read' }); } catch { perm = 'prompt'; }
+    if (perm !== 'granted') return { ready: false, reason: '폴더 접근 권한 재승인이 필요합니다 ("권한 승인" 버튼).', permission: perm };
+    return { ready: true, handle: h, permission: 'granted' };
+  }
+  const files = state.oneshot.get(folder.id);
+  if (files && files.length) return { ready: true, files };
+  return { ready: false, reason: '실행할 때마다 폴더(파일)를 선택해야 합니다 ("선택 후 업로드" 버튼). 자동 실행은 지원하지 않습니다.', oneshot: true };
+}
+
+/* ------------------------------------------------------------------ engine glue */
+function makeCtx(section, signal) {
+  return core.createContext({
+    config: state.config, googleAuth, githubAuth, signal, fetch: PREVIEW ? previewFetch : undefined,
+    log: (level, msg, data) => log(section, level, msg, data),
+    progress: (p) => renderProgress(section, p),
+  });
+}
+
+function setRunning(kind) {
+  state.running = kind ? { kind, startedAt: core.nowIso(), abort: new AbortController() } : null;
+  document.body.dataset.state = kind ? 'running' : 'idle';
+  renderChip('status-run', kind ? 'running' : 'idle', kind ? `${kind} 실행 중` : '대기');
+  for (const id of ['btn-preflight', 'btn-stock-run', 'btn-stock-dry', 'btn-flow-run-all', 'btn-flow-dry', 'btn-auto-run-now', 'btn-auto-check', 'btn-create-target', 'btn-manifest-reset']) $(id).disabled = !!kind;
+  $('btn-stock-stop').hidden = kind !== 'stock';
+  $('btn-flow-stop').hidden = kind !== 'flow';
+  renderFolders();
+  renderAgentState();
+  emit('state', { running: !!kind, kind });
+}
+
+async function guarded(kind, fn) {
+  if (state.running) return { ok: false, busy: true, reasons: [`다른 작업(${state.running.kind})이 실행 중입니다.`] };
+  setRunning(kind);
+  try {
+    const res = await fn(state.running.abort.signal);
+    if (res && res.braked) document.body.dataset.state = 'braked';
+    return res;
+  } catch (e) {
+    if (e.name === 'AbortError') { log(kind, 'warn', '사용자가 중지했습니다.'); return { ok: false, aborted: true, reasons: ['중지됨'] }; }
+    log(kind, 'error', e.message);
+    document.body.dataset.state = 'error';
+    return { ok: false, error: e.message, reasons: [e.message] };
+  } finally {
+    const st = document.body.dataset.state;
+    setRunning(null);
+    if (st === 'braked' || st === 'error') document.body.dataset.state = st;
+  }
+}
+
+async function doPreflight({ scope = 'stock', quiet = false } = {}) {
+  const ctx = makeCtx('preflight');
+  const pf = await core.preflight(ctx, { scope });
+  state.lastRuns.preflight = pf;
+  saveLastRuns();
+  const g = pf.checks.find((c) => c.id === 'google.account');
+  state.google.email = g && g.ok ? g.actual : null;
+  const gh = pf.checks.find((c) => c.id === 'github.account');
+  state.github.login = gh && gh.ok ? gh.actual : null;
+  renderPreflight(pf);
+  renderStatus();
+  if (!pf.ok && !quiet) showBanner(pf.reasons.join('\n'), 'bad');
+  else if (pf.ok) hideBanner();
+  return pf;
+}
+
+async function doStock({ dryRun = false, trigger = 'manual' } = {}) {
+  return guarded('stock', async (signal) => {
+    $('stock-summary').hidden = true;
+    showProgress('stock', true);
+    const ctx = makeCtx('stock', signal);
+    const res = await core.runStockMatching(ctx, { dryRun, trigger });
+    showProgress('stock', false);
+    state.lastRuns.stock = res;
+    saveLastRuns();
+    if (res.preflight) { state.lastRuns.preflight = res.preflight; renderPreflight(res.preflight); }
+    renderSummary('stock', res);
+    renderStatus();
+    return res;
+  });
+}
+
+/**
+ * strict: every requested folder must be ready (automation). Otherwise folders that are not
+ * ready are skipped with a logged reason and the ready ones run.
+ */
+async function doFlow({ folderIds, dryRun = false, trigger = 'manual', strict = false } = {}) {
+  return guarded('flow', async (signal) => {
+    $('flow-summary').hidden = true;
+    const wanted = state.folders.filter((f) => !folderIds || folderIds.includes(f.id));
+    const ready = [];
+    const notReady = [];
+    for (const f of wanted) {
+      const r = await folderReadiness(f);
+      if (r.ready) ready.push({ folder: f, r }); else notReady.push({ folder: f, r });
+    }
+    const extraChecks = [];
+    if (strict) for (const { folder, r } of notReady) extraChecks.push({ id: `folder.${folder.id}`, label: `폴더 "${folder.label}"`, ok: false, detail: r.reason });
+    else for (const { folder, r } of notReady) log('flow', 'warn', `건너뜀 "${folder.label}": ${r.reason}`);
+    if (!wanted.length) { const res = { ok: false, braked: true, reasons: ['업로드할 기기 폴더가 지정되지 않았습니다. 기능 2에서 폴더를 추가하세요.'], at: core.nowIso() }; log('flow', 'brake', res.reasons[0]); renderSummary('flow', res); return res; }
+    if (!ready.length && !strict) { const res = { ok: false, braked: true, reasons: notReady.map(({ folder, r }) => `"${folder.label}": ${r.reason}`), at: core.nowIso() }; log('flow', 'brake', '실행 가능한 폴더가 없습니다.'); renderSummary('flow', res); return res; }
+    showProgress('flow', true);
+    const ctx = makeCtx('flow', signal);
+    const folders = ready.map(({ folder, r }) => ({
+      id: folder.id, label: folder.label, driveSubPath: folder.driveSubPath || '',
+      source: folder.mode === 'handle' ? new HandleSource(r.handle, folder.label) : new FileListSource(r.files, folder.label),
+    }));
+    const res = await core.runFlowMatching(ctx, { folders, dryRun, trigger, extraChecks });
+    showProgress('flow', false);
+    if (res.ok !== undefined && !res.braked && !dryRun) {
+      for (const fr of res.folders || []) {
+        const f = state.folders.find((x) => x.id === fr.id);
+        if (f) { f.lastRun = res.finishedAt; f.lastResult = { uploaded: fr.uploaded, failed: fr.failed.length, scanned: fr.scanned, error: fr.error || null }; }
+        state.oneshot.delete(fr.id);
+      }
+      saveFolders();
+    }
+    if (notReady.length && !strict) res.skippedFolders = notReady.map(({ folder, r }) => ({ id: folder.id, label: folder.label, reason: r.reason }));
+    state.lastRuns.flow = res;
+    saveLastRuns();
+    if (res.preflight) { state.lastRuns.preflight = res.preflight; renderPreflight(res.preflight); }
+    renderSummary('flow', res);
+    renderFolders();
+    renderStatus();
+    return res;
+  });
+}
+
+async function automationPrereqs() {
+  const folders = state.folders;
+  const extraChecks = [];
+  for (const f of folders) {
+    const r = await folderReadiness(f);
+    if (f.mode !== 'handle') extraChecks.push({ id: `folder.${f.id}`, label: `폴더 "${f.label}"`, ok: false, detail: '"실행할 때마다 선택" 방식 폴더는 자동 실행할 수 없습니다. 지속 접근 방식으로 다시 추가하거나 목록에서 제외하세요.' });
+    else extraChecks.push({ id: `folder.${f.id}`, label: `폴더 "${f.label}"`, ok: r.ready, detail: r.ready ? '접근 권한 확인' : r.reason });
+  }
+  if (googleAuth.mode !== 'refresh') extraChecks.push({ id: 'google.longrun', label: 'Google 장기 인증', ok: true, detail: '꺼짐 (1시간 토큰). 토큰 갱신에 실패하면 자동 실행이 멈추고 재로그인을 요청합니다. 무인 실행에는 설정의 장기 인증을 권장합니다.' });
+  else extraChecks.push({ id: 'google.longrun', label: 'Google 장기 인증', ok: true, detail: '켜짐' });
+  const ctx = makeCtx('automation');
+  const pf = await core.automationPreflight(ctx, { folders, intervalMinutes: state.config.automation.intervalMinutes, extraChecks });
+  state.lastRuns.automationCheck = pf;
+  saveLastRuns();
+  renderChecks($('auto-prereqs'), pf.checks);
+  return pf;
+}
+
+/* ------------------------------------------------------------------ automation */
+const automation = {
+  timer: null,
+  start() { if (!this.timer) this.timer = setInterval(() => this.tick(), 20000); this.tick(); },
+  stop() { if (this.timer) clearInterval(this.timer); this.timer = null; },
+  due() { const n = state.automation.nextRunAt; return !n || Date.now() >= Date.parse(n); },
+  schedule() {
+    const mins = Math.max(1, Number(state.config.automation.intervalMinutes) || 30);
+    state.automation.nextRunAt = new Date(Date.now() + mins * 60000).toISOString();
+    saveAutomation();
+    renderAutomation();
+  },
+  async tick() {
+    if (!state.config.automation.enabled) return;
+    renderAutomation();
+    if (state.running || !this.due()) return;
+    await this.runOnce('automation');
+  },
+  async runOnce(trigger = 'automation') {
+    if (state.running) return { ok: false, busy: true, reasons: ['다른 작업이 실행 중입니다.'] };
+    log('automation', 'info', `자동 실행 주기 도래 (${trigger}) - 선결 조건 점검`);
+    const pf = await automationPrereqs();
+    if (!pf.ok) {
+      state.automation.lastBrake = { at: core.nowIso(), reasons: pf.reasons };
+      saveAutomation();
+      log('automation', 'brake', `실행하지 않음: ${pf.reasons.join(' / ')}`);
+      notify('Drives Sync 자동화 중단', pf.reasons[0]);
+      showBanner('자동 실행을 건너뛰었습니다.\n' + pf.reasons.join('\n'), 'bad');
+      if (pf.needLogin || pf.mismatch) { state.config.automation.enabled = false; saveConfig(); this.stop(); log('automation', 'warn', '로그인 문제로 자동화를 껐습니다. 문제를 해결한 뒤 다시 켜세요.'); }
+      else this.schedule();
+      renderAutomation();
+      return { ok: false, braked: true, reasons: pf.reasons, preflight: pf };
+    }
+    state.automation.lastBrake = null;
+    const res = await doFlow({ folderIds: state.folders.filter((f) => f.mode === 'handle').map((f) => f.id), trigger, strict: true });
+    state.automation.lastRunAt = core.nowIso();
+    state.lastRuns.automation = res;
+    saveLastRuns();
+    if (res.braked) { state.automation.lastBrake = { at: core.nowIso(), reasons: res.reasons }; log('automation', 'brake', `실행하지 않음: ${res.reasons.join(' / ')}`); notify('Drives Sync 자동화 중단', res.reasons[0]); }
+    else if (res.ok) { log('automation', 'info', `완료: ${res.uploaded}개 업로드, ${res.failed}개 실패`); if (res.uploaded || res.failed) notify('Drives Sync 자동 업로드', `${res.uploaded}개 업로드, ${res.failed}개 실패`); }
+    else log('automation', 'error', `오류: ${(res.reasons || []).join(' / ')}`);
+    this.schedule();
+    return res;
+  },
+  async enable({ intervalMinutes } = {}) {
+    if (intervalMinutes !== undefined) state.config.automation.intervalMinutes = Number(intervalMinutes);
+    saveConfig();
+    const pf = await automationPrereqs();
+    if (!pf.ok) {
+      state.config.automation.enabled = false;
+      saveConfig();
+      renderAutomation();
+      log('automation', 'brake', `자동화를 켤 수 없습니다: ${pf.reasons.join(' / ')}`);
+      showBanner('자동화를 켤 수 없습니다.\n' + pf.reasons.join('\n'), 'bad');
+      return { ok: false, braked: true, reasons: pf.reasons, preflight: pf };
+    }
+    state.config.automation.enabled = true;
+    saveConfig();
+    state.automation.nextRunAt = null;
+    saveAutomation();
+    hideBanner();
+    log('automation', 'info', `자동화 켜짐: ${state.config.automation.intervalMinutes}분마다 Flow Matching 실행`);
+    renderAutomation();
+    this.start();
+    updateWakeLock();
+    return { ok: true, intervalMinutes: state.config.automation.intervalMinutes };
+  },
+  disable() {
+    state.config.automation.enabled = false;
+    saveConfig();
+    state.automation.nextRunAt = null;
+    saveAutomation();
+    this.stop();
+    updateWakeLock();
+    log('automation', 'info', '자동화 꺼짐');
+    renderAutomation();
+    return { ok: true };
+  },
+  status() {
+    return { enabled: !!state.config.automation.enabled, intervalMinutes: state.config.automation.intervalMinutes, nextRunAt: state.automation.nextRunAt, lastRunAt: state.automation.lastRunAt, lastBrake: state.automation.lastBrake, lastResult: state.lastRuns.automation || null };
+  },
+};
+
+async function updateWakeLock() {
+  const want = state.config.automation.enabled && state.config.automation.keepAwake && document.visibilityState === 'visible';
+  if (want && !state.wakeLock && 'wakeLock' in navigator) {
+    try { state.wakeLock = await navigator.wakeLock.request('screen'); state.wakeLock.addEventListener('release', () => { state.wakeLock = null; }); } catch (e) { log('automation', 'warn', `화면 켜짐 유지 실패: ${e.message}`); }
+  } else if (!want && state.wakeLock) { try { await state.wakeLock.release(); } catch { /* ignore */ } state.wakeLock = null; }
+}
+function notify(title, body) {
+  if (!state.config.automation.notify || !('Notification' in window) || Notification.permission !== 'granted') return;
+  try { new Notification(title, { body, icon: ICON_192 }); } catch { /* ignore */ }
+}
+
+/* ------------------------------------------------------------------ rendering */
+function renderChip(id, st, text) { const el = $(id); el.dataset.state = st; const t = el.querySelector('.chip-text'); if (t) t.textContent = text; else el.textContent = text; }
+function showBanner(text, kind = '') { const b = $('banner'); b.className = 'banner ' + kind; b.innerHTML = `<span class="banner-text"></span><button class="btn-secondary small" type="button">닫기</button>`; b.querySelector('.banner-text').textContent = text; b.querySelector('button').onclick = hideBanner; b.hidden = false; }
+function hideBanner() { $('banner').hidden = true; }
+
+function renderStatus() {
+  const cfg = state.config;
+  if (state.google.email) renderChip('status-google', 'ok', state.google.email);
+  else if (googleAuth.hasAny()) renderChip('status-google', 'warn', googleAuth.isValid() ? '연결됨 (계정 미확인)' : '토큰 만료 - 점검 필요');
+  else renderChip('status-google', 'off', '연결 안 됨');
+  const ghTok = store.get(LS.ghToken, null);
+  if (state.github.login) renderChip('status-github', 'ok', `${state.github.login} · ${cfg.github.owner}/${cfg.github.repo}`);
+  else if (ghTok) renderChip('status-github', 'warn', '토큰 저장됨 (미확인)');
+  else renderChip('status-github', 'off', '토큰 없음');
+  $('google-state').textContent = state.google.email
+    ? `${state.google.email} 로 연결됨 · ${googleAuth.describe()}${googleAuth.token ? ` · 토큰 만료 ${fmtTime(new Date(googleAuth.token.expires_at).toISOString())}` : ''}`
+    : googleAuth.hasAny() ? `토큰이 저장되어 있습니다 (${googleAuth.describe()}). 사전 점검으로 계정을 확인하세요.` : '이 기기에서 Google Drive에 로그인되어 있지 않습니다.';
+  $('github-state').textContent = ghTok ? (state.github.login ? `${state.github.login} 계정의 토큰이 저장되어 있습니다.` : '토큰이 저장되어 있습니다. 사전 점검으로 확인하세요.') : '저장된 GitHub 토큰이 없습니다.';
+  $('github-token').placeholder = ghTok ? '저장됨 (바꾸려면 새 토큰 입력)' : 'github_pat_...';
+  document.body.dataset.google = state.google.email || '';
+  document.body.dataset.github = state.github.login || '';
+  const branch = cfg.github.branch || 'HEAD';
+  $('target-link').href = `https://github.com/${cfg.github.owner}/${cfg.github.repo}/tree/${encodeURIComponent(branch)}/${core.joinPath(cfg.github.targetPath)}`;
+  $('target-link').textContent = `${cfg.github.owner}/${cfg.github.repo}/${core.joinPath(cfg.github.targetPath)}`;
+  $('stock-from').textContent = `Google Drive · ${cfg.google.sourceFolderId && cfg.google.sourceFolderId !== 'root' ? (cfg.google.sourceFolderName || cfg.google.sourceFolderId) : '내 드라이브 전체'}`;
+  $('stock-to').textContent = `${cfg.github.owner}/${cfg.github.repo}${cfg.github.branch ? '@' + cfg.github.branch : ''} : ${core.joinPath(cfg.github.targetPath)}`;
+  $('flow-from').textContent = `${cfg.device.name} 의 폴더`;
+  $('flow-mid').textContent = `Google Drive · ${core.joinPath(cfg.flow.driveSubPath, cfg.device.name)}/<폴더>`;
+  $('flow-to').textContent = `${cfg.github.owner}/${cfg.github.repo} : ${core.joinPath(cfg.github.targetPath, cfg.flow.driveSubPath, cfg.device.name)}/<폴더>`;
+  $('stock-last').textContent = state.lastRuns.stock ? `마지막 실행 ${fmtTime(state.lastRuns.stock.finishedAt || state.lastRuns.stock.at)}` : '';
+  $('flow-last').textContent = state.lastRuns.flow ? `마지막 실행 ${fmtTime(state.lastRuns.flow.finishedAt || state.lastRuns.flow.at)}` : '';
+  $('google-longrun-state').textContent = googleAuth.mode === 'refresh'
+    ? `켜짐 (${fmtTime(googleAuth.refresh.at)}부터). 토큰이 자동 갱신되어 창이 열려 있는 한 무인 실행이 이어집니다. Google Cloud 프로젝트가 "테스트" 상태이면 7일마다 다시 인증해야 합니다.`
+    : '꺼짐. 기본 연결은 1시간짜리 토큰을 쓰며, 만료 시 조용히 갱신을 시도하고 실패하면 재로그인을 요청합니다.';
+  renderAgentState();
+}
+
+function renderChecks(ul, checks) {
+  ul.innerHTML = '';
+  if (!checks || !checks.length) { ul.innerHTML = '<li class="empty">점검 결과가 없습니다.</li>'; return; }
+  for (const c of checks) {
+    const li = document.createElement('li');
+    li.className = c.ok ? 'ok' : 'fail';
+    li.innerHTML = `<span class="mark">${c.ok ? '✓' : '✗'}</span><span class="label"></span><span class="detail"></span>`;
+    li.querySelector('.label').textContent = c.label;
+    li.querySelector('.detail').textContent = c.detail || '';
+    ul.appendChild(li);
+  }
+}
+
+function renderPreflight(pf) {
+  renderChecks($('preflight-result'), pf && pf.checks);
+  $('preflight-time').textContent = pf ? `${fmtTime(pf.at)} 점검 · ${pf.ok ? '모두 통과' : `${pf.reasons.length}개 실패`}` : '';
+  renderChip('chip-preflight', pf ? (pf.ok ? 'ok' : 'fail') : 'idle', pf ? (pf.ok ? '통과' : '실패') : '점검 전');
+  $('btn-create-target').hidden = !(pf && pf.missingTarget && pf.checks.find((c) => c.id === 'github.write' && c.ok));
+}
+
+function showProgress(section, on) {
+  const el = $(`${section}-progress`);
+  el.hidden = !on;
+  const bar = el.querySelector('.progress-bar');
+  bar.classList.toggle('indeterminate', on);
+  bar.querySelector('span').style.width = '0%';
+  el.querySelector('.progress-text').textContent = on ? '준비 중…' : '';
+  renderChip(`chip-${section}`, on ? 'running' : 'idle', on ? '실행 중' : '대기');
+}
+function renderProgress(section, p) {
+  const el = $(`${section}-progress`);
+  if (el.hidden) return;
+  const bar = el.querySelector('.progress-bar');
+  const text = el.querySelector('.progress-text');
+  if (p.total) {
+    bar.classList.remove('indeterminate');
+    bar.querySelector('span').style.width = `${Math.round((p.done / p.total) * 100)}%`;
+    text.textContent = `${p.done}/${p.total}${p.folder ? ` [${p.folder}]` : ''} ${p.current ? '· ' + p.current : ''}`;
+  } else {
+    bar.classList.add('indeterminate');
+    text.textContent = p.detail || (p.phase === 'commit' ? `커밋 완료 ${p.committed}개` : p.phase || '');
+  }
+  emit('progress', { section, ...p });
+}
+
+function commitLinks(commits) {
+  return (commits || []).map((c) => `<a href="${escapeHtml(c.url || '#')}" target="_blank" rel="noopener">${c.sha.slice(0, 7)}</a> (${c.files})`).join(', ');
+}
+function renderSummary(section, res) {
+  const el = $(`${section}-summary`);
+  el.hidden = false;
+  el.classList.toggle('braked', !!res.braked || !!res.error);
+  if (res.braked) {
+    el.innerHTML = `<b>작업하지 않았습니다 (브레이크).</b><ul>${res.reasons.map((r) => `<li>${escapeHtml(r)}</li>`).join('')}</ul>`;
+    renderChip(`chip-${section}`, 'braked', '중단됨');
+    return;
+  }
+  if (res.error) { el.innerHTML = `<b>오류:</b> ${escapeHtml(res.error)}`; renderChip(`chip-${section}`, 'error', '오류'); return; }
+  if (res.aborted) { el.innerHTML = '<b>중지되었습니다.</b> 이미 커밋된 배치는 그대로 남고, 다음 실행에서 이어서 진행합니다.'; renderChip(`chip-${section}`, 'warn', '중지'); return; }
+  if (section === 'stock') {
+    const parts = [`Drive 파일 ${res.listed}개 (폴더 ${res.folders}개)`, `변경 없음 ${res.unchanged}`, `건너뜀 ${res.skipped.length}`];
+    if (res.dryRun) el.innerHTML = `<b>미리 보기:</b> 동기화 대상 ${res.planned}개 · ${parts.join(' · ')}${res.plan && res.plan.length ? `<ul>${res.plan.slice(0, 50).map((p) => `<li>${escapeHtml(p.path)} ${p.size ? `(${core.formatBytes(p.size)})` : ''}</li>`).join('')}${res.plan.length > 50 ? `<li>… 외 ${res.plan.length - 50}개</li>` : ''}</ul>` : ''}`;
+    else el.innerHTML = `<b>${res.synced}개 동기화</b> (${core.formatBytes(res.bytes)}) · 실패 ${res.failed.length} · ${parts.join(' · ')} · 커밋 ${res.commits.length}개 ${commitLinks(res.commits)}${res.failed.length ? `<ul>${res.failed.slice(0, 20).map((f) => `<li>${escapeHtml(f.path)}: ${escapeHtml(f.error)}</li>`).join('')}</ul>` : ''}`;
+    renderChip('chip-stock', res.failed && res.failed.length ? 'warn' : 'ok', res.dryRun ? '미리 보기' : `${res.synced}개 동기화`);
+  } else {
+    const rows = (res.folders || []).map((f) => `<li><b>${escapeHtml(f.label)}</b>: 검사 ${f.scanned}, 새 파일 ${f.fresh}${res.dryRun ? '' : `, 업로드 ${f.uploaded}, 실패 ${f.failed.length}`}${f.error ? ` · 오류: ${escapeHtml(f.error)}` : ''}${f.skipped && f.skipped.length ? ` · 건너뜀 ${f.skipped.length}` : ''}</li>`);
+    for (const s of res.skippedFolders || []) rows.push(`<li><b>${escapeHtml(s.label)}</b>: 건너뜀 - ${escapeHtml(s.reason)}</li>`);
+    el.innerHTML = `${res.dryRun ? '<b>미리 보기</b>' : `<b>${res.uploaded}개 업로드</b> (${core.formatBytes(res.bytes)}) · 실패 ${res.failed} · 커밋 ${(res.commits || []).length}개 ${commitLinks(res.commits)}`}<ul>${rows.join('')}</ul>`;
+    renderChip('chip-flow', res.failed ? 'warn' : 'ok', res.dryRun ? '미리 보기' : `${res.uploaded}개 업로드`);
+  }
+}
+
+async function renderFolders() {
+  const list = $('flow-folder-list');
+  if (!state.folders.length) { list.innerHTML = '<p class="hint empty">아직 지정된 폴더가 없습니다. "폴더 추가"로 이 기기의 폴더를 지정하세요. 여러 폴더를 지정하면 병렬로 업로드합니다.</p>'; return; }
+  const cards = await Promise.all(state.folders.map(async (f) => {
+    const r = await folderReadiness(f);
+    const div = document.createElement('div');
+    div.className = 'folder' + (r.ready ? '' : ' not-ready');
+    div.dataset.id = f.id;
+    const drivePath = core.joinPath(f.driveSubPath || core.joinPath(state.config.flow.driveSubPath, state.config.device.name, f.label));
+    div.innerHTML = `
+      <div class="f-head"><span class="f-label"></span><span class="f-mode">${f.mode === 'handle' ? '지속 접근' : '실행 시 선택'}</span><span class="f-state ${r.ready ? 'ok' : 'warn'}"></span></div>
+      <div class="f-meta"><span>Drive: <code class="f-path"></code></span><span>마지막 실행: ${fmtTime(f.lastRun)}</span>${f.lastResult ? `<span>업로드 ${f.lastResult.uploaded} · 실패 ${f.lastResult.failed} · 검사 ${f.lastResult.scanned}</span>` : ''}${f.fileCount != null ? `<span>파일 ${f.fileCount}개</span>` : ''}</div>
+      <div class="f-actions"></div>`;
+    div.querySelector('.f-label').textContent = f.label;
+    div.querySelector('.f-path').textContent = drivePath;
+    div.querySelector('.f-state').textContent = r.ready ? '준비됨' : r.reason;
+    const actions = div.querySelector('.f-actions');
+    const btn = (text, cls, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = cls + ' small'; b.textContent = text; b.disabled = !!state.running; b.onclick = fn; actions.appendChild(b); return b; };
+    if (f.mode === 'handle') {
+      if (r.permission === 'prompt') btn('권한 승인', 'btn', async () => { const h = await handles.get(f.id); try { await h.requestPermission({ mode: 'read' }); } catch (e) { log('flow', 'error', e.message); } renderFolders(); });
+      if (r.reselect) btn('폴더 다시 선택', 'btn', () => reselectFolder(f));
+      btn('지금 업로드', r.ready ? 'btn' : 'btn-secondary', () => doFlow({ folderIds: [f.id] }));
+    } else {
+      btn(r.ready ? '선택한 파일 업로드' : '폴더 선택 후 업로드', 'btn', () => { if (r.ready) doFlow({ folderIds: [f.id] }); else pickOneshot(f, 'dir'); });
+      btn('파일 선택', 'btn-secondary', () => pickOneshot(f, 'files'));
+    }
+    btn('경로', 'btn-secondary', () => { const p = prompt('Google Drive 안의 저장 경로 (원본 폴더 기준, 비우면 기본값)', f.driveSubPath || drivePath); if (p === null) return; f.driveSubPath = core.joinPath(p); saveFolders(); renderFolders(); });
+    btn('제외', 'btn-danger', async () => { if (!confirm(`"${f.label}" 폴더를 목록에서 제외할까요? Drive와 GitHub의 파일은 그대로 남습니다.`)) return; removeFolder(f.id); });
+    return div;
+  }));
+  list.innerHTML = '';
+  for (const c of cards) list.appendChild(c);
+}
+
+function renderAutomation() {
+  const cfg = state.config.automation;
+  $('auto-toggle').checked = !!cfg.enabled;
+  $('auto-interval').value = cfg.intervalMinutes;
+  $('auto-keepawake').checked = !!cfg.keepAwake;
+  $('auto-notify').checked = !!cfg.notify;
+  const next = state.automation.nextRunAt;
+  let text = cfg.enabled ? (next ? `다음 실행: ${fmtTime(next)}${Date.now() >= Date.parse(next) ? ' (지금)' : ''}` : '다음 실행: 곧') : '다음 실행: — (꺼짐)';
+  if (state.automation.lastRunAt) text += ` · 마지막 자동 실행: ${fmtTime(state.automation.lastRunAt)}`;
+  if (state.automation.lastBrake) text += ` · 마지막 중단: ${fmtTime(state.automation.lastBrake.at)}`;
+  $('auto-next').textContent = text;
+  renderChip('chip-automation', cfg.enabled ? (state.automation.lastBrake ? 'braked' : 'on') : 'off', cfg.enabled ? (state.automation.lastBrake ? '켜짐 · 중단됨' : `켜짐 · ${cfg.intervalMinutes}분`) : '꺼짐');
+  renderAgentState();
+}
+
+function publicState() {
+  const cfg = structuredClone(state.config);
+  cfg.google.clientSecret = cfg.google.clientSecret ? '(저장됨)' : '';
+  return {
+    app: 'Drives Sync', version: core.VERSION, url: APP_URL, at: core.nowIso(),
+    device: cfg.device, running: state.running ? { kind: state.running.kind, startedAt: state.running.startedAt } : null,
+    bodyState: document.body.dataset.state,
+    google: { connected: googleAuth.hasAny(), email: state.google.email, mode: googleAuth.mode, tokenValid: googleAuth.isValid() },
+    github: { tokenStored: !!store.get(LS.ghToken, null), login: state.github.login, repo: `${cfg.github.owner}/${cfg.github.repo}`, branch: cfg.github.branch || '(default)', targetPath: cfg.github.targetPath },
+    capabilities: { persistentFolders: supportsHandles, notifications: 'Notification' in window ? Notification.permission : 'unsupported', wakeLock: 'wakeLock' in navigator },
+    config: cfg,
+    folders: state.folders.map((f) => ({ id: f.id, label: f.label, mode: f.mode, driveSubPath: f.driveSubPath || null, lastRun: f.lastRun || null, lastResult: f.lastResult || null })),
+    preflight: state.lastRuns.preflight ? { ok: state.lastRuns.preflight.ok, at: state.lastRuns.preflight.at, reasons: state.lastRuns.preflight.reasons } : null,
+    lastRuns: { stock: brief(state.lastRuns.stock), flow: brief(state.lastRuns.flow), automation: brief(state.lastRuns.automation) },
+    automation: automation.status(),
+  };
+}
+function brief(r) {
+  if (!r) return null;
+  const { preflight: _p, plan: _pl, folders, ...rest } = r;
+  return { ...rest, ...(Array.isArray(folders) ? { folders: folders.map((f) => ({ id: f.id, label: f.label, scanned: f.scanned, fresh: f.fresh, uploaded: f.uploaded, failed: f.failed && f.failed.length, error: f.error || null })) } : (folders !== undefined ? { folders } : {})) };
+}
+let agentStateTimer = null;
+function renderAgentState() {
+  if (agentStateTimer) return;
+  agentStateTimer = setTimeout(() => { agentStateTimer = null; try { $('agent-state').textContent = JSON.stringify(publicState(), null, 1); } catch (e) { $('agent-state').textContent = String(e); } }, 80);
+}
+
+function renderForms() {
+  const cfg = state.config;
+  $('device-name').value = cfg.device.name;
+  $('google-expected').value = cfg.google.expectedEmail;
+  $('github-expected').value = cfg.github.expectedLogin;
+  $('github-owner').value = cfg.github.owner;
+  $('github-repo').value = cfg.github.repo;
+  $('github-branch').value = cfg.github.branch;
+  $('github-target').value = cfg.github.targetPath;
+  $('stock-source-id').value = cfg.google.sourceFolderId;
+  $('stock-source-name').value = cfg.google.sourceFolderName;
+  for (const k of ['document', 'spreadsheet', 'presentation', 'drawing']) $(`export-${k}`).value = cfg.google.exports[k];
+  $('flow-drive-sub').value = cfg.flow.driveSubPath;
+  $('google-client-id').value = cfg.google.clientId;
+  $('google-client-secret').value = cfg.google.clientSecret;
+  $('limit-max-mb').value = Math.round(cfg.limits.maxFileBytes / 1048576);
+  $('limit-batch-files').value = cfg.limits.batchFiles;
+  $('limit-concurrency').value = cfg.limits.concurrency;
+  $('origin-uri').textContent = location.origin;
+  $('redirect-uri').textContent = APP_URL;
+  $('app-version').textContent = 'v' + core.VERSION;
+  $('flow-capability').textContent = supportsHandles
+    ? '이 브라우저는 폴더 지속 접근(File System Access)을 지원합니다. 폴더를 한 번 선택해 두면 이후 실행과 자동화에서 새 파일을 스스로 찾습니다. 브라우저를 다시 열면 "권한 승인" 한 번이 필요할 수 있습니다.'
+    : '이 브라우저(휴대폰 등)는 폴더 지속 접근을 지원하지 않습니다. 실행할 때마다 폴더나 파일을 직접 선택하면, 이미 올린 파일은 건너뛰고 새 파일만 업로드합니다. 자동화(기능 3)는 지속 접근을 지원하는 노트북 브라우저(Chrome, Edge)에서 켜세요.';
+  $('flow-add-mode').value = supportsHandles ? 'handle' : 'oneshot';
+  $('flow-add-mode').querySelector('option[value="handle"]').disabled = !supportsHandles;
+}
+
+/* ------------------------------------------------------------------ folder actions */
+async function addFolder({ label, driveSubPath, mode }) {
+  label = (label || '').trim();
+  if (!label) throw new Error('폴더 이름(라벨)을 입력하세요.');
+  if (state.folders.some((f) => f.label === label)) throw new Error('같은 이름의 폴더가 이미 있습니다.');
+  const folder = { id: 'f-' + core.randomId(5), label, driveSubPath: core.joinPath(driveSubPath || ''), mode: mode === 'handle' && supportsHandles ? 'handle' : 'oneshot', addedAt: core.nowIso(), lastRun: null, lastResult: null };
+  if (folder.mode === 'handle') {
+    const h = await window.showDirectoryPicker({ mode: 'read' });
+    await handles.set(folder.id, h);
+    folder.fileCount = (await new HandleSource(h, label).list()).length;
+    folder.dirName = h.name;
+  }
+  state.folders.push(folder);
+  saveFolders();
+  log('flow', 'info', `폴더 추가: "${label}" (${folder.mode === 'handle' ? '지속 접근' : '실행 시 선택'})`);
+  renderFolders();
+  renderAgentState();
+  return folder;
+}
+async function reselectFolder(f) {
+  try { const h = await window.showDirectoryPicker({ mode: 'read' }); await handles.set(f.id, h); f.dirName = h.name; saveFolders(); log('flow', 'info', `폴더 다시 선택: "${f.label}"`); } catch (e) { if (e.name !== 'AbortError') log('flow', 'error', e.message); }
+  renderFolders();
+}
+function removeFolder(id) {
+  const f = state.folders.find((x) => x.id === id);
+  if (!f) return false;
+  state.folders = state.folders.filter((x) => x.id !== id);
+  saveFolders();
+  handles.del(id);
+  state.oneshot.delete(id);
+  log('flow', 'info', `폴더 제외: "${f.label}" (Drive/GitHub의 파일은 유지)`);
+  renderFolders();
+  renderAgentState();
+  return true;
+}
+let pendingOneshot = null;
+function pickOneshot(f, kind) {
+  pendingOneshot = f.id;
+  const input = $(kind === 'dir' ? 'flow-oneshot-input' : 'flow-oneshot-files');
+  input.value = '';
+  input.click();
+}
+function onOneshotChosen(input) {
+  const id = pendingOneshot;
+  pendingOneshot = null;
+  if (!id || !input.files || !input.files.length) return;
+  state.oneshot.set(id, Array.from(input.files));
+  const f = state.folders.find((x) => x.id === id);
+  log('flow', 'info', `"${f ? f.label : id}": ${input.files.length}개 파일 선택됨 - 새 파일만 업로드합니다.`);
+  doFlow({ folderIds: [id] });
+}
+
+/* ------------------------------------------------------------------ GitHub helpers used by the UI */
+async function createTargetFolder() {
+  return guarded('preflight', async (signal) => {
+    const ctx = makeCtx('preflight', signal);
+    const target = core.joinPath(state.config.github.targetPath);
+    const readme = `# ${target.split('/').pop()}\n\nDrives Sync가 동기화 대상으로 쓰는 폴더입니다. 이 폴더의 파일은 자유롭게 열람하고 정리해도 됩니다. 앱은 파일을 추가하거나 갱신만 하고 삭제하지 않습니다.\n`;
+    const res = await ctx.github.commitEntries({ message: `Drives Sync: create ${target}`, buildEntries: async () => [{ path: core.joinPath(target, 'README.md'), content: readme }] });
+    log('preflight', 'info', `대상 폴더 생성 커밋 ${res.sha.slice(0, 7)}: ${target}/README.md`);
+    await doPreflight();
+    return { ok: true, commit: res.sha };
+  });
+}
+async function resetManifest() {
+  if (!confirm('저장소의 매니페스트를 비웁니다. 다음 Stock/Flow 실행에서 모든 파일을 다시 확인해 같은 경로에 덮어씁니다(삭제 없음). 계속할까요?')) return { ok: false };
+  return guarded('preflight', async (signal) => {
+    const ctx = makeCtx('preflight', signal);
+    const pf = await core.preflight(ctx, { scope: 'stock' });
+    if (!pf.ok) { renderPreflight(pf); showBanner(pf.reasons.join('\n'), 'bad'); return { ok: false, braked: true, reasons: pf.reasons }; }
+    const path = core.joinPath(state.config.github.targetPath, core.MANIFEST_FILE);
+    const res = await ctx.github.commitEntries({ message: 'Drives Sync: reset manifest', buildEntries: async () => [{ path, content: JSON.stringify(core.emptyManifest(state.config), null, 1) + '\n' }] });
+    log('preflight', 'info', `매니페스트 초기화 커밋 ${res.sha.slice(0, 7)}`);
+    return { ok: true, commit: res.sha };
+  });
+}
+
+/* ------------------------------------------------------------------ wiring */
+function bindConfigInputs() {
+  const bind = (id, apply, event = 'change') => $(id).addEventListener(event, (e) => { apply(e.target.value); saveConfig(); renderStatus(); renderFolders(); });
+  bind('device-name', (v) => { state.config.device.name = v.trim() || state.config.device.name; });
+  bind('google-expected', (v) => { state.config.google.expectedEmail = v.trim(); });
+  bind('github-expected', (v) => { state.config.github.expectedLogin = v.trim(); });
+  bind('github-owner', (v) => { state.config.github.owner = v.trim(); });
+  bind('github-repo', (v) => { state.config.github.repo = v.trim(); });
+  bind('github-branch', (v) => { state.config.github.branch = v.trim(); });
+  bind('github-target', (v) => { state.config.github.targetPath = core.joinPath(v); $('github-target').value = state.config.github.targetPath; });
+  bind('stock-source-id', (v) => { const id = v.trim() || 'root'; state.config.google.sourceFolderId = id; $('stock-source-id').value = id; });
+  bind('stock-source-name', (v) => { state.config.google.sourceFolderName = v.trim(); });
+  for (const k of ['document', 'spreadsheet', 'presentation', 'drawing']) bind(`export-${k}`, (v) => { state.config.google.exports[k] = v; });
+  bind('flow-drive-sub', (v) => { state.config.flow.driveSubPath = core.joinPath(v) || 'DrivesSync'; $('flow-drive-sub').value = state.config.flow.driveSubPath; });
+  bind('google-client-id', (v) => { state.config.google.clientId = v.trim(); });
+  bind('google-client-secret', (v) => { state.config.google.clientSecret = v.trim(); });
+  bind('limit-max-mb', (v) => { state.config.limits.maxFileBytes = Math.min(100, Math.max(1, Number(v) || 100)) * 1048576; });
+  bind('limit-batch-files', (v) => { state.config.limits.batchFiles = Math.min(200, Math.max(1, Number(v) || 20)); });
+  bind('limit-concurrency', (v) => { state.config.limits.concurrency = Math.min(8, Math.max(1, Number(v) || 3)); });
+  $('auto-interval').addEventListener('change', (e) => { state.config.automation.intervalMinutes = Math.max(1, Number(e.target.value) || 30); e.target.value = state.config.automation.intervalMinutes; saveConfig(); if (state.config.automation.enabled) automation.schedule(); renderAutomation(); });
+  $('auto-keepawake').addEventListener('change', (e) => { state.config.automation.keepAwake = e.target.checked; saveConfig(); updateWakeLock(); });
+  $('auto-notify').addEventListener('change', async (e) => {
+    state.config.automation.notify = e.target.checked;
+    if (e.target.checked && 'Notification' in window && Notification.permission === 'default') { const p = await Notification.requestPermission(); if (p !== 'granted') { state.config.automation.notify = false; e.target.checked = false; } }
+    saveConfig();
+  });
+}
+
+function bindButtons() {
+  $('theme-toggle').addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : cur === 'light' ? 'dark' : (matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('lobby-theme', next); } catch { /* ignore */ }
+  });
+  $('btn-google-connect').addEventListener('click', async () => {
+    const b = $('btn-google-connect');
+    b.disabled = true;
+    try {
+      const about = await googleAuth.connect({ consent: true });
+      log('preflight', 'info', `Google Drive 연결: ${about.email}`);
+      hideBanner();
+      renderStatus();
+      await doPreflight({ quiet: true });
+    } catch (e) { log('preflight', 'error', e.message); showBanner(e.message, 'bad'); renderStatus(); } finally { b.disabled = false; }
+  });
+  $('btn-google-disconnect').addEventListener('click', async () => { await googleAuth.disconnect(); state.lastRuns.preflight = null; renderPreflight(null); log('preflight', 'info', 'Google Drive 연결 해제'); renderStatus(); });
+  $('btn-github-save').addEventListener('click', async () => {
+    const v = $('github-token').value.trim();
+    if (!v) { showBanner('GitHub 토큰을 입력하세요.'); return; }
+    store.set(LS.ghToken, v);
+    $('github-token').value = '';
+    state.github.login = null;
+    log('preflight', 'info', 'GitHub 토큰 저장');
+    renderStatus();
+    await doPreflight({ quiet: true });
+  });
+  $('btn-preflight').addEventListener('click', () => guarded('preflight', () => doPreflight()));
+  $('btn-create-target').addEventListener('click', createTargetFolder);
+  $('btn-stock-run').addEventListener('click', () => doStock());
+  $('btn-stock-dry').addEventListener('click', () => doStock({ dryRun: true }));
+  $('btn-stock-stop').addEventListener('click', () => state.running && state.running.abort.abort());
+  $('btn-flow-stop').addEventListener('click', () => state.running && state.running.abort.abort());
+  $('btn-flow-run-all').addEventListener('click', () => doFlow());
+  $('btn-flow-dry').addEventListener('click', () => doFlow({ dryRun: true }));
+  $('btn-flow-add').addEventListener('click', () => { $('flow-add-form').hidden = false; $('flow-add-label').focus(); });
+  $('flow-add-cancel').addEventListener('click', () => { $('flow-add-form').hidden = true; });
+  $('flow-add-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await addFolder({ label: $('flow-add-label').value, driveSubPath: $('flow-add-path').value, mode: $('flow-add-mode').value });
+      $('flow-add-form').hidden = true;
+      $('flow-add-label').value = '';
+      $('flow-add-path').value = '';
+    } catch (err) { if (err.name !== 'AbortError') { log('flow', 'error', err.message); showBanner(err.message, 'bad'); } }
+  });
+  $('flow-oneshot-input').addEventListener('change', (e) => onOneshotChosen(e.target));
+  $('flow-oneshot-files').addEventListener('change', (e) => onOneshotChosen(e.target));
+  $('auto-toggle').addEventListener('change', async (e) => { if (e.target.checked) await automation.enable(); else automation.disable(); });
+  $('btn-auto-check').addEventListener('click', () => guarded('preflight', async () => { const pf = await automationPrereqs(); if (!pf.ok) showBanner(pf.reasons.join('\n'), 'bad'); else hideBanner(); return pf; }));
+  $('btn-auto-run-now').addEventListener('click', () => automation.runOnce('manual-automation'));
+  $('btn-copy-state').addEventListener('click', async () => { try { await navigator.clipboard.writeText(JSON.stringify(publicState(), null, 2)); log('app', 'info', '상태 JSON을 복사했습니다.'); } catch (e) { log('app', 'warn', `복사 실패: ${e.message}`); } });
+  $('btn-export-logs').addEventListener('click', () => download(`drives-sync-logs-${Date.now()}.json`, JSON.stringify({ state: publicState(), logs: state.logs }, null, 1)));
+  $('btn-clear-logs').addEventListener('click', () => { state.logs = []; store.del(LS.logs); for (const s of Object.keys(logEls)) renderLog(s); });
+  $('btn-google-longrun').addEventListener('click', async () => { try { await googleAuth.startLongRun(); } catch (e) { showBanner(e.message, 'bad'); } });
+  $('btn-google-longrun-clear').addEventListener('click', () => { googleAuth.clearRefresh(); log('app', 'info', '장기 인증을 지웠습니다.'); renderStatus(); });
+  $('btn-config-export').addEventListener('click', () => { const cfg = structuredClone(state.config); cfg.google.clientSecret = ''; download('drives-sync-config.json', JSON.stringify({ config: cfg, folders: state.folders.map((f) => ({ ...f, mode: 'oneshot' })) }, null, 1)); });
+  $('config-import').addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      if (data.config) { const dev = state.config.device; state.config = normalizeConfig(core.withDefaults(data.config)); state.config.device = dev; saveConfig(); }
+      renderForms(); renderStatus(); renderAutomation();
+      log('app', 'info', '설정을 가져왔습니다 (폴더 접근 권한은 기기마다 다시 지정해야 합니다).');
+    } catch (err) { showBanner(`설정 가져오기 실패: ${err.message}`, 'bad'); }
+    e.target.value = '';
+  });
+  $('btn-manifest-reset').addEventListener('click', resetManifest);
+  $('btn-reset-all').addEventListener('click', async () => {
+    if (!confirm('이 기기의 앱 데이터(토큰, 설정, 폴더 지정, 로그)를 모두 지웁니다. 저장소와 Drive의 파일은 그대로입니다. 계속할까요?')) return;
+    await googleAuth.disconnect().catch(() => null);
+    for (const f of state.folders) await handles.del(f.id);
+    for (const k of Object.values(LS)) store.del(k);
+    location.reload();
+  });
+  $('install-btn').addEventListener('click', async () => { const p = state.installPrompt; if (!p) return; $('install-btn').hidden = true; await p.prompt(); state.installPrompt = null; });
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); state.installPrompt = e; $('install-btn').hidden = false; });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { automation.tick(); updateWakeLock(); } });
+}
+
+function download(name, text) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ------------------------------------------------------------------ agent API */
+window.DrivesSync = {
+  version: core.VERSION,
+  getState: () => publicState(),
+  preflight: ({ scope = 'stock' } = {}) => guarded('preflight', () => doPreflight({ scope })),
+  runStock: (opts = {}) => doStock({ dryRun: !!opts.dryRun, trigger: opts.trigger || 'agent' }),
+  runFlow: (opts = {}) => doFlow({ folderIds: opts.folderIds, dryRun: !!opts.dryRun, trigger: opts.trigger || 'agent', strict: !!opts.strict }),
+  automation: { enable: (o) => automation.enable(o || {}), disable: () => automation.disable(), status: () => automation.status(), runNow: () => automation.runOnce('agent') },
+  config: {
+    get: () => publicState().config,
+    set: (patch) => { const dev = state.config.device; state.config = normalizeConfig(core.withDefaults(core.deepMerge(state.config, patch || {}))); if (patch && patch.device) state.config.device = { ...dev, ...patch.device }; saveConfig(); renderForms(); renderStatus(); renderAutomation(); return publicState().config; },
+  },
+  folders: {
+    list: () => publicState().folders,
+    /** mode 'oneshot' works without a user gesture; 'handle' opens the folder picker and needs one. */
+    add: async ({ label, driveSubPath, mode = 'oneshot' } = {}) => { const f = await addFolder({ label, driveSubPath, mode }); return { id: f.id, label: f.label, mode: f.mode, driveSubPath: f.driveSubPath }; },
+    remove: (id) => removeFolder(id),
+    update: (id, patch) => { const f = state.folders.find((x) => x.id === id); if (!f) return null; if (patch.label) f.label = String(patch.label); if (patch.driveSubPath !== undefined) f.driveSubPath = core.joinPath(patch.driveSubPath); saveFolders(); renderFolders(); return { id: f.id, label: f.label, driveSubPath: f.driveSubPath }; },
+    readiness: async (id) => { const f = state.folders.find((x) => x.id === id); if (!f) return null; const r = await folderReadiness(f); return { ready: r.ready, reason: r.reason || null }; },
+  },
+  tokens: { setGitHub: (token) => { if (!token) store.del(LS.ghToken); else store.set(LS.ghToken, String(token).trim()); state.github.login = null; renderStatus(); return { ok: true }; } },
+  logs: { get: (n = 200) => state.logs.slice(-n), clear: () => { state.logs = []; store.del(LS.logs); for (const s of Object.keys(logEls)) renderLog(s); return { ok: true }; } },
+  on: (event, fn) => { if (!listeners.has(event)) listeners.set(event, new Set()); listeners.get(event).add(fn); return () => listeners.get(event).delete(fn); },
+};
+
+/* ------------------------------------------------------------------ single-file edition helpers */
+/** The one-file edition has no manifest.webmanifest, so it offers an equivalent one from memory. */
+function installSingleFileManifest() {
+  try {
+    const dir = location.href.split(/[?#]/)[0].replace(/[^/]*$/, '');
+    const manifest = {
+      name: 'Drives Sync', short_name: 'Drives Sync', description: 'Google Drive, GitHub Drive 저장소, 기기 폴더를 한 방향으로 누적 동기화합니다.',
+      start_url: location.href.split(/[?#]/)[0], scope: dir, display: 'standalone', lang: 'ko', background_color: '#f9f9f7', theme_color: '#2a78d6',
+      icons: [
+        { src: BUILD.icon192, sizes: '192x192', type: 'image/png' },
+        { src: BUILD.icon512, sizes: '512x512', type: 'image/png' },
+        { src: BUILD.iconMaskable || BUILD.icon512, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      ].filter((i) => i.src),
+    };
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }));
+    document.head.appendChild(link);
+  } catch { /* the page still works without an install manifest */ }
+}
+function showPreviewNote() {
+  const note = document.createElement('div');
+  note.className = 'banner';
+  note.id = 'preview-note';
+  note.innerHTML = '<span class="banner-text"><b>미리 보기입니다.</b> 화면, 설정, 사전 점검(브레이크)의 동작만 확인할 수 있습니다. </span>';
+  note.querySelector('.banner-text').append(PREVIEW_REASON);
+  document.querySelector('.wrap').prepend(note);
+  // file saves are inert inside the preview host
+  for (const id of ['btn-export-logs', 'btn-config-export']) { const b = $(id); b.disabled = true; b.title = '미리 보기에서는 파일 저장이 막혀 있습니다.'; }
+  $('config-import').disabled = true;
+}
+
+/* ------------------------------------------------------------------ boot */
+async function boot() {
+  if (!document.body.dataset.state) document.body.dataset.state = 'idle';
+  if (BUILD.single) installSingleFileManifest();
+  if (PREVIEW) showPreviewNote();
+  renderForms();
+  bindConfigInputs();
+  bindButtons();
+  for (const s of Object.keys(logEls)) renderLog(s);
+  renderPreflight(state.lastRuns.preflight);
+  if (state.lastRuns.stock) renderSummary('stock', state.lastRuns.stock);
+  if (state.lastRuns.flow) renderSummary('flow', state.lastRuns.flow);
+  renderAutomation();
+  renderStatus();
+  await renderFolders();
+  try {
+    if (await googleAuth.handleRedirect()) { log('app', 'info', 'Google 장기 인증을 저장했습니다.'); renderStatus(); }
+  } catch (e) { log('app', 'error', e.message); showBanner(e.message, 'bad'); }
+  if ('serviceWorker' in navigator && location.protocol === 'https:' && !BUILD.single) navigator.serviceWorker.register('sw.js').catch((e) => log('app', 'warn', `서비스 워커 등록 실패: ${e.message}`));
+  if (location.protocol === 'file:') showBanner('파일을 직접 열면(file://) Google 로그인이 되지 않습니다. GitHub Pages 주소에서 열거나, 이 파일이 있는 폴더에서 "python -m http.server 8000"을 실행해 http://localhost:8000 으로 여세요.');
+  if (googleAuth.hasAny() && store.get(LS.ghToken, null)) await guarded('preflight', () => doPreflight({ quiet: true }));
+  if (state.config.automation.enabled) { log('automation', 'info', '앱을 다시 열어 자동화를 재개합니다.'); automation.start(); updateWakeLock(); }
+  log('app', 'info', `Drives Sync v${core.VERSION} 준비 (${state.config.device.name})`);
+  renderAgentState();
+}
+boot();
+
+  </script>
+</body>
+</html>
