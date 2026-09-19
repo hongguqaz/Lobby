@@ -6,6 +6,7 @@ bedroom) from one template.  Run from the repository root:
 
 Each page shows assets/img/<room>.jpg when that file exists and the drawn SVG
 scene otherwise; film grain and a vignette are laid over either."""
+import json
 import random
 from pathlib import Path
 
@@ -142,6 +143,13 @@ def fin_lab():
     .figure-photo.frame { position: absolute; inset: 0; height: 100%; opacity: 0; transition: opacity 0.32s ease; }
     .figure-photo.frame.on { opacity: 1; }
     .figure-photo.frame.fast { transition-duration: 0.12s; }
+    .figure-photo.frame.instant { transition: none; }
+    .figure-photo.morph { position: absolute; inset: 0; height: 100%; opacity: 0; pointer-events: none; }
+    .figure-photo.morph.on { opacity: 1; }
+    .figure-photo.clip { position: absolute; inset: 0; height: 100%; opacity: 0; pointer-events: none; background: transparent; }
+    .figure-photo.clip.on { opacity: 1; }
+    .nameplate .sound { font: inherit; font-size: 12px; color: var(--room-muted); background: transparent; border: 1px solid var(--room-line); border-radius: 6px; padding: 2px 7px; cursor: pointer; margin-right: 6px; }
+    .nameplate .sound[aria-pressed="true"] { color: var(--room-ink); border-color: var(--room-accent); }
     @keyframes breathe { 50% { transform: scale(1.012) translateY(-1px); } }
     .figure-glow { position: absolute; inset: 0; background: radial-gradient(60% 45% at 18% 42%, rgba(79,163,255,0.28), rgba(79,163,255,0) 70%); mix-blend-mode: screen; animation: monitor 3.4s ease-in-out infinite alternate; pointer-events: none; }
     @keyframes monitor { to { opacity: 0.45; } }
@@ -183,12 +191,14 @@ def fin_lab():
             <img class="figure-photo base" src="assets/analyst.jpg" alt="" width="768" height="1152">
             <img class="figure-photo frame" alt="" aria-hidden="true">
             <img class="figure-photo frame" alt="" aria-hidden="true">
+            <canvas class="figure-photo morph" width="512" height="768" aria-hidden="true"></canvas>
+__VIDEOS__
             <div class="figure-glow"></div>
             <div class="figure-shine"></div>
           </div>
           <div class="figure-ring"></div>
         </div>
-        <div class="nameplate"><span id="fig-name">Analyst on duty</span><span class="lang" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="true">EN</button><button type="button" data-lang="ko" aria-pressed="false">KO</button></span></div>
+        <div class="nameplate"><span id="fig-name">Analyst on duty</span><span class="lang" role="group" aria-label="Language"><button type="button" class="sound" id="fig-sound" aria-pressed="true" title="Sound">&#128266;</button><button type="button" data-lang="en" aria-pressed="true">EN</button><button type="button" data-lang="ko" aria-pressed="false">KO</button></span></div>
         <div class="bubble" id="bubble" aria-live="polite"><span id="bubble-text"></span><span class="caret" aria-hidden="true"></span></div>
         <div class="chips" id="chips"></div>
       </aside>
@@ -205,7 +215,24 @@ def fin_lab():
         placard('Analyst reports', 'Sell-side and in-house research, tagged by sector, issuer and author, with the key charts kept alongside.', 'Space reserved'),
         placard('Sources &amp; feeds', 'Where the material comes from and how it is refreshed: uploads, scheduled pulls, and links to be connected.', 'To be connected'),
         placard('Hand-off to the Market Board', 'What the lab extracts for the board outside: series, snapshots and summaries, once the database is established.', 'Planned'))
-    return shell('fin-lab', 'Fin Lab', palette, scene(inner, defs), body, extra_scripts='  <script src="assets/figure.js"></script>')
+    body = body.replace('__VIDEOS__', clip_videos())
+    return shell('fin-lab', 'Fin Lab', palette, scene(inner, defs), body, extra_scripts='  <script src="assets/frames/morph/manifest.js"></script>\n  <script src="assets/clips/clips.js"></script>\n  <script src="assets/figure.js"></script>')
+
+
+def clip_videos():
+    """One <video> per clip listed in fin-lab/assets/clips/clips.json (the greeting preloads
+    fully, the rest wait for the conversation to open)."""
+    path = ROOT / 'fin-lab' / 'assets' / 'clips' / 'clips.json'
+    if not path.exists():
+        return ''
+    clips = json.loads(path.read_text())['clips']
+    tags = []
+    for name in sorted(clips):
+        preload = 'auto' if clips[name]['kind'] == 'greet' else 'metadata'
+        tags.append('            <video class="figure-photo clip" data-clip="%s" data-kind="%s" playsinline preload="%s" aria-hidden="true">'
+                    '<source src="assets/clips/%s.webm" type="video/webm"><source src="assets/clips/%s.mp4" type="video/mp4"></video>'
+                    % (name, clips[name]['kind'], preload, name, name))
+    return '\n'.join(tags)
 
 
 # ====================================================================== LEGAL QUARTER
