@@ -126,6 +126,21 @@ await test('with the right accounts: preflight passes, chips show the accounts',
   assert.equal(await page.getAttribute('#chip-preflight', 'data-state'), 'ok');
 });
 
+await test('brake: a token without Contents permission shows the fix inline with a clickable link', async () => {
+  world.perms.read = false;
+  world.perms.write = false;
+  const pf = await api('DrivesSync.preflight()');
+  assert.equal(pf.ok, false);
+  assert.equal(pf.permission, true);
+  const text = await page.textContent('#preflight-result');
+  assert.ok(text.includes('Contents') && text.includes('Fine-grained tokens') && text.includes('Read and write'), text);
+  assert.ok(!text.includes('HTTP 403'), text);
+  assert.ok(await page.$('#preflight-result a[href="https://github.com/settings/personal-access-tokens"]'), 'token settings link rendered');
+  assert.equal(await page.getAttribute('#chip-preflight', 'data-state'), 'fail');
+  world.perms.read = true;
+  world.perms.write = true;
+});
+
 await test('brake: a wrong Google account is reported and refused', async () => {
   world.email = 'other.person@gmail.com';
   const pf = await api('DrivesSync.preflight()');

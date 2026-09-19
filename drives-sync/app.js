@@ -110,6 +110,10 @@ function renderLog(section) {
   el.innerHTML = lines.map((l) => `<span class="${l.level}">${fmtTime(l.t, true)} ${escapeHtml(l.msg)}</span>`).join('\n');
   el.scrollTop = el.scrollHeight;
 }
+/** Escapes text and turns https URLs into links that open in a new tab. */
+function linkify(text) {
+  return escapeHtml(text).replace(/https?:\/\/[^\s<)]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+}
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 function fmtTime(iso, short = false) {
   if (!iso) return '—';
@@ -575,7 +579,7 @@ function renderChecks(ul, checks) {
     li.className = c.ok ? 'ok' : 'fail';
     li.innerHTML = `<span class="mark">${c.ok ? '✓' : '✗'}</span><span class="label"></span><span class="detail"></span>`;
     li.querySelector('.label').textContent = c.label;
-    li.querySelector('.detail').textContent = c.detail || '';
+    li.querySelector('.detail').innerHTML = linkify(c.detail || '');
     ul.appendChild(li);
   }
 }

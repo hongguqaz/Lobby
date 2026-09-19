@@ -83,6 +83,7 @@
                 </span>
               </label>
               <p class="hint" id="github-state">저장된 GitHub 토큰이 없습니다.</p>
+              <p class="hint">토큰 만들기: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Fine-grained token 새로 만들기</a> → Repository access는 <b>Only select repositories → Drive</b>, Repository permissions는 <b>Contents → Read and write</b>. 이미 만든 토큰은 <a href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noopener">토큰 목록</a>에서 열어 같은 두 항목을 고칠 수 있습니다(토큰 값은 그대로). Lobby README의 <code>LOBBY_DEPLOY_TOKEN</code>은 다른 용도(Lobby 저장소)의 토큰입니다.</p>
               <div class="grid-2">
                 <label>계정 (예상) <input id="github-expected" type="text" placeholder="hongguqaz" spellcheck="false"></label>
                 <label>저장소 <span class="row tight"><input id="github-owner" type="text" placeholder="hongguqaz" spellcheck="false"><b>/</b><input id="github-repo" type="text" placeholder="Drive" spellcheck="false"></span></label>
