@@ -43,15 +43,26 @@ Google Drive, 비공개 `Drive` 저장소, 그리고 기기(휴대폰·노트북
 
 ### 2. GitHub 토큰 만들기
 
-1. GitHub → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token.
-2. Repository access: *Only select repositories* → **Drive**.
-3. Permissions → Repository permissions → **Contents: Read and write** (Metadata는 자동으로 Read).
-4. 만료 기간을 정하고 생성한 뒤 토큰(`github_pat_…`)을 복사합니다.
-5. 앱의 **0번 바**에 붙여 넣고 *저장*을 누릅니다.
+> Lobby 저장소 README에 나오는 `LOBBY_DEPLOY_TOKEN`은 **다른 토큰**입니다(Drive → Lobby 발행용, Lobby 저장소 권한).
+> Drives Sync에는 **Drive 저장소**에 쓸 수 있는 토큰이 따로 필요합니다.
+
+1. https://github.com/settings/personal-access-tokens/new 를 엽니다
+   (GitHub → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token).
+2. Token name: `Drives Sync`, Expiration: 원하는 기간.
+3. **Repository access**: *Only select repositories* → 목록에서 **Drive** 를 고릅니다.
+4. **Permissions → Repository permissions**: **Contents** 를 찾아 **Read and write** 로 바꿉니다.
+   (Metadata: Read-only 는 자동으로 붙습니다. 다른 권한은 필요 없습니다.)
+5. Generate token → 토큰(`github_pat_…`)을 복사해 앱의 **0번 바**에 붙여 넣고 *저장*을 누릅니다.
+
+권한을 빠뜨렸다면 새로 만들 필요 없이 https://github.com/settings/personal-access-tokens 에서 그 토큰을 열어
+3·4번 항목을 고치고 저장(Update)하면 됩니다. 토큰 값은 바뀌지 않으므로 앱에서는 *사전 점검 실행*만 다시 누르세요.
+
+간단하지만 범위가 넓은 대안: classic 토큰(https://github.com/settings/tokens/new?scopes=repo&description=Drives%20Sync,
+`repo` 체크)도 됩니다. 단, 계정의 모든 저장소에 쓸 수 있는 토큰이므로 fine-grained 쪽을 권합니다.
 
 ### 3. 연결하고 점검하기
 
-0번 바에서 **Google Drive 연결**(계정 선택 → 권한 승인) → **사전 점검 실행**. 열 개 항목이 모두 ✓이면 준비 끝입니다.
+0번 바에서 **Google Drive 연결**(계정 선택 → 권한 승인) → **사전 점검 실행**. 모든 항목이 ✓이면 준비 끝입니다. ✗가 있으면 그 항목에 고치는 법이 적혀 있습니다.
 대상 폴더 `fin-lab/FinResearchRaw`는 이미 저장소에 있습니다. 다른 경로로 바꿨는데 폴더가 없으면 점검이 멈추고
 *대상 폴더 만들기* 버튼이 나타납니다.
 
@@ -101,7 +112,7 @@ Google Drive, 비공개 `Drive` 저장소, 그리고 기기(휴대폰·노트북
 *자동 실행*을 켜면 즉시 한 번, 그 뒤 주기(기본 30분)마다 기능 2를 실행합니다. 켤 때와 매 실행 전에 선결 조건을 다시
 점검하며, 하나라도 빠지면 **실행하지 않고** 사유를 자동화 로그·배너·알림(켠 경우)에 남깁니다.
 
-선결 조건: 사전 점검 10개 항목 통과, Drive 쓰기 권한, 지정된 폴더가 1개 이상, 모든 폴더가 *지속 접근* 방식이고 권한이
+선결 조건: 사전 점검 전 항목 통과, Drive 쓰기 권한, 지정된 폴더가 1개 이상, 모든 폴더가 *지속 접근* 방식이고 권한이
 승인된 상태, 주기가 1분 이상. 로그인 문제(토큰 만료, 다른 계정)로 멈추면 자동화를 끄고 알립니다. 그 밖의 문제는 다음
 주기에 다시 시도합니다.
 
@@ -121,9 +132,10 @@ Google Drive, 비공개 `Drive` 저장소, 그리고 기기(휴대폰·노트북
 | Drive 원본 폴더 | 폴더 ID가 틀렸거나 접근 불가 |
 | GitHub 로그인 | 토큰이 없음 |
 | GitHub 계정 일치 | 설정한 계정(`hongguqaz`)이 아닌 계정의 토큰 |
-| GitHub 저장소 | 저장소가 없거나 토큰의 접근 범위 밖 |
-| GitHub 쓰기 권한 | 토큰에 Contents: Read and write가 없음 |
-| GitHub 브랜치 / 대상 폴더 | 브랜치가 없거나 대상 폴더가 없음(*대상 폴더 만들기* 버튼) |
+| GitHub 저장소 | 저장소가 없거나 토큰의 Repository access 밖(비공개 저장소는 404) |
+| GitHub 토큰 범위 | classic 토큰인데 `repo` 범위가 없음 |
+| GitHub 브랜치 / 대상 폴더 | Contents 권한이 없음(고치는 법을 항목에 표시), 브랜치가 없음, 대상 폴더가 없음(*대상 폴더 만들기* 버튼) |
+| GitHub 쓰기 권한 | Contents 가 Read-only 이거나 없음 |
 
 ## 에이전트가 쓰는 법
 
@@ -144,7 +156,11 @@ GitHub 토큰은 Drive 저장소 하나에만, Contents 권한만 주도록 만�
 
 - **로그인 팝업이 차단됨**: 주소창의 팝업 차단 아이콘에서 허용하고 다시 누릅니다.
 - **"다른 Google 계정이 로그인되어 있습니다"**: 의도한 브레이크입니다. 연결 해제 후 계정 선택 화면에서 올바른 계정을 고르세요.
-- **GitHub 쓰기 권한 실패(403)**: 토큰의 Repository access에 Drive가 포함되고 Contents가 Read and write인지 확인합니다.
+- **"Resource not accessible by personal access token" / GitHub 쓰기 권한·브랜치·대상 폴더가 한꺼번에 실패**: 토큰이 Drive
+  저장소에는 닿지만(저장소 항목 ✓) **Contents 권한이 "No access"** 인 상태입니다. https://github.com/settings/personal-access-tokens
+  에서 그 토큰을 열어 Repository permissions → Contents 를 **Read and write** 로 바꾸고 저장한 뒤 *사전 점검 실행*을 다시 누르세요.
+  브랜치·대상 폴더만 ✓이고 쓰기 권한만 ✗이면 Contents 가 Read-only 인 경우입니다. 같은 방법으로 고칩니다.
+- **GitHub 저장소 404**: 토큰의 Repository access 에 Drive 가 빠져 있습니다(비공개 저장소는 접근 범위 밖이면 404로 보입니다).
 - **토큰 만료(401)**: 새 토큰을 만들어 0번 바에 다시 저장합니다.
 - **폴더 권한 재승인**: 브라우저 재시작 후에는 폴더 항목의 *권한 승인*을 한 번 누릅니다.
 - **iPhone에서 폴더 선택이 안 됨**: *파일 선택* 버튼으로 여러 파일을 고르면 됩니다.

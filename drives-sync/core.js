@@ -630,6 +630,13 @@ export class GitHubRepo {
 
   async user() { return this.api('/user'); }
 
+  /** GET /user plus the scopes GitHub reports for classic tokens (X-OAuth-Scopes; empty for fine-grained tokens). */
+  async userWithScopes() {
+    const res = await this.api('/user', { raw: true });
+    const scopes = (res.headers.get('x-oauth-scopes') || '').split(',').map((x) => x.trim()).filter(Boolean);
+    return { user: await res.json(), scopes };
+  }
+
   async repoInfo() {
     if (!this._info) this._info = await this.api('');
     return this._info;
@@ -792,6 +799,30 @@ class Committer {
   }
 }
 
+/* ------------------------------------------------------------------ GitHub token helpers */
+
+export function githubTokenKind(token) {
+  const t = String(token || '');
+  if (t.startsWith('github_pat_')) return 'fine-grained';
+  if (t.startsWith('ghp_')) return 'classic';
+  if (t.startsWith('gho_')) return 'oauth';
+  if (t.startsWith('ghs_') || t.startsWith('ghu_')) return 'app';
+  return 'unknown';
+}
+
+export const GITHUB_TOKEN_KIND_LABEL = { 'fine-grained': 'fine-grained 토큰', classic: 'classic 토큰', oauth: 'OAuth 토큰', app: 'GitHub App 토큰', unknown: '토큰' };
+
+export const GITHUB_NEW_CLASSIC_TOKEN_URL = 'https://github.com/settings/tokens/new?scopes=repo&description=Drives%20Sync';
+export const GITHUB_TOKENS_URL = 'https://github.com/settings/personal-access-tokens';
+
+/** What to do when GitHub answers "Resource not accessible by personal access token". */
+export function githubPermissionHelp({ kind, scopes = [], repo, need = '읽기' }) {
+  if (kind === 'classic') {
+    return `classic 토큰에 'repo' 범위(scope)가 없어 ${repo} 저장소를 ${need === '쓰기' ? '쓸' : '읽을'} 수 없습니다${scopes.length ? ` (현재 범위: ${scopes.join(', ')})` : ''}. ${GITHUB_NEW_CLASSIC_TOKEN_URL} 에서 repo에 체크한 새 토큰을 만들어 입력하세요.`;
+  }
+  return `이 토큰에는 ${repo} 저장소의 Contents(${need}) 권한이 없습니다. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens (${GITHUB_TOKENS_URL}) 에서 이 토큰을 열어 ① Repository access에 ${repo}가 포함되어 있는지 확인하고 ② Repository permissions → Contents를 "Read and write"로 바꾼 뒤 맨 아래 저장(Update)을 누르세요. 토큰 값은 그대로이므로 다시 입력할 필요 없이 "사전 점검 실행"만 다시 누르면 됩니다.`;
+}
+
 /* ------------------------------------------------------------------ context + preflight */
 
 /**
@@ -867,10 +898,13 @@ export async function preflight(ctx, { scope = 'stock', extraChecks = [] } = {})
   if (!ghToken) {
     add('github.token', 'GitHub 로그인', false, '이 기기에 GitHub 토큰이 저장되어 있지 않습니다. GitHub 토큰(fine-grained, Contents: Read and write)을 입력하세요.', { needLogin: true });
   } else {
-    add('github.token', 'GitHub 로그인', true, '토큰 확인');
+    const kind = githubTokenKind(ghToken);
+    add('github.token', 'GitHub 로그인', true, `토큰 확인 (${GITHUB_TOKEN_KIND_LABEL[kind]})`);
     const expected = (cfg.github.expectedLogin || '').trim();
+    let scopes = [];
     try {
-      const u = await ctx.github.user();
+      const { user: u, scopes: s } = await ctx.github.userWithScopes();
+      scopes = s;
       if (expected && u.login.toLowerCase() !== expected.toLowerCase()) {
         add('github.account', 'GitHub 계정 일치', false, `다른 GitHub 계정(${u.login})의 토큰입니다. 설정된 계정은 ${expected}입니다.`, { mismatch: true, actual: u.login, expected });
       } else add('github.account', 'GitHub 계정 일치', true, u.login, { actual: u.login });
@@ -879,35 +913,51 @@ export async function preflight(ctx, { scope = 'stock', extraChecks = [] } = {})
       else if (e.status === 403 && ctx.env.githubActions) add('github.account', 'GitHub 계정 일치', true, 'GitHub Actions 토큰 (계정 조회 불가, 저장소 권한으로 확인)');
       else add('github.account', 'GitHub 계정 일치', false, `GitHub 계정을 확인할 수 없습니다: ${e.message}`);
     }
-    let repoOk = false;
+    let info = null;
     try {
-      const info = await ctx.github.repoInfo();
+      info = await ctx.github.repoInfo();
       const branch = await ctx.github.resolveBranch();
-      repoOk = true;
       add('github.repo', 'GitHub 저장소', true, `${info.full_name} (${info.private ? 'private' : 'public'}), 브랜치 ${branch}`);
     } catch (e) {
+      const classicHint = kind === 'classic' && !scopes.includes('repo') ? ` classic 토큰에 repo 범위가 없습니다(현재: ${scopes.join(', ') || '없음'}). ${GITHUB_NEW_CLASSIC_TOKEN_URL} 에서 repo에 체크한 토큰을 만드세요.` : '';
       add('github.repo', 'GitHub 저장소', false, e.status === 404
-        ? `저장소 ${ctx.github.fullName}에 접근할 수 없습니다(404). 토큰의 저장소 접근 범위와 이름을 확인하세요.`
-        : `저장소를 확인할 수 없습니다: ${e.message}`);
+        ? `저장소 ${ctx.github.fullName}에 접근할 수 없습니다(404). 토큰의 Repository access에 이 저장소가 포함되어 있는지, 이름이 맞는지 확인하세요.${classicHint}`
+        : `저장소를 확인할 수 없습니다: ${e.message}${classicHint}`);
     }
-    if (repoOk) {
-      try { await ctx.github.probeWrite(); add('github.write', 'GitHub 쓰기 권한', true, 'Contents: write 확인'); } catch (e) {
-        add('github.write', 'GitHub 쓰기 권한', false, e.status === 403 || e.status === 404
-          ? '저장소에 쓰기 권한이 없습니다. 토큰에 Contents: Read and write 권한이 필요합니다.'
-          : `쓰기 권한을 확인할 수 없습니다: ${e.message}`);
+    if (info) {
+      const repo = info.full_name;
+      const help = (need) => githubPermissionHelp({ kind, scopes, repo, need });
+      if (kind === 'classic') {
+        const hasRepo = scopes.includes('repo') || (!info.private && scopes.includes('public_repo'));
+        add('github.scope', 'GitHub 토큰 범위', hasRepo, hasRepo ? scopes.join(', ') : `classic 토큰에 repo 범위(scope)가 없습니다 (현재: ${scopes.join(', ') || '없음'}). ${GITHUB_NEW_CLASSIC_TOKEN_URL} 에서 repo에 체크한 새 토큰을 만들어 입력하세요.`, { permission: !hasRepo });
       }
-      try { const head = await ctx.github.branchHead(); add('github.branch', 'GitHub 브랜치', true, `${head.branch} @ ${head.commitSha.slice(0, 7)}`); } catch (e) {
-        add('github.branch', 'GitHub 브랜치', false, `브랜치 ${ctx.github.branch || '(기본)'}을(를) 찾을 수 없습니다: ${e.message}`);
+      let readOk = false;
+      try {
+        const head = await ctx.github.branchHead();
+        readOk = true;
+        add('github.branch', 'GitHub 브랜치', true, `${head.branch} @ ${head.commitSha.slice(0, 7)}`);
+      } catch (e) {
+        if (e.status === 403) add('github.branch', 'GitHub 브랜치', false, help('읽기'), { permission: true });
+        else if (e.status === 404) add('github.branch', 'GitHub 브랜치', false, `브랜치 ${ctx.github.branch || '(기본)'}을(를) 찾을 수 없습니다(404). 브랜치 이름을 확인하세요. 비워 두면 저장소의 기본 브랜치를 씁니다.`);
+        else add('github.branch', 'GitHub 브랜치', false, `브랜치를 확인할 수 없습니다: ${e.message}`);
       }
       const target = joinPath(cfg.github.targetPath);
       if (!target) add('github.target', 'GitHub 대상 폴더', false, '대상 폴더 경로가 비어 있습니다(저장소 루트 전체 동기화는 허용하지 않습니다).');
+      else if (!readOk) add('github.target', 'GitHub 대상 폴더', false, '브랜치를 읽지 못해 확인하지 못했습니다. 위의 브랜치 항목 문제를 먼저 해결하세요.');
       else {
         try {
           const c = await ctx.github.contents(target);
           if (c === null) add('github.target', 'GitHub 대상 폴더', false, `대상 폴더가 저장소에 없습니다: ${target}. 경로를 확인하거나 먼저 폴더를 만드세요.`, { missingTarget: true });
           else if (!Array.isArray(c)) add('github.target', 'GitHub 대상 폴더', false, `대상 경로가 폴더가 아니라 파일입니다: ${target}`);
           else add('github.target', 'GitHub 대상 폴더', true, `${target}/ (항목 ${c.length}개)`);
-        } catch (e) { add('github.target', 'GitHub 대상 폴더', false, `대상 폴더를 확인할 수 없습니다: ${e.message}`); }
+        } catch (e) {
+          if (e.status === 403) add('github.target', 'GitHub 대상 폴더', false, help('읽기'), { permission: true });
+          else add('github.target', 'GitHub 대상 폴더', false, `대상 폴더를 확인할 수 없습니다: ${e.message}`);
+        }
+      }
+      try { await ctx.github.probeWrite(); add('github.write', 'GitHub 쓰기 권한', true, 'Contents: Read and write 확인'); } catch (e) {
+        if (e.status === 403 || e.status === 404) add('github.write', 'GitHub 쓰기 권한', false, help('쓰기'), { permission: true });
+        else add('github.write', 'GitHub 쓰기 권한', false, `쓰기 권한을 확인할 수 없습니다: ${e.message}`);
       }
     }
   }
@@ -918,7 +968,7 @@ export async function preflight(ctx, { scope = 'stock', extraChecks = [] } = {})
   return {
     ok: failed.length === 0, scope, at: nowIso(), checks,
     reasons: failed.map((c) => `${c.label}: ${c.detail}`),
-    needLogin: failed.some((c) => c.needLogin), mismatch: failed.some((c) => c.mismatch), missingTarget: failed.some((c) => c.missingTarget),
+    needLogin: failed.some((c) => c.needLogin), mismatch: failed.some((c) => c.mismatch), missingTarget: failed.some((c) => c.missingTarget), permission: failed.some((c) => c.permission),
   };
 }
 

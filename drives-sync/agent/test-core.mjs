@@ -65,6 +65,37 @@ await test('brake: wrong GitHub account, no write permission, missing target fol
   assert.ok(pf.reasons.some((r) => r.includes('fin-lab/FinResearchRaw')));
 });
 
+await test('brake: a fine-grained token without Contents is explained step by step, not as raw 403s', async () => {
+  const world = makeFakeWorld({ canRead: false, canWrite: false, githubToken: 'github_pat_abc' });
+  const pf = await core.preflight(makeCtx(world, { githubToken: 'github_pat_abc' }).ctx);
+  assert.equal(pf.ok, false);
+  assert.equal(pf.permission, true);
+  assert.ok(pf.checks.find((c) => c.id === 'github.repo').ok, 'metadata still readable');
+  const branch = pf.checks.find((c) => c.id === 'github.branch');
+  assert.ok(branch && !branch.ok && branch.detail.includes('Contents') && branch.detail.includes('Fine-grained tokens') && branch.detail.includes('Read and write'), branch && branch.detail);
+  assert.ok(pf.checks.find((c) => c.id === 'github.token').detail.includes('fine-grained'));
+  assert.ok(pf.checks.find((c) => c.id === 'github.target').detail.includes('먼저'));
+  assert.ok(pf.checks.find((c) => c.id === 'github.write').detail.includes('Contents(쓰기)'));
+  assert.ok(!pf.reasons.some((r) => r.includes('HTTP 403')), 'no raw 403 noise: ' + pf.reasons.join(' | '));
+  // read-only Contents: reads pass, only the write check fails
+  const ro = makeFakeWorld({ canWrite: false, githubToken: 'github_pat_ro' });
+  const pf2 = await core.preflight(makeCtx(ro, { githubToken: 'github_pat_ro' }).ctx);
+  assert.ok(pf2.checks.find((c) => c.id === 'github.branch').ok && pf2.checks.find((c) => c.id === 'github.target').ok);
+  assert.ok(!pf2.checks.find((c) => c.id === 'github.write').ok);
+});
+
+await test('classic token: the repo scope is read from X-OAuth-Scopes', async () => {
+  let world = makeFakeWorld({ classicScopes: ['read:user'], githubToken: 'ghp_x' });
+  let pf = await core.preflight(makeCtx(world, { githubToken: 'ghp_x' }).ctx);
+  const sc = pf.checks.find((c) => c.id === 'github.scope');
+  assert.ok(sc && !sc.ok && sc.detail.includes('repo') && sc.detail.includes('read:user'), sc && sc.detail);
+  assert.ok(pf.checks.find((c) => c.id === 'github.token').detail.includes('classic'));
+  world = makeFakeWorld({ classicScopes: ['repo', 'read:user'], githubToken: 'ghp_y' });
+  pf = await core.preflight(makeCtx(world, { githubToken: 'ghp_y' }).ctx);
+  assert.equal(pf.ok, true, JSON.stringify(pf.reasons));
+  assert.equal(pf.checks.find((c) => c.id === 'github.scope').detail, 'repo, read:user');
+});
+
 await test('brake: read-only Google scope cannot run Flow', async () => {
   const world = makeFakeWorld({ scope: core.GOOGLE_SCOPE_DRIVE_READONLY });
   const { ctx } = makeCtx(world);
