@@ -120,6 +120,9 @@ await test('stock: syncs new files, exports Google Docs, batches commits, is ide
   assert.equal(res.skipped.length, 1);
   assert.ok(res.skipped[0].reason.includes('크기 초과'));
   assert.equal(res.commits.length, 2, 'batchFiles=2 -> two commits');
+  const msgs = res.commits.map((c) => world.git.commits.get(c.sha).message);
+  assert.ok(msgs[0].endsWith('[skip ci]'), 'intermediate batch must not wake push workflows: ' + msgs[0]);
+  assert.ok(!msgs[1].includes('[skip ci]'), 'final batch of a run wakes them once: ' + msgs[1]);
   assert.equal(world.fileAt('fin-lab/FinResearchRaw/note.txt').toString(), 'hello');
   assert.equal(world.fileAt('fin-lab/FinResearchRaw/Research/report.pdf').toString(), 'pdfdata');
   assert.equal(world.fileAt('fin-lab/FinResearchRaw/Research/bad_name_1.csv').toString(), 'a,b');

@@ -88,6 +88,10 @@ export const DEFAULT_CONFIG = {
     branch: '',                      // '' = the repository's default branch
     targetPath: 'fin-lab/FinResearchRaw',
     expectedLogin: 'hongguqaz',
+    // '[skip ci]' on batch commits keeps push-triggered workflows (e.g. a librarian that commits
+    // back) from waking up after every batch and racing the next one. 'intermediate' marks every
+    // batch but the last of a run, so such workflows run once per sync; 'all' never wakes them; 'none' always does.
+    skipCi: 'intermediate',
   },
   flow: {
     driveSubPath: 'DrivesSync',      // under the Stock source folder: DrivesSync/<device>/<folder label>
@@ -795,27 +799,40 @@ class Committer {
     this.pending.push(entry);
     this.pendingBytes += entry.size || 0;
     const { batchFiles, batchBytes } = this.ctx.config.limits;
-    if (this.pending.length >= batchFiles || this.pendingBytes >= batchBytes) return this.flush();
+    // The newest entry is always held back, so the run's final commit (the one that may wake
+    // push-triggered workflows) is never empty, whatever the file count.
+    if (this.pending.length > batchFiles || (this.pendingBytes >= batchBytes && this.pending.length > 1)) {
+      const batch = this.pending.splice(0, this.pending.length - 1);
+      this.pendingBytes = this.pending.reduce((n, e) => n + (e.size || 0), 0);
+      return this._enqueue(batch, false);
+    }
     return this.chain;
   }
 
-  flush() {
+  /** `final` marks the last commit of a run: the one allowed to wake push-triggered workflows. */
+  flush(final = false) {
     const batch = this.pending;
     this.pending = [];
     this.pendingBytes = 0;
     if (!batch.length) return this.chain;
-    this.chain = this.chain.then(() => this._commit(batch));
+    return this._enqueue(batch, final);
+  }
+
+  _enqueue(batch, final) {
+    this.chain = this.chain.then(() => this._commit(batch, final));
     return this.chain;
   }
 
-  async _commit(batch) {
-    try { await this._commitBatch(batch); } catch (e) { this.error = e; throw e; }
+  async _commit(batch, final) {
+    try { await this._commitBatch(batch, final); } catch (e) { this.error = e; throw e; }
   }
 
-  async _commitBatch(batch) {
+  async _commitBatch(batch, final) {
     const ctx = this.ctx;
+    const mode = ctx.config.github.skipCi || 'intermediate';
+    const skip = mode === 'all' || (mode === 'intermediate' && !final);
     const res = await ctx.github.commitEntries({
-      message: `${this.message} (+${batch.length})`,
+      message: `${this.message} (+${batch.length})${skip ? ' [skip ci]' : ''}`,
       buildEntries: async ({ attempt }) => {
         if (attempt > 0) {
           const reloaded = await loadManifest(ctx.github, ctx.config.github.targetPath, ctx.config);
@@ -1147,7 +1164,7 @@ export async function runStockMatching(ctx, { dryRun = false, trigger = 'manual'
     for (const r of results) if (r) { summary.synced++; summary.bytes += r.size; await committer.add(r); }
     ctx.progress({ phase: 'transfer', done, total });
   }
-  await committer.flush();
+  await committer.flush(true);
   } catch (e) {
     if (e.name === 'AbortError') throw e;
     summary.ok = false;
@@ -1267,7 +1284,7 @@ export async function runFlowMatching(ctx, { folders = [], dryRun = false, trigg
   };
 
   const results = await Promise.all(folders.map(processFolder));
-  try { await committer.flush(); } catch (e) { if (e.name === 'AbortError') throw e; }
+  try { await committer.flush(true); } catch (e) { if (e.name === 'AbortError') throw e; }
   if (committer.error) {
     summary.ok = false;
     summary.error = committer.error.message;
