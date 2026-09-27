@@ -65,6 +65,37 @@ await test('brake: wrong GitHub account, no write permission, missing target fol
   assert.ok(pf.reasons.some((r) => r.includes('fin-lab/FinResearchRaw')));
 });
 
+await test('brake: a fine-grained token without Contents is explained step by step, not as raw 403s', async () => {
+  const world = makeFakeWorld({ canRead: false, canWrite: false, githubToken: 'github_pat_abc' });
+  const pf = await core.preflight(makeCtx(world, { githubToken: 'github_pat_abc' }).ctx);
+  assert.equal(pf.ok, false);
+  assert.equal(pf.permission, true);
+  assert.ok(pf.checks.find((c) => c.id === 'github.repo').ok, 'metadata still readable');
+  const branch = pf.checks.find((c) => c.id === 'github.branch');
+  assert.ok(branch && !branch.ok && branch.detail.includes('Contents') && branch.detail.includes('Fine-grained tokens') && branch.detail.includes('Read and write'), branch && branch.detail);
+  assert.ok(pf.checks.find((c) => c.id === 'github.token').detail.includes('fine-grained'));
+  assert.ok(pf.checks.find((c) => c.id === 'github.target').detail.includes('먼저'));
+  assert.ok(pf.checks.find((c) => c.id === 'github.write').detail.includes('Contents(쓰기)'));
+  assert.ok(!pf.reasons.some((r) => r.includes('HTTP 403')), 'no raw 403 noise: ' + pf.reasons.join(' | '));
+  // read-only Contents: reads pass, only the write check fails
+  const ro = makeFakeWorld({ canWrite: false, githubToken: 'github_pat_ro' });
+  const pf2 = await core.preflight(makeCtx(ro, { githubToken: 'github_pat_ro' }).ctx);
+  assert.ok(pf2.checks.find((c) => c.id === 'github.branch').ok && pf2.checks.find((c) => c.id === 'github.target').ok);
+  assert.ok(!pf2.checks.find((c) => c.id === 'github.write').ok);
+});
+
+await test('classic token: the repo scope is read from X-OAuth-Scopes', async () => {
+  let world = makeFakeWorld({ classicScopes: ['read:user'], githubToken: 'ghp_x' });
+  let pf = await core.preflight(makeCtx(world, { githubToken: 'ghp_x' }).ctx);
+  const sc = pf.checks.find((c) => c.id === 'github.scope');
+  assert.ok(sc && !sc.ok && sc.detail.includes('repo') && sc.detail.includes('read:user'), sc && sc.detail);
+  assert.ok(pf.checks.find((c) => c.id === 'github.token').detail.includes('classic'));
+  world = makeFakeWorld({ classicScopes: ['repo', 'read:user'], githubToken: 'ghp_y' });
+  pf = await core.preflight(makeCtx(world, { githubToken: 'ghp_y' }).ctx);
+  assert.equal(pf.ok, true, JSON.stringify(pf.reasons));
+  assert.equal(pf.checks.find((c) => c.id === 'github.scope').detail, 'repo, read:user');
+});
+
 await test('brake: read-only Google scope cannot run Flow', async () => {
   const world = makeFakeWorld({ scope: core.GOOGLE_SCOPE_DRIVE_READONLY });
   const { ctx } = makeCtx(world);
@@ -89,6 +120,9 @@ await test('stock: syncs new files, exports Google Docs, batches commits, is ide
   assert.equal(res.skipped.length, 1);
   assert.ok(res.skipped[0].reason.includes('크기 초과'));
   assert.equal(res.commits.length, 2, 'batchFiles=2 -> two commits');
+  const msgs = res.commits.map((c) => world.git.commits.get(c.sha).message);
+  assert.ok(msgs[0].endsWith('[skip ci]'), 'intermediate batch must not wake push workflows: ' + msgs[0]);
+  assert.ok(!msgs[1].includes('[skip ci]'), 'final batch of a run wakes them once: ' + msgs[1]);
   assert.equal(world.fileAt('fin-lab/FinResearchRaw/note.txt').toString(), 'hello');
   assert.equal(world.fileAt('fin-lab/FinResearchRaw/Research/report.pdf').toString(), 'pdfdata');
   assert.equal(world.fileAt('fin-lab/FinResearchRaw/Research/bad_name_1.csv').toString(), 'a,b');
@@ -128,16 +162,62 @@ await test('stock: dry run plans without writing; duplicate names get a suffix',
   assert.equal(world.calls.filter((c) => c.includes('git/commits') && c.startsWith('POST')).length, 0);
 });
 
-await test('stock: recovers when the branch moves between read and update', async () => {
+await test('stock: rides out a branch that moves three times under the commit and names the intruder', async () => {
   const world = makeFakeWorld();
   world.addFile('a.txt', world.rootId, 'A');
-  world.conflictOnce = true;
+  world.conflictTimes = 3;
   const { ctx, logs } = makeCtx(world);
   const res = await core.runStockMatching(ctx);
-  assert.equal(res.ok, true);
+  assert.equal(res.ok, true, JSON.stringify(res));
   assert.equal(res.synced, 1);
   assert.equal(world.fileAt('fin-lab/FinResearchRaw/a.txt').toString(), 'A');
-  assert.ok(logs.some((l) => l.msg.includes('다시 만듭니다')));
+  const retries = logs.filter((l) => l.msg.includes('브랜치 갱신 거부'));
+  assert.equal(retries.length, 3);
+  assert.ok(retries[0].msg.includes('fin-courier[bot]') && retries[0].msg.includes('Fin Courier: 0 new file(s)'), retries[0].msg);
+  assert.ok(retries[0].msg.includes('not a fast forward'));
+});
+
+await test('stock: a refusal that is not about the branch moving stops at once with GitHub\'s reason, keeps earlier commits', async () => {
+  const world = makeFakeWorld();
+  world.addFile('a.txt', world.rootId, 'A');
+  world.addFile('b.txt', world.rootId, 'B');
+  world.addFile('c.txt', world.rootId, 'C');
+  const { ctx, logs } = makeCtx(world);
+  // first batch (2 files) succeeds, then the branch starts refusing every update
+  const origFetch = world.fetch;
+  let commits = 0;
+  const gated = async (url, init) => {
+    const res = await origFetch(url, init);
+    if (/git\/refs\/heads/.test(url) && (init.method || 'GET') === 'PATCH' && res.ok) { commits++; if (commits === 1) world.refReject = 'Changes must be made through a pull request.'; }
+    return res;
+  };
+  const ctx2 = core.createContext({ ...ctx, config: ctx.config, googleAuth: ctx.googleAuth, githubAuth: ctx.githubAuth, fetch: gated, log: ctx.log });
+  const res = await core.runStockMatching(ctx2);
+  assert.equal(res.ok, false);
+  assert.ok(res.error.includes('거부') && res.error.includes('pull request'), res.error);
+  assert.equal(res.commits.length, 1, 'first batch kept');
+  assert.equal(res.committed, 2);
+  assert.ok(world.fileAt('fin-lab/FinResearchRaw/a.txt'), 'first batch is in the repo');
+  assert.equal(world.fileAt('fin-lab/FinResearchRaw/c.txt'), null, 'later batch not committed');
+  const patches = world.calls.filter((c) => c.startsWith('PATCH')).length;
+  assert.ok(patches <= 3, `stopped early, PATCH calls: ${patches}`);
+  assert.ok(logs.some((l) => l.level === 'error' && l.msg.includes('GitHub 커밋 실패로 중단')));
+});
+
+await test('flow: a GitHub refusal is reported with partial results instead of failing every file', async () => {
+  const world = makeFakeWorld();
+  world.refReject = 'Required status check "ci" is expected.';
+  const mk = (relPath, content, mtime) => ({ relPath, size: content.length, lastModified: mtime, read: async () => new Blob([content]) });
+  const files = Array.from({ length: 6 }, (_, i) => mk(`f${i}.txt`, `file ${i}`, 1000 + i));
+  const { ctx } = makeCtx(world);
+  const res = await core.runFlowMatching(ctx, { folders: [{ id: 'p', label: 'Photos', source: core.listFolderSource('Photos', files) }] });
+  assert.equal(res.ok, false);
+  assert.ok(res.error.includes('Required status check'), res.error);
+  assert.equal(res.commits.length, 0);
+  const f = res.folders[0];
+  assert.ok(f.failed.length + f.skipped.length + f.uploaded >= 6, JSON.stringify(f));
+  assert.ok(f.skipped.some((x) => x.reason.includes('중단')) || f.failed.length > 0);
+  assert.ok([...world.drive.files.values()].some((x) => x.name === 'f0.txt'), 'upload to Drive happened before the GitHub refusal');
 });
 
 await test('flow: uploads new device files to Drive and GitHub in parallel, additive, chunked upload', async () => {

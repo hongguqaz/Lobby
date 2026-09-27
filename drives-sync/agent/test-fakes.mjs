@@ -6,7 +6,7 @@ import * as core from '../core.js';
 const FOLDER = core.GOOGLE_FOLDER;
 
 /** A fake of the two APIs the engine talks to: enough of Drive v3 and the GitHub Git Data API. */
-export function makeFakeWorld({ email = 'honggusangjoon@gmail.com', login = 'hongguqaz', canWrite = true, targetExists = true, scope = core.GOOGLE_SCOPE_DRIVE } = {}) {
+export function makeFakeWorld({ email = 'honggusangjoon@gmail.com', login = 'hongguqaz', canWrite = true, canRead = true, targetExists = true, scope = core.GOOGLE_SCOPE_DRIVE, classicScopes = null, githubToken = 'GHTOKEN' } = {}) {
   const drive = {
     files: new Map(),   // id -> {id, name, mimeType, parents, size, md5Checksum, modifiedTime, content}
     nextId: 1,
@@ -34,7 +34,7 @@ export function makeFakeWorld({ email = 'honggusangjoon@gmail.com', login = 'hon
   const git = { blobs: new Map(), trees: new Map(), commits: new Map(), branch: 'main', head: null, defaultBranch: 'main' };
   const sha = (s) => createHash('sha1').update(s).digest('hex');
   const makeTree = (entries) => { const id = sha('tree' + JSON.stringify([...entries.entries()].sort())); git.trees.set(id, new Map(entries)); return id; };
-  const makeCommit = (tree, parents, message) => { const id = sha('commit' + tree + parents.join() + message + git.commits.size); git.commits.set(id, { tree, parents, message }); return id; };
+  const makeCommit = (tree, parents, message, author = 'hongguqaz') => { const id = sha('commit' + tree + parents.join() + message + git.commits.size); git.commits.set(id, { tree, parents, message, author }); return id; };
   const initialTree = new Map([['README.md', sha('readme')]]);
   if (targetExists) initialTree.set('fin-lab/FinResearchRaw/README.md', sha('target readme'));
   git.blobs.set(sha('readme'), 'README');
@@ -44,7 +44,7 @@ export function makeFakeWorld({ email = 'honggusangjoon@gmail.com', login = 'hon
   const calls = [];
 
   // Browsers may read Location/Range on cross-origin responses only when the server exposes them, as Google's upload servers do.
-  const json = (status, body, headers = {}) => new Response(body === null ? null : JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'Access-Control-Expose-Headers': 'Location, Range', ...headers } });
+  const json = (status, body, headers = {}) => new Response(body === null ? null : JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'Access-Control-Expose-Headers': 'Location, Range, X-OAuth-Scopes', ...headers } });
 
   async function fetchImpl(url, init = {}) {
     const u = new URL(url);
@@ -114,13 +114,15 @@ export function makeFakeWorld({ email = 'honggusangjoon@gmail.com', login = 'hon
 
     // ---- GitHub
     if (u.host === 'api.github.com') {
-      if (auth !== 'Bearer GHTOKEN') return json(401, { message: 'Bad credentials' });
-      if (u.pathname === '/user') return json(200, { login });
+      if (auth !== 'Bearer ' + world.githubToken) return json(401, { message: 'Bad credentials' });
+      if (u.pathname === '/user') return json(200, { login }, classicScopes ? { 'X-OAuth-Scopes': classicScopes.join(', ') } : {});
+      const denied = () => json(403, { message: 'Resource not accessible by personal access token' });
       const repoBase = '/repos/hongguqaz/Drive';
       if (!u.pathname.startsWith(repoBase)) return json(404, { message: 'Not Found' });
       const rest = u.pathname.slice(repoBase.length);
       if (rest === '') return json(200, { full_name: 'hongguqaz/Drive', private: true, default_branch: git.defaultBranch, permissions: { push: canWrite } });
       if (rest.startsWith('/contents/')) {
+        if (!world.perms.read) return denied();
         const path = decodeURIComponent(rest.slice('/contents/'.length));
         const tree = headTree();
         if (tree.has(path)) {
@@ -132,7 +134,7 @@ export function makeFakeWorld({ email = 'honggusangjoon@gmail.com', login = 'hon
         return json(404, { message: 'Not Found' });
       }
       if (rest === '/git/blobs' && method === 'POST') {
-        if (!canWrite) return json(403, { message: 'Resource not accessible by personal access token' });
+        if (!world.perms.write) return denied();
         const body = JSON.parse(init.body);
         const content = body.encoding === 'base64' ? Buffer.from(body.content, 'base64') : Buffer.from(body.content, 'utf8');
         const id = sha('blob' + content.toString('base64'));
@@ -141,13 +143,14 @@ export function makeFakeWorld({ email = 'honggusangjoon@gmail.com', login = 'hon
       }
       const refM = /^\/git\/ref\/heads\/(.+)$/.exec(rest);
       if (refM && method === 'GET') {
+        if (!world.perms.read) return denied();
         if (decodeURIComponent(refM[1]) !== git.branch) return json(404, { message: 'Not Found' });
         return json(200, { object: { sha: git.head } });
       }
       const commitM = /^\/git\/commits\/(.+)$/.exec(rest);
-      if (commitM && method === 'GET') { const c = git.commits.get(commitM[1]); return c ? json(200, { sha: commitM[1], tree: { sha: c.tree } }) : json(404, { message: 'no commit' }); }
+      if (commitM && method === 'GET') { const c = git.commits.get(commitM[1]); return c ? json(200, { sha: commitM[1], tree: { sha: c.tree }, message: c.message, author: { name: c.author }, committer: { name: c.author } }) : json(404, { message: 'no commit' }); }
       if (rest === '/git/trees' && method === 'POST') {
-        if (!canWrite) return json(403, { message: 'forbidden' });
+        if (!world.perms.write) return denied();
         const body = JSON.parse(init.body);
         const base = new Map(git.trees.get(body.base_tree));
         for (const e of body.tree) {
@@ -156,7 +159,7 @@ export function makeFakeWorld({ email = 'honggusangjoon@gmail.com', login = 'hon
         return json(201, { sha: makeTree(base) });
       }
       if (rest === '/git/commits' && method === 'POST') {
-        if (!canWrite) return json(403, { message: 'forbidden' });
+        if (!world.perms.write) return denied();
         const body = JSON.parse(init.body);
         const id = makeCommit(body.tree, body.parents, body.message);
         return json(201, { sha: id, html_url: `https://github.com/hongguqaz/Drive/commit/${id}` });
@@ -165,8 +168,9 @@ export function makeFakeWorld({ email = 'honggusangjoon@gmail.com', login = 'hon
       if (patchM && method === 'PATCH') {
         const body = JSON.parse(init.body);
         const c = git.commits.get(body.sha);
+        if (world.refReject) return json(422, { message: world.refReject });
         if (!c || c.parents[0] !== git.head) return json(422, { message: 'Update is not a fast forward' });
-        if (world.conflictOnce) { world.conflictOnce = false; git.head = makeCommit(c.tree, [git.head], 'someone else'); return json(422, { message: 'Update is not a fast forward' }); }
+        if (world.conflictTimes > 0) { world.conflictTimes--; git.head = makeCommit(c.tree, [git.head], 'Fin Courier: 0 new file(s)', 'fin-courier[bot]'); return json(422, { message: 'Update is not a fast forward' }); }
         git.head = body.sha;
         return json(200, { object: { sha: git.head } });
       }
@@ -176,7 +180,7 @@ export function makeFakeWorld({ email = 'honggusangjoon@gmail.com', login = 'hon
     return json(404, { message: 'unknown host ' + u.host });
   }
 
-  const world = { drive, git, calls, rootId, addFile, addFolder, addGoogleDoc, fetch: fetchImpl, headTree, conflictOnce: false, email, scope,
+  const world = { drive, git, calls, rootId, addFile, addFolder, addGoogleDoc, fetch: fetchImpl, headTree, conflictTimes: 0, refReject: null, email, scope, githubToken, perms: { read: canRead, write: canWrite },
     fileAt: (path) => { const t = headTree(); return t.has(path) ? git.blobs.get(t.get(path)) : null; } };
   return world;
 }
@@ -186,7 +190,7 @@ export function makeCtx(world, { googleToken = 'GTOKEN', githubToken = 'GHTOKEN'
   return {
     logs,
     ctx: core.createContext({
-      config: core.deepMerge({ device: { id: 'dev1', name: 'Laptop' }, limits: { batchFiles: 2, batchBytes: 1024 * 1024, uploadChunkBytes: 4 } }, config),
+      config: core.deepMerge({ device: { id: 'dev1', name: 'Laptop' }, limits: { batchFiles: 2, batchBytes: 1024 * 1024, uploadChunkBytes: 4, commitRetryMs: 5 } }, config),
       googleAuth: new core.StaticGoogleAuth({ accessToken: googleToken, scope: scope ?? world.scope, fetch: world.fetch }),
       githubAuth: new core.StaticGitHubAuth(githubToken),
       fetch: world.fetch,

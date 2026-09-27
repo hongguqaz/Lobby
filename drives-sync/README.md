@@ -43,15 +43,26 @@ Google Drive, 비공개 `Drive` 저장소, 그리고 기기(휴대폰·노트북
 
 ### 2. GitHub 토큰 만들기
 
-1. GitHub → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token.
-2. Repository access: *Only select repositories* → **Drive**.
-3. Permissions → Repository permissions → **Contents: Read and write** (Metadata는 자동으로 Read).
-4. 만료 기간을 정하고 생성한 뒤 토큰(`github_pat_…`)을 복사합니다.
-5. 앱의 **0번 바**에 붙여 넣고 *저장*을 누릅니다.
+> Lobby 저장소 README에 나오는 `LOBBY_DEPLOY_TOKEN`은 **다른 토큰**입니다(Drive → Lobby 발행용, Lobby 저장소 권한).
+> Drives Sync에는 **Drive 저장소**에 쓸 수 있는 토큰이 따로 필요합니다.
+
+1. https://github.com/settings/personal-access-tokens/new 를 엽니다
+   (GitHub → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token).
+2. Token name: `Drives Sync`, Expiration: 원하는 기간.
+3. **Repository access**: *Only select repositories* → 목록에서 **Drive** 를 고릅니다.
+4. **Permissions → Repository permissions**: **Contents** 를 찾아 **Read and write** 로 바꿉니다.
+   (Metadata: Read-only 는 자동으로 붙습니다. 다른 권한은 필요 없습니다.)
+5. Generate token → 토큰(`github_pat_…`)을 복사해 앱의 **0번 바**에 붙여 넣고 *저장*을 누릅니다.
+
+권한을 빠뜨렸다면 새로 만들 필요 없이 https://github.com/settings/personal-access-tokens 에서 그 토큰을 열어
+3·4번 항목을 고치고 저장(Update)하면 됩니다. 토큰 값은 바뀌지 않으므로 앱에서는 *사전 점검 실행*만 다시 누르세요.
+
+간단하지만 범위가 넓은 대안: classic 토큰(https://github.com/settings/tokens/new?scopes=repo&description=Drives%20Sync,
+`repo` 체크)도 됩니다. 단, 계정의 모든 저장소에 쓸 수 있는 토큰이므로 fine-grained 쪽을 권합니다.
 
 ### 3. 연결하고 점검하기
 
-0번 바에서 **Google Drive 연결**(계정 선택 → 권한 승인) → **사전 점검 실행**. 열 개 항목이 모두 ✓이면 준비 끝입니다.
+0번 바에서 **Google Drive 연결**(계정 선택 → 권한 승인) → **사전 점검 실행**. 모든 항목이 ✓이면 준비 끝입니다. ✗가 있으면 그 항목에 고치는 법이 적혀 있습니다.
 대상 폴더 `fin-lab/FinResearchRaw`는 이미 저장소에 있습니다. 다른 경로로 바꿨는데 폴더가 없으면 점검이 멈추고
 *대상 폴더 만들기* 버튼이 나타납니다.
 
@@ -101,7 +112,7 @@ Google Drive, 비공개 `Drive` 저장소, 그리고 기기(휴대폰·노트북
 *자동 실행*을 켜면 즉시 한 번, 그 뒤 주기(기본 30분)마다 기능 2를 실행합니다. 켤 때와 매 실행 전에 선결 조건을 다시
 점검하며, 하나라도 빠지면 **실행하지 않고** 사유를 자동화 로그·배너·알림(켠 경우)에 남깁니다.
 
-선결 조건: 사전 점검 10개 항목 통과, Drive 쓰기 권한, 지정된 폴더가 1개 이상, 모든 폴더가 *지속 접근* 방식이고 권한이
+선결 조건: 사전 점검 전 항목 통과, Drive 쓰기 권한, 지정된 폴더가 1개 이상, 모든 폴더가 *지속 접근* 방식이고 권한이
 승인된 상태, 주기가 1분 이상. 로그인 문제(토큰 만료, 다른 계정)로 멈추면 자동화를 끄고 알립니다. 그 밖의 문제는 다음
 주기에 다시 시도합니다.
 
@@ -121,9 +132,10 @@ Google Drive, 비공개 `Drive` 저장소, 그리고 기기(휴대폰·노트북
 | Drive 원본 폴더 | 폴더 ID가 틀렸거나 접근 불가 |
 | GitHub 로그인 | 토큰이 없음 |
 | GitHub 계정 일치 | 설정한 계정(`hongguqaz`)이 아닌 계정의 토큰 |
-| GitHub 저장소 | 저장소가 없거나 토큰의 접근 범위 밖 |
-| GitHub 쓰기 권한 | 토큰에 Contents: Read and write가 없음 |
-| GitHub 브랜치 / 대상 폴더 | 브랜치가 없거나 대상 폴더가 없음(*대상 폴더 만들기* 버튼) |
+| GitHub 저장소 | 저장소가 없거나 토큰의 Repository access 밖(비공개 저장소는 404) |
+| GitHub 토큰 범위 | classic 토큰인데 `repo` 범위가 없음 |
+| GitHub 브랜치 / 대상 폴더 | Contents 권한이 없음(고치는 법을 항목에 표시), 브랜치가 없음, 대상 폴더가 없음(*대상 폴더 만들기* 버튼) |
+| GitHub 쓰기 권한 | Contents 가 Read-only 이거나 없음 |
 
 ## 에이전트가 쓰는 법
 
@@ -144,17 +156,44 @@ GitHub 토큰은 Drive 저장소 하나에만, Contents 권한만 주도록 만�
 
 - **로그인 팝업이 차단됨**: 주소창의 팝업 차단 아이콘에서 허용하고 다시 누릅니다.
 - **"다른 Google 계정이 로그인되어 있습니다"**: 의도한 브레이크입니다. 연결 해제 후 계정 선택 화면에서 올바른 계정을 고르세요.
-- **GitHub 쓰기 권한 실패(403)**: 토큰의 Repository access에 Drive가 포함되고 Contents가 Read and write인지 확인합니다.
+- **"Resource not accessible by personal access token" / GitHub 쓰기 권한·브랜치·대상 폴더가 한꺼번에 실패**: 토큰이 Drive
+  저장소에는 닿지만(저장소 항목 ✓) **Contents 권한이 "No access"** 인 상태입니다. https://github.com/settings/personal-access-tokens
+  에서 그 토큰을 열어 Repository permissions → Contents 를 **Read and write** 로 바꾸고 저장한 뒤 *사전 점검 실행*을 다시 누르세요.
+  브랜치·대상 폴더만 ✓이고 쓰기 권한만 ✗이면 Contents 가 Read-only 인 경우입니다. 같은 방법으로 고칩니다.
+- **GitHub 저장소 404**: 토큰의 Repository access 에 Drive 가 빠져 있습니다(비공개 저장소는 접근 범위 밖이면 404로 보입니다).
+- **"브랜치가 계속 바뀌어 커밋하지 못했습니다"**: 앱이 커밋을 만들어 브랜치를 옮기려는 순간, 다른 쪽이 같은 브랜치에 먼저 커밋해
+  GitHub 이 갱신을 거절한 것입니다. 다른 쪽이란 다른 기기·다른 탭의 Drives Sync, 또는 저장소 자체의 자동 커밋(Drive 저장소에는
+  Fin Courier 봇이 하루 세 번, Fin Librarian 이 푸시 때마다, "Sync rooms with Google Drive" 가 매일 커밋합니다)입니다. 앱은 약 1분
+  동안 8번까지 다시 시도하며, 로그에 어떤 커밋이 끼어들었는지(누가, 무슨 커밋) 적습니다. 그래도 실패하면 **이미 커밋된 배치는 그대로
+  남아 있으므로** 잠시 뒤 다시 실행하면 이어서 진행합니다. 한 번에 한 기기·한 탭에서만 실행하세요. GitHub 이 다른 이유(브랜치 보호
+  규칙 등)로 거절하면 재시도하지 않고 그 사유를 그대로 보여 줍니다.
+  푸시 때마다 실행되어 되밀어 넣는 워크플로(Fin Librarian 등)와의 핑퐁을 막기 위해, 한 실행의 중간 배치 커밋에는 `[skip ci]` 를
+  붙여 워크플로를 깨우지 않고 **마지막 배치에만** 붙이지 않습니다. 그래서 그런 워크플로는 동기화 한 번에 한 번만 돕니다.
+  (설정 JSON의 `github.skipCi`: `intermediate` 기본, `all` = 절대 깨우지 않음, `none` = 매 배치마다 깨움.)
 - **토큰 만료(401)**: 새 토큰을 만들어 0번 바에 다시 저장합니다.
 - **폴더 권한 재승인**: 브라우저 재시작 후에는 폴더 항목의 *권한 승인*을 한 번 누릅니다.
 - **iPhone에서 폴더 선택이 안 됨**: *파일 선택* 버튼으로 여러 파일을 고르면 됩니다.
 - 전부 다시 올리고 싶을 때: ⚙ 설정 → *매니페스트 초기화*. 같은 경로에 덮어쓰며 삭제하지 않습니다.
+
+## 한 파일짜리 판 `drives-sync.html`
+
+같은 앱을 파일 하나에 담은 판입니다(스타일, 엔진, 화면 스크립트, 아이콘을 모두 안에 넣음). 어디에든 올려 쓸 수 있고,
+`node drives-sync/build-single.mjs`로 다시 만듭니다. 두 가지만 다릅니다.
+
+- 반드시 **웹 서버 주소**로 열어야 합니다. 파일을 더블클릭해 `file://`로 열면 Google 로그인이 되지 않습니다. 노트북에서는
+  파일이 있는 폴더에서 `python -m http.server 8000`을 실행하고 `http://localhost:8000/drives-sync.html`을 여세요
+  (Google Cloud의 승인된 JavaScript 원본에 `http://localhost:8000`을 추가).
+- 다른 주소에 올리면 ⚙ 설정에 표시되는 리디렉션 URI와 원본을 Google Cloud에 등록해야 합니다.
+
+claude.ai 안에 올린 미리 보기(artifact)는 외부 연결이 차단되는 곳이라 화면과 브레이크 동작만 보여 주고 동기화는 하지 못합니다.
+화면에 그렇게 표시됩니다.
 
 ## 개발
 
 | 파일 | 역할 |
 |---|---|
 | `index.html`, `drives-sync.css` | 화면. 기능별 바(0 사전 점검, 1, 2, 3, A 에이전트, ⚙ 설정). 색은 `../assets/tokens.css` |
+| `drives-sync.html`, `build-single.mjs` | 한 파일짜리 판과 그것을 만드는 스크립트 (`--preview`는 외부 연결이 막힌 곳용 조각) |
 | `core.js` | 엔진: Drive·GitHub 클라이언트, 사전 점검, Stock/Flow 동기화, 장부. 브라우저와 Node에서 같은 코드 |
 | `app.js` | 화면 연결, Google 로그인(GIS 토큰 + 선택적 refresh token), 폴더 핸들, 자동화 타이머, `window.DrivesSync` |
 | `sw.js`, `manifest.webmanifest`, `assets/` | 설치·오프라인 셸. 배포 시 `sw.js`의 `VERSION`을 올리세요 |
@@ -164,6 +203,8 @@ GitHub 토큰은 Drive 저장소 하나에만, Contents 권한만 주도록 만�
 ```bash
 node drives-sync/agent/test-core.mjs                       # 엔진 테스트
 PLAYWRIGHT_MODULE=$(npm root -g)/playwright node drives-sync/agent/test-ui.mjs   # 화면 테스트 (Chromium)
+TEST_TARGET=single PLAYWRIGHT_MODULE=$(npm root -g)/playwright node drives-sync/agent/test-ui.mjs   # 한 파일짜리 판 테스트
+node drives-sync/build-single.mjs                          # drives-sync.html 다시 만들기 (소스를 고친 뒤)
 python3 -m http.server 8000                                # 로컬 실행: http://localhost:8000/drives-sync/
 ```
 

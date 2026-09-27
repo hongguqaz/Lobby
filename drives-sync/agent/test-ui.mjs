@@ -34,7 +34,9 @@ const server = http.createServer(async (req, res) => {
   } catch { res.writeHead(404); res.end('not found'); }
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const base = `http://127.0.0.1:${server.address().port}/drives-sync/`;
+// TEST_TARGET=single tests the one-file edition built by build-single.mjs instead of index.html.
+const SINGLE = process.env.TEST_TARGET === 'single';
+const base = `http://127.0.0.1:${server.address().port}/drives-sync/${SINGLE ? 'drives-sync.html' : ''}`;
 
 const world = makeFakeWorld();
 world.addFile('note.txt', world.rootId, 'hello from drive');
@@ -47,6 +49,8 @@ const page = await context.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
+const notFound = [];
+page.on('response', (r) => { if (r.status() === 404 && r.url().startsWith('http://127.0.0.1')) notFound.push(r.url()); }); // API 404s (no manifest yet, missing folder) are expected
 await page.route('https://accounts.google.com/**', (route) => route.fulfill({ status: 200, contentType: 'text/javascript', body: '/* gis stub */' }));
 await page.route(/^https:\/\/(www\.googleapis\.com|api\.github\.com|oauth2\.googleapis\.com)\//, async (route) => {
   const req = route.request();
@@ -69,7 +73,7 @@ async function test(name, fn) {
 }
 const api = (expr) => page.evaluate(expr);
 
-console.log('Drives Sync UI tests');
+console.log(`Drives Sync UI tests (${SINGLE ? 'one-file edition' : 'index.html'})`);
 
 await test('page loads with all feature bars and the agent API', async () => {
   await page.goto(base);
@@ -78,6 +82,8 @@ await test('page loads with all feature bars and the agent API', async () => {
   assert.equal(await page.title(), 'Drives Sync');
   assert.equal(await api('DrivesSync.version'), core.VERSION);
   assert.equal(await api('document.body.dataset.state'), 'idle');
+  assert.equal(await api('!!(window.DRIVES_SYNC_BUILD && window.DRIVES_SYNC_BUILD.single)'), SINGLE, 'build flag matches the edition under test');
+  if (SINGLE) assert.equal(await api("document.querySelector('link[rel=manifest]') && document.querySelector('link[rel=manifest]').href.startsWith('blob:')"), true, 'one-file edition offers its manifest from memory');
 });
 
 await test('brake: without logins, preflight fails and nothing runs', async () => {
@@ -120,6 +126,21 @@ await test('with the right accounts: preflight passes, chips show the accounts',
   assert.equal(await page.getAttribute('#chip-preflight', 'data-state'), 'ok');
 });
 
+await test('brake: a token without Contents permission shows the fix inline with a clickable link', async () => {
+  world.perms.read = false;
+  world.perms.write = false;
+  const pf = await api('DrivesSync.preflight()');
+  assert.equal(pf.ok, false);
+  assert.equal(pf.permission, true);
+  const text = await page.textContent('#preflight-result');
+  assert.ok(text.includes('Contents') && text.includes('Fine-grained tokens') && text.includes('Read and write'), text);
+  assert.ok(!text.includes('HTTP 403'), text);
+  assert.ok(await page.$('#preflight-result a[href="https://github.com/settings/personal-access-tokens"]'), 'token settings link rendered');
+  assert.equal(await page.getAttribute('#chip-preflight', 'data-state'), 'fail');
+  world.perms.read = true;
+  world.perms.write = true;
+});
+
 await test('brake: a wrong Google account is reported and refused', async () => {
   world.email = 'other.person@gmail.com';
   const pf = await api('DrivesSync.preflight()');
@@ -130,8 +151,10 @@ await test('brake: a wrong Google account is reported and refused', async () => 
 });
 
 await test('Stock Matching from the UI button copies Drive files into the repo folder', async () => {
+  // hide any stale summary from an earlier test so we wait for THIS run's render, not a leftover
+  await page.evaluate(() => { const s = document.getElementById('stock-summary'); s.hidden = true; s.textContent = ''; });
   await page.click('#btn-stock-run');
-  await page.waitForFunction(() => document.body.dataset.state === 'idle' && !document.getElementById('stock-summary').hidden, null, { timeout: 20000 });
+  await page.waitForFunction(() => { const s = document.getElementById('stock-summary'); return document.body.dataset.state === 'idle' && !s.hidden && s.textContent.includes('동기화'); }, null, { timeout: 20000 });
   const text = await page.textContent('#stock-summary');
   assert.ok(text.includes('2개 동기화'), text);
   assert.equal(world.fileAt('fin-lab/FinResearchRaw/note.txt').toString(), 'hello from drive');
@@ -200,6 +223,21 @@ await test('state JSON hides secrets and the logs are readable', async () => {
   assert.ok(logs.length > 5 && logs.every((l) => l.t && l.level && l.msg));
 });
 
+await test('only one tab runs at a time (Web Locks)', async () => {
+  // hold the shared lock from this page with an explicit release we control (no page-close timing)
+  await page.evaluate(() => new Promise((acquired) => {
+    window.__release = null;
+    navigator.locks.request('drives-sync:run', () => new Promise((release) => { window.__release = release; acquired(); }));
+  }));
+  const res = await api('DrivesSync.runStock()');
+  assert.equal(res.busy, true, JSON.stringify(res));
+  assert.ok(res.reasons[0].includes('다른 탭'));
+  await page.evaluate(() => { window.__release(); window.__release = null; });
+  await page.waitForFunction(async () => !(await navigator.locks.query()).held.some((l) => l.name === 'drives-sync:run'), null, { timeout: 5000 });
+  const again = await api('DrivesSync.runStock()');
+  assert.notEqual(again.busy, true, 'lock released -> not busy: ' + JSON.stringify(again));
+});
+
 await test('renders at phone width without horizontal overflow', async () => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
@@ -214,9 +252,10 @@ await test('renders at phone width without horizontal overflow', async () => {
   console.log(`  screenshots in ${os.tmpdir()}/drives-sync-{desktop,phone}.png`);
 });
 
-await test('no page errors', () => {
+await test('no page errors, no missing files', () => {
   const real = errors.filter((e) => !/favicon|Failed to load resource/.test(e));
   assert.deepEqual(real, []);
+  assert.deepEqual(notFound.filter((u) => !/favicon\.ico$/.test(u)), []);
 });
 
 await browser.close();
