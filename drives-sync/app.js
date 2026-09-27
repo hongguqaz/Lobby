@@ -1042,7 +1042,15 @@ async function boot() {
     if (await googleAuth.handleRedirect()) { log('app', 'info', 'Google 장기 인증을 저장했습니다.'); renderStatus(); }
   } catch (e) { log('app', 'error', e.message); showBanner(e.message, 'bad'); }
   if ('serviceWorker' in navigator && location.protocol === 'https:' && !BUILD.single) navigator.serviceWorker.register('sw.js').catch((e) => log('app', 'warn', `서비스 워커 등록 실패: ${e.message}`));
-  if (location.protocol === 'file:') showBanner('파일을 직접 열면(file://) Google 로그인이 되지 않습니다. GitHub Pages 주소에서 열거나, 이 파일이 있는 폴더에서 "python -m http.server 8000"을 실행해 http://localhost:8000 으로 여세요.');
+  if (location.protocol === 'file:') {
+    // Google refuses OAuth from a file:// origin (the "액세스가 차단됨 ... origin=file://" error), so
+    // block the button before it can reach that dead end and say exactly what to do instead.
+    const msg = 'Google 로그인은 파일을 직접 열면(file://) 불가능합니다. Google이 file:// 출처의 로그인을 차단하기 때문이며, 설정으로는 풀 수 없습니다. 웹 주소로 여세요: 휴대폰·노트북 모두 https://hongguqaz.github.io/Lobby/drives-sync/ 에서 열거나, 이 파일이 있는 폴더에서 "python -m http.server 8000" 을 실행해 http://localhost:8000/drives-sync.html 로 여세요(그 경우 Google Cloud의 "승인된 JavaScript 원본"에 http://localhost:8000 추가).';
+    showBanner(msg, 'bad');
+    for (const id of ['btn-google-connect', 'btn-google-longrun']) { const b = $(id); if (b) { b.disabled = true; b.title = msg; } }
+    $('google-state').textContent = 'file:// 에서는 Google 로그인을 할 수 없습니다. 위 안내의 웹 주소로 여세요.';
+    log('app', 'warn', 'file:// 로 열려 Google 로그인을 비활성화했습니다. 웹 주소(https://hongguqaz.github.io/Lobby/drives-sync/ 또는 http://localhost:8000/)로 여세요.');
+  }
   if (googleAuth.hasAny() && store.get(LS.ghToken, null)) await guarded('preflight', () => doPreflight({ quiet: true }));
   if (state.config.automation.enabled) { log('automation', 'info', '앱을 다시 열어 자동화를 재개합니다.'); automation.start(); updateWakeLock(); }
   log('app', 'info', `Drives Sync v${core.VERSION} 준비 (${state.config.device.name})`);
