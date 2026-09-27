@@ -159,16 +159,62 @@ await test('stock: dry run plans without writing; duplicate names get a suffix',
   assert.equal(world.calls.filter((c) => c.includes('git/commits') && c.startsWith('POST')).length, 0);
 });
 
-await test('stock: recovers when the branch moves between read and update', async () => {
+await test('stock: rides out a branch that moves three times under the commit and names the intruder', async () => {
   const world = makeFakeWorld();
   world.addFile('a.txt', world.rootId, 'A');
-  world.conflictOnce = true;
+  world.conflictTimes = 3;
   const { ctx, logs } = makeCtx(world);
   const res = await core.runStockMatching(ctx);
-  assert.equal(res.ok, true);
+  assert.equal(res.ok, true, JSON.stringify(res));
   assert.equal(res.synced, 1);
   assert.equal(world.fileAt('fin-lab/FinResearchRaw/a.txt').toString(), 'A');
-  assert.ok(logs.some((l) => l.msg.includes('다시 만듭니다')));
+  const retries = logs.filter((l) => l.msg.includes('브랜치 갱신 거부'));
+  assert.equal(retries.length, 3);
+  assert.ok(retries[0].msg.includes('fin-courier[bot]') && retries[0].msg.includes('Fin Courier: 0 new file(s)'), retries[0].msg);
+  assert.ok(retries[0].msg.includes('not a fast forward'));
+});
+
+await test('stock: a refusal that is not about the branch moving stops at once with GitHub\'s reason, keeps earlier commits', async () => {
+  const world = makeFakeWorld();
+  world.addFile('a.txt', world.rootId, 'A');
+  world.addFile('b.txt', world.rootId, 'B');
+  world.addFile('c.txt', world.rootId, 'C');
+  const { ctx, logs } = makeCtx(world);
+  // first batch (2 files) succeeds, then the branch starts refusing every update
+  const origFetch = world.fetch;
+  let commits = 0;
+  const gated = async (url, init) => {
+    const res = await origFetch(url, init);
+    if (/git\/refs\/heads/.test(url) && (init.method || 'GET') === 'PATCH' && res.ok) { commits++; if (commits === 1) world.refReject = 'Changes must be made through a pull request.'; }
+    return res;
+  };
+  const ctx2 = core.createContext({ ...ctx, config: ctx.config, googleAuth: ctx.googleAuth, githubAuth: ctx.githubAuth, fetch: gated, log: ctx.log });
+  const res = await core.runStockMatching(ctx2);
+  assert.equal(res.ok, false);
+  assert.ok(res.error.includes('거부') && res.error.includes('pull request'), res.error);
+  assert.equal(res.commits.length, 1, 'first batch kept');
+  assert.equal(res.committed, 2);
+  assert.ok(world.fileAt('fin-lab/FinResearchRaw/a.txt'), 'first batch is in the repo');
+  assert.equal(world.fileAt('fin-lab/FinResearchRaw/c.txt'), null, 'later batch not committed');
+  const patches = world.calls.filter((c) => c.startsWith('PATCH')).length;
+  assert.ok(patches <= 3, `stopped early, PATCH calls: ${patches}`);
+  assert.ok(logs.some((l) => l.level === 'error' && l.msg.includes('GitHub 커밋 실패로 중단')));
+});
+
+await test('flow: a GitHub refusal is reported with partial results instead of failing every file', async () => {
+  const world = makeFakeWorld();
+  world.refReject = 'Required status check "ci" is expected.';
+  const mk = (relPath, content, mtime) => ({ relPath, size: content.length, lastModified: mtime, read: async () => new Blob([content]) });
+  const files = Array.from({ length: 6 }, (_, i) => mk(`f${i}.txt`, `file ${i}`, 1000 + i));
+  const { ctx } = makeCtx(world);
+  const res = await core.runFlowMatching(ctx, { folders: [{ id: 'p', label: 'Photos', source: core.listFolderSource('Photos', files) }] });
+  assert.equal(res.ok, false);
+  assert.ok(res.error.includes('Required status check'), res.error);
+  assert.equal(res.commits.length, 0);
+  const f = res.folders[0];
+  assert.ok(f.failed.length + f.skipped.length + f.uploaded >= 6, JSON.stringify(f));
+  assert.ok(f.skipped.some((x) => x.reason.includes('중단')) || f.failed.length > 0);
+  assert.ok([...world.drive.files.values()].some((x) => x.name === 'f0.txt'), 'upload to Drive happened before the GitHub refusal');
 });
 
 await test('flow: uploads new device files to Drive and GitHub in parallel, additive, chunked upload', async () => {

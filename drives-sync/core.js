@@ -99,6 +99,7 @@ export const DEFAULT_CONFIG = {
     batchBytes: 48 * 1024 * 1024,
     concurrency: 3,
     uploadChunkBytes: 16 * 1024 * 1024, // multiple of 256 KiB
+    commitRetryMs: 1500,             // base wait between attempts when the branch moves under a commit
   },
   automation: { enabled: false, intervalMinutes: 30, keepAwake: false, notify: false },
   device: { id: '', name: '' },
@@ -597,8 +598,9 @@ export function collectUnder(files, sourceId) {
 /* ------------------------------------------------------------------ GitHub client */
 
 export class GitHubRepo {
-  constructor(auth, { owner, repo, branch, fetch: fetchImpl, log, signal } = {}) {
+  constructor(auth, { owner, repo, branch, fetch: fetchImpl, log, signal, retryMs } = {}) {
     this.auth = auth;
+    this.retryMs = retryMs || 1500;
     this.owner = owner;
     this.repo = repo;
     this.branch = branch || '';
@@ -682,33 +684,61 @@ export class GitHubRepo {
 
   async createCommit(message, tree, parents) { return this.api('git/commits', { method: 'POST', body: { message, tree, parents } }); }
 
+  /** Moves the branch to `sha`, fast-forward only. Resolves to { ok } or { ok:false, status, message, retryable }. */
   async updateRef(sha) {
     const branch = await this.resolveBranch();
     const res = await this.api(`git/refs/${encodeURI('heads/' + branch)}`, { method: 'PATCH', body: { sha, force: false }, raw: true, allow: [422, 409] });
-    if (res.status === 422 || res.status === 409) return false;
-    return true;
+    if (res.ok) return { ok: true };
+    let message = '';
+    try { const body = await res.json(); message = body && body.message ? String(body.message) : ''; } catch { /* no body */ }
+    const retryable = res.status === 409 || !message || /fast[ -]?forward|being updated|try again|spammed|reference update failed/i.test(message);
+    return { ok: false, status: res.status, message, retryable };
+  }
+
+  /** After a refused update: did the branch move, and who moved it? null when it did not move. */
+  async describeHeadMove(previousSha) {
+    const head = await this.branchHead();
+    if (head.commitSha === previousSha) return null;
+    const c = await this.api(`git/commits/${head.commitSha}`);
+    const who = (c.committer && c.committer.name) || (c.author && c.author.name) || '?';
+    return { sha: head.commitSha, author: who, title: String(c.message || '').split('\n')[0].slice(0, 80) };
   }
 
   /**
    * One commit on the branch. `buildEntries({head, attempt})` returns tree entries
    * ({path, sha} for blobs already created, or {path, content} for text). When another
-   * writer moved the branch in between, it is called again against the new head.
+   * writer moved the branch in between, it is called again against the new head; the log
+   * names the commit that got in. A refusal that is not about the branch moving (a rule,
+   * a permission) stops at once with GitHub's own reason.
    */
-  async commitEntries({ message, buildEntries, maxAttempts = 4 }) {
+  async commitEntries({ message, buildEntries, maxAttempts = 8 }) {
+    let last = null;
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       throwIfAborted(this.signal);
       const head = await this.branchHead();
+      if (last && !last.result.retryable && head.commitSha === last.head.commitSha) {
+        throw new Error(`GitHub가 브랜치 ${head.branch}의 갱신을 거부했습니다 (HTTP ${last.result.status}): ${last.result.message}. 브랜치 보호 규칙이나 저장소 규칙이 API 커밋을 막고 있는지, 토큰에 이 브랜치로 푸시할 권한이 있는지 확인하세요.`);
+      }
       const entries = await buildEntries({ head, attempt });
       const tree = entries.map((e) => (e.content !== undefined
         ? { path: e.path, mode: '100644', type: 'blob', content: e.content }
         : { path: e.path, mode: '100644', type: 'blob', sha: e.sha }));
       const treeSha = await this.createTree(head.treeSha, tree);
       const commit = await this.createCommit(message, treeSha, [head.commitSha]);
-      if (await this.updateRef(commit.sha)) return { sha: commit.sha, url: commit.html_url, branch: head.branch, files: entries.length, attempt };
-      this.log('warn', `브랜치가 그 사이 바뀌어 커밋을 다시 만듭니다 (${attempt + 1}/${maxAttempts})`);
-      await sleep(500 * (attempt + 1), this.signal);
+      const result = await this.updateRef(commit.sha);
+      if (result.ok) return { sha: commit.sha, url: commit.html_url, branch: head.branch, files: entries.length, attempt };
+      last = { head, result };
+      let moved = null;
+      try { moved = await this.describeHeadMove(head.commitSha); } catch { /* best effort */ }
+      const why = `HTTP ${result.status}${result.message ? ': ' + result.message : ''}`;
+      const who = moved
+        ? ` - 그 사이 다른 커밋이 들어왔습니다: ${moved.sha.slice(0, 7)} (${moved.author}: ${moved.title})`
+        : ' - 브랜치는 그대로인데 거부되었습니다';
+      this.log('warn', `브랜치 갱신 거부 (${why})${who}. 다시 시도 ${attempt + 1}/${maxAttempts}`);
+      await sleep(Math.min(10 * this.retryMs, this.retryMs * (attempt + 1)) + Math.floor(Math.random() * this.retryMs * 0.5), this.signal);
     }
-    throw new Error('브랜치가 계속 바뀌어 커밋하지 못했습니다. 잠시 후 다시 시도하세요.');
+    const r = last.result;
+    throw new Error(`브랜치가 계속 바뀌어 커밋하지 못했습니다 (${maxAttempts}회 시도, 마지막 사유: HTTP ${r.status}${r.message ? ' ' + r.message : ''}). 다른 기기의 앱이나 자동화, 또는 저장소의 워크플로(봇 커밋)가 같은 브랜치에 계속 커밋하고 있습니다. 이미 커밋된 배치는 그대로 남으므로 잠시 후 다시 실행하면 이어서 진행합니다.`);
   }
 }
 
@@ -758,6 +788,7 @@ class Committer {
     this.chain = Promise.resolve();
     this.commits = [];
     this.committed = 0;
+    this.error = null;
   }
 
   add(entry) {
@@ -778,6 +809,10 @@ class Committer {
   }
 
   async _commit(batch) {
+    try { await this._commitBatch(batch); } catch (e) { this.error = e; throw e; }
+  }
+
+  async _commitBatch(batch) {
     const ctx = this.ctx;
     const res = await ctx.github.commitEntries({
       message: `${this.message} (+${batch.length})`,
@@ -837,7 +872,7 @@ export function createContext({ config, googleAuth, githubAuth, fetch: fetchImpl
     googleAuth,
     githubAuth,
     google: new GoogleDrive(googleAuth, { fetch: f, log: logger, signal, chunkBytes: cfg.limits.uploadChunkBytes }),
-    github: new GitHubRepo(githubAuth, { owner: cfg.github.owner, repo: cfg.github.repo, branch: cfg.github.branch, fetch: f, log: logger, signal }),
+    github: new GitHubRepo(githubAuth, { owner: cfg.github.owner, repo: cfg.github.repo, branch: cfg.github.branch, fetch: f, log: logger, signal, retryMs: cfg.limits.commitRetryMs }),
     log: logger,
     progress: progress || noop,
     signal,
@@ -1087,6 +1122,7 @@ export async function runStockMatching(ctx, { dryRun = false, trigger = 'manual'
   const chunks = [];
   for (let i = 0; i < plan.toSync.length; i += cfg.limits.batchFiles) chunks.push(plan.toSync.slice(i, i + cfg.limits.batchFiles));
 
+  try {
   for (const chunk of chunks) {
     throwIfAborted(ctx.signal);
     const results = await Promise.all(chunk.map((t) => limit(async () => {
@@ -1112,10 +1148,18 @@ export async function runStockMatching(ctx, { dryRun = false, trigger = 'manual'
     ctx.progress({ phase: 'transfer', done, total });
   }
   await committer.flush();
+  } catch (e) {
+    if (e.name === 'AbortError') throw e;
+    summary.ok = false;
+    summary.error = e.message;
+    ctx.log('error', `GitHub 커밋 실패로 중단: ${e.message}`);
+  }
   summary.commits = committer.commits;
+  summary.committed = committer.committed;
   summary.finishedAt = nowIso();
   summary.durationMs = Date.now() - t0;
-  ctx.log('info', `Stock Matching 완료: ${summary.synced}개 동기화, ${summary.failed.length}개 실패, ${formatBytes(summary.bytes)}, 커밋 ${summary.commits.length}개`);
+  if (summary.error) ctx.log('warn', `Stock Matching 중단: 커밋된 파일 ${summary.committed}개 (커밋 ${summary.commits.length}개)는 저장됨, 나머지는 다음 실행에서 이어서 진행`);
+  else ctx.log('info', `Stock Matching 완료: ${summary.synced}개 동기화, ${summary.failed.length}개 실패, ${formatBytes(summary.bytes)}, 커밋 ${summary.commits.length}개`);
   return summary;
 }
 
@@ -1188,6 +1232,7 @@ export async function runFlowMatching(ctx, { folders = [], dryRun = false, trigg
     let done = 0;
     await Promise.all(fresh.map((e) => limit(async () => {
       throwIfAborted(ctx.signal);
+      if (committer.error) { res.skipped.push({ relPath: e.relPath, reason: 'GitHub 커밋 실패로 중단' }); done++; return; }
       ctx.progress({ phase: 'upload', folder: fd.label, done, total: fresh.length, current: e.relPath });
       try {
         const relDir = splitPath(e.relPath).slice(0, -1);
@@ -1222,7 +1267,12 @@ export async function runFlowMatching(ctx, { folders = [], dryRun = false, trigg
   };
 
   const results = await Promise.all(folders.map(processFolder));
-  await committer.flush();
+  try { await committer.flush(); } catch (e) { if (e.name === 'AbortError') throw e; }
+  if (committer.error) {
+    summary.ok = false;
+    summary.error = committer.error.message;
+    ctx.log('error', `GitHub 커밋 실패로 중단: ${committer.error.message}`);
+  }
   const finishedAt = nowIso();
   for (const r of results) {
     summary.folders.push(r);
@@ -1232,9 +1282,11 @@ export async function runFlowMatching(ctx, { folders = [], dryRun = false, trigg
     if (r.error) summary.ok = false;
   }
   summary.commits = committer.commits;
+  summary.committed = committer.committed;
   summary.finishedAt = finishedAt;
   summary.durationMs = Date.now() - t0;
-  ctx.log('info', `Flow Matching 완료: ${summary.uploaded}개 업로드, ${summary.failed}개 실패, ${formatBytes(summary.bytes)}, 커밋 ${summary.commits.length}개`);
+  if (summary.error) ctx.log('warn', `Flow Matching 중단: 커밋된 파일 ${summary.committed}개 (커밋 ${summary.commits.length}개)는 저장됨, 나머지는 다음 실행에서 이어서 진행`);
+  else ctx.log('info', `Flow Matching 완료: ${summary.uploaded}개 업로드, ${summary.failed}개 실패, ${formatBytes(summary.bytes)}, 커밋 ${summary.commits.length}개`);
   return summary;
 }
 

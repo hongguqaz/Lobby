@@ -151,8 +151,10 @@ await test('brake: a wrong Google account is reported and refused', async () => 
 });
 
 await test('Stock Matching from the UI button copies Drive files into the repo folder', async () => {
+  // hide any stale summary from an earlier test so we wait for THIS run's render, not a leftover
+  await page.evaluate(() => { const s = document.getElementById('stock-summary'); s.hidden = true; s.textContent = ''; });
   await page.click('#btn-stock-run');
-  await page.waitForFunction(() => document.body.dataset.state === 'idle' && !document.getElementById('stock-summary').hidden, null, { timeout: 20000 });
+  await page.waitForFunction(() => { const s = document.getElementById('stock-summary'); return document.body.dataset.state === 'idle' && !s.hidden && s.textContent.includes('동기화'); }, null, { timeout: 20000 });
   const text = await page.textContent('#stock-summary');
   assert.ok(text.includes('2개 동기화'), text);
   assert.equal(world.fileAt('fin-lab/FinResearchRaw/note.txt').toString(), 'hello from drive');
@@ -219,6 +221,21 @@ await test('state JSON hides secrets and the logs are readable', async () => {
   assert.ok(st.lastRuns.stock && st.folders.length === 0 && st.automation.enabled === false);
   const logs = await api('DrivesSync.logs.get(50)');
   assert.ok(logs.length > 5 && logs.every((l) => l.t && l.level && l.msg));
+});
+
+await test('only one tab runs at a time (Web Locks)', async () => {
+  // hold the shared lock from this page with an explicit release we control (no page-close timing)
+  await page.evaluate(() => new Promise((acquired) => {
+    window.__release = null;
+    navigator.locks.request('drives-sync:run', () => new Promise((release) => { window.__release = release; acquired(); }));
+  }));
+  const res = await api('DrivesSync.runStock()');
+  assert.equal(res.busy, true, JSON.stringify(res));
+  assert.ok(res.reasons[0].includes('다른 탭'));
+  await page.evaluate(() => { window.__release(); window.__release = null; });
+  await page.waitForFunction(async () => !(await navigator.locks.query()).held.some((l) => l.name === 'drives-sync:run'), null, { timeout: 5000 });
+  const again = await api('DrivesSync.runStock()');
+  assert.notEqual(again.busy, true, 'lock released -> not busy: ' + JSON.stringify(again));
 });
 
 await test('renders at phone width without horizontal overflow', async () => {

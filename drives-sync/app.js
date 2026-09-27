@@ -325,7 +325,22 @@ function setRunning(kind) {
   emit('state', { running: !!kind, kind });
 }
 
+/** One operation at a time: in this tab (state.running) and across tabs and windows of this browser (Web Locks). */
 async function guarded(kind, fn) {
+  if (state.running) return { ok: false, busy: true, reasons: [`다른 작업(${state.running.kind})이 실행 중입니다.`] };
+  if (navigator.locks && navigator.locks.request) {
+    return navigator.locks.request('drives-sync:run', { ifAvailable: true }, async (lock) => {
+      if (!lock) {
+        const res = { ok: false, busy: true, reasons: ['다른 탭이나 창에서 Drives Sync가 실행 중입니다. 한 번에 한 곳에서만 실행하세요.'] };
+        log(kind, 'warn', res.reasons[0]);
+        return res;
+      }
+      return runGuarded(kind, fn);
+    });
+  }
+  return runGuarded(kind, fn);
+}
+async function runGuarded(kind, fn) {
   if (state.running) return { ok: false, busy: true, reasons: [`다른 작업(${state.running.kind})이 실행 중입니다.`] };
   setRunning(kind);
   try {
@@ -628,7 +643,14 @@ function renderSummary(section, res) {
     renderChip(`chip-${section}`, 'braked', '중단됨');
     return;
   }
-  if (res.error) { el.innerHTML = `<b>오류:</b> ${escapeHtml(res.error)}`; renderChip(`chip-${section}`, 'error', '오류'); return; }
+  if (res.error) {
+    const kept = res.commits && res.commits.length
+      ? ` 그 전까지의 커밋 ${res.commits.length}개(파일 ${res.committed || 0}개)는 저장되었습니다: ${commitLinks(res.commits)}. 다시 실행하면 이어서 진행합니다.`
+      : '';
+    el.innerHTML = `<b>오류:</b> ${linkify(res.error)}${kept}`;
+    renderChip(`chip-${section}`, 'error', '오류');
+    return;
+  }
   if (res.aborted) { el.innerHTML = '<b>중지되었습니다.</b> 이미 커밋된 배치는 그대로 남고, 다음 실행에서 이어서 진행합니다.'; renderChip(`chip-${section}`, 'warn', '중지'); return; }
   if (section === 'stock') {
     const parts = [`Drive 파일 ${res.listed}개 (폴더 ${res.folders}개)`, `변경 없음 ${res.unchanged}`, `건너뜀 ${res.skipped.length}`];
