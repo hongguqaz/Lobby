@@ -1,6 +1,6 @@
 /* Drives Sync service worker: caches the app shell so the page opens offline and installs
    as a PWA. API calls (Google, GitHub) are never intercepted. Bump VERSION on every release. */
-const VERSION = 'drives-sync-v1.0.0';
+const VERSION = 'drives-sync-v1.1.0';
 const SHELL = [
   './', './index.html', './app.js', './core.js', './drives-sync.css', './manifest.webmanifest',
   './assets/icon.svg', './assets/icon-192.png', './assets/icon-512.png', './assets/icon-maskable-512.png', './assets/apple-touch-icon.png',

@@ -8,7 +8,7 @@
    Every operation starts with a preflight; if any check fails the operation is "braked":
    nothing is written and the reasons are returned to whoever asked (person or agent). */
 
-export const VERSION = '1.0.0';
+export const VERSION = '1.1.0';
 export const MANIFEST_DIR = '.drives-sync';
 export const MANIFEST_FILE = '.drives-sync/manifest.json';
 
@@ -260,7 +260,9 @@ export async function fetchRetry(fetchImpl, url, init = {}, { retries = 3, signa
     throwIfAborted(signal);
     let res;
     try {
-      res = await fetchImpl(url, { ...init, signal });
+      // GitHub answers with Cache-Control: max-age=60; a browser would then serve a stale branch
+      // head (and manifest) for a minute, so every API read must bypass the HTTP cache.
+      res = await fetchImpl(url, { ...init, signal, cache: 'no-store' });
     } catch (e) {
       if (e && e.name === 'AbortError') throw abortError();
       if (attempt >= retries) throw new HttpError(0, url, null, `네트워크 오류 (${shortUrl(url)}): ${e.message}`);

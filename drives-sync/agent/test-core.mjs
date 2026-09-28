@@ -31,6 +31,23 @@ await test('preflight passes with the right accounts and target folder', async (
   assert.ok(pf.checks.length >= 9);
 });
 
+await test('every API read bypasses the browser HTTP cache (GitHub sends max-age=60)', async () => {
+  const world = makeFakeWorld();
+  const seen = [];
+  const spy = (url, init) => { seen.push({ url, cache: init && init.cache, method: (init && init.method) || 'GET' }); return world.fetch(url, init); };
+  const ctx = core.createContext({
+    config: { device: { id: 'd', name: 'D' } },
+    googleAuth: new core.StaticGoogleAuth({ accessToken: 'GTOKEN', scope: world.scope, fetch: spy }),
+    githubAuth: new core.StaticGitHubAuth('GHTOKEN'), fetch: spy,
+  });
+  const pf = await core.preflight(ctx);
+  assert.equal(pf.ok, true, JSON.stringify(pf.reasons));
+  const gets = seen.filter((x) => x.method === 'GET');
+  assert.ok(gets.length >= 5, 'expected several GETs');
+  const cached = gets.filter((x) => x.cache !== 'no-store').map((x) => x.url);
+  assert.deepEqual(cached, [], 'GETs that could hit the browser cache');
+});
+
 await test('brake: no Google login', async () => {
   const world = makeFakeWorld();
   const { ctx } = makeCtx(world, { googleToken: null });
