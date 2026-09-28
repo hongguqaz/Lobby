@@ -133,9 +133,11 @@
           <div class="row">
             <button id="btn-stock-run" class="btn" type="button">동기화 실행</button>
             <button id="btn-stock-dry" class="btn-secondary" type="button">미리 보기 (쓰지 않음)</button>
+            <button id="btn-stock-cloud" class="btn-secondary" type="button">클라우드에서 실행 (GitHub Actions)</button>
             <button id="btn-stock-stop" class="btn-danger" type="button" hidden>중지</button>
             <span class="hint" id="stock-last"></span>
           </div>
+          <p class="hint">브라우저 앱은 창이 닫히면 멈춥니다. 실행 중에는 화면을 켜 두도록 붙들고, 닫으려 하면 경고하며, 그래도 끊기면 다음에 열 때 이어서 실행을 권합니다. 파일이 많아 오래 걸리면 <b>클라우드에서 실행</b>을 누르세요. Drive 저장소의 "Sync rooms with Google Drive" 워크플로(저장소의 sync/ 도구)가 GitHub Actions에서 Drive → 저장소 가져오기를 끝까지 돌리므로 창을 닫아도 됩니다. 토큰에 Actions: Read and write 권한이 필요하고, 워크플로 이름은 ⚙ 설정에서 바꿀 수 있습니다.</p>
           <div class="progress" id="stock-progress" hidden><div class="progress-bar"><span></span></div><span class="progress-text"></span></div>
           <div class="summary" id="stock-summary" hidden></div>
           <pre class="log" id="stock-log" aria-live="polite"></pre>
@@ -279,6 +281,11 @@ document.body.dataset.state                       // idle | running | braked | e
               <button id="btn-google-longrun" class="btn-secondary" type="button">장기 인증 시작 (Google로 이동)</button>
               <button id="btn-google-longrun-clear" class="btn-secondary" type="button">장기 인증 지우기</button>
             </div>
+          </fieldset>
+          <fieldset>
+            <legend>클라우드 실행 (GitHub Actions)</legend>
+            <label>Drive 저장소의 워크플로 파일 <input id="cloud-workflow" type="text" placeholder="sync-gdrive.yml" spellcheck="false"></label>
+            <p class="hint">기능 1의 "클라우드에서 실행"이 이 워크플로를 실행합니다(workflow_dispatch). 기본값은 저장소의 "Sync rooms with Google Drive"로, Drive → 저장소 가져오기를 합니다. 앱의 GitHub 토큰에 Actions: Read and write 권한이 있어야 합니다.</p>
           </fieldset>
           <fieldset>
             <legend>제한</legend>

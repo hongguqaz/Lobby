@@ -285,6 +285,38 @@ await test('flow: braked without folders; automation preflight needs folders and
   assert.equal(ok.ok, true, JSON.stringify(ok.reasons));
 });
 
+await test('cloud: dispatches the repository sync workflow on demand; explains unknown inputs, a missing workflow, or no Actions permission', async () => {
+  const world = makeFakeWorld();
+  const { ctx } = makeCtx(world);
+  const res = await core.dispatchStockWorkflow(ctx);
+  assert.equal(res.ok, true, JSON.stringify(res));
+  assert.equal(world.dispatches.length, 1);
+  assert.equal(world.dispatches[0].file, 'sync-gdrive.yml');
+  assert.equal(world.dispatches[0].ref, 'main');
+  assert.equal(world.dispatches[0].inputs.mode, 'import');
+  assert.equal(res.workflow, 'Sync rooms with Google Drive');
+  assert.ok(res.runsUrl.endsWith('/actions/workflows/sync-gdrive.yml'));
+  // a workflow that does not know the inputs: asked again without them, and the note says so
+  world.workflows['sync-gdrive.yml'].inputs = ['dry_run'];
+  const older = await core.dispatchStockWorkflow(ctx);
+  assert.equal(older.ok, true, JSON.stringify(older));
+  assert.ok(older.note && older.note.includes('inputs'), older.note);
+  assert.deepEqual(Object.keys(world.dispatches[1].inputs), []);
+  // another workflow with its own inputs, chosen explicitly
+  const own = await core.dispatchStockWorkflow(ctx, { workflowFile: 'drives-sync-stock.yml', inputs: { target_path: 'fin-lab/FinResearchRaw', source_folder_id: '', dry_run: 'false' } });
+  assert.equal(own.ok, true, JSON.stringify(own));
+  assert.equal(world.dispatches[2].inputs.target_path, 'fin-lab/FinResearchRaw');
+  world.workflows = {};
+  const missing = await core.dispatchStockWorkflow(ctx);
+  assert.equal(missing.ok, false);
+  assert.ok(missing.reasons[0].includes('sync-gdrive.yml'), missing.reasons[0]);
+  world.workflows = { 'sync-gdrive.yml': { inputs: ['mode', 'entries', 'dry_run'] } };
+  world.actionsPerm = false;
+  const noperm = await core.dispatchStockWorkflow(ctx);
+  assert.equal(noperm.ok, false);
+  assert.ok(noperm.reasons[0].includes('Actions'), noperm.reasons[0]);
+});
+
 await test('refresh-token auth refreshes lazily; auth url + pkce', async () => {
   let refreshes = 0;
   const fetchImpl = async (url, init) => {

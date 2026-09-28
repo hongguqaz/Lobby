@@ -92,6 +92,9 @@ export const DEFAULT_CONFIG = {
     // back) from waking up after every batch and racing the next one. 'intermediate' marks every
     // batch but the last of a run, so such workflows run once per sync; 'all' never wakes them; 'none' always does.
     skipCi: 'intermediate',
+    // "클라우드에서 실행": the repository workflow the app dispatches so a long Drive -> repository
+    // load finishes with the window closed. Default: the Drive repo's own daily Google Drive sync.
+    cloud: { workflow: 'sync-gdrive.yml', inputs: { mode: 'import', entries: 'all', dry_run: 'false' } },
   },
   flow: {
     driveSubPath: 'DrivesSync',      // under the Stock source folder: DrivesSync/<device>/<folder label>
@@ -686,6 +689,14 @@ export class GitHubRepo {
   /** A harmless write: an unreferenced blob, garbage-collected by GitHub. Proves Contents: write. */
   async probeWrite() { return this.createBlobText(`Drives Sync write check ${nowIso()}\n`); }
 
+  /** A workflow by file name, or null when the repository has none. Needs Actions: read on the token. */
+  async getWorkflow(file) { return this.api(`actions/workflows/${encodeURIComponent(file)}`, { allow: [404] }); }
+
+  /** workflow_dispatch. Needs Actions: write on the token. GitHub answers 204. */
+  async dispatchWorkflow(file, ref, inputs = {}) {
+    return this.api(`actions/workflows/${encodeURIComponent(file)}/dispatches`, { method: 'POST', body: { ref, inputs } });
+  }
+
   async createTree(baseTree, tree) { return (await this.api('git/trees', { method: 'POST', body: { base_tree: baseTree, tree } })).sha; }
 
   async createCommit(message, tree, parents) { return this.api('git/commits', { method: 'POST', body: { message, tree, parents } }); }
@@ -1003,7 +1014,7 @@ export async function preflight(ctx, { scope = 'stock', extraChecks = [] } = {})
           const c = await ctx.github.contents(target);
           if (c === null) add('github.target', 'GitHub 대상 폴더', false, `대상 폴더가 저장소에 없습니다: ${target}. 경로를 확인하거나 먼저 폴더를 만드세요.`, { missingTarget: true });
           else if (!Array.isArray(c)) add('github.target', 'GitHub 대상 폴더', false, `대상 경로가 폴더가 아니라 파일입니다: ${target}`);
-          else add('github.target', 'GitHub 대상 폴더', true, `${target}/ (항목 ${c.length}개)`);
+          else add('github.target', 'GitHub 대상 폴더', true, `${target}/ (항목 ${c.length >= 1000 ? '1,000개 이상: 목록 API는 1,000개까지만 보여 주지만 파일은 모두 저장되어 있습니다' : c.length + '개'})`);
         } catch (e) {
           if (e.status === 403) add('github.target', 'GitHub 대상 폴더', false, help('읽기'), { permission: true });
           else add('github.target', 'GitHub 대상 폴더', false, `대상 폴더를 확인할 수 없습니다: ${e.message}`);
@@ -1321,6 +1332,54 @@ export async function automationPreflight(ctx, { folders = [], intervalMinutes, 
   else checks.push({ id: 'automation.interval', label: '실행 주기', ok: true, detail: `${mins}분마다` });
   const pf = await preflight(ctx, { scope: 'automation', extraChecks: checks });
   return pf;
+}
+
+/* ------------------------------------------------------------------ cloud run: hand Stock Matching to GitHub Actions */
+
+/**
+ * Asks GitHub Actions to run the Stock workflow in the repository (the Drive repo's
+ * .github/workflows/drives-sync-stock.yml runs this same engine from the CLI). The window can
+ * then be closed. Checks the token, the repository, the workflow and the Actions permission;
+ * never throws for an expected failure - it returns { ok:false, reasons }.
+ */
+export async function dispatchStockWorkflow(ctx, { workflowFile, inputs } = {}) {
+  const cloud = (ctx.config.github && ctx.config.github.cloud) || {};
+  workflowFile = (workflowFile || cloud.workflow || 'sync-gdrive.yml').trim();
+  inputs = inputs || cloud.inputs || {};
+  const token = ctx.githubAuth ? await ctx.githubAuth.getToken() : null;
+  if (!token) return { ok: false, reasons: ['GitHub 토큰이 없습니다. 0번 바에서 토큰을 저장하세요.'] };
+  let branch;
+  try { await ctx.github.repoInfo(); branch = await ctx.github.resolveBranch(); } catch (e) {
+    return { ok: false, reasons: [`저장소 ${ctx.github.fullName}을(를) 확인할 수 없습니다: ${e.message}`] };
+  }
+  const permissionHelp = `토큰에 Actions 권한이 없습니다. ${GITHUB_TOKENS_URL} 에서 이 토큰을 열어 Repository permissions → Actions 를 "Read and write"로 추가하고 저장하세요 (Contents 권한은 그대로 둡니다).`;
+  let wf;
+  try { wf = await ctx.github.getWorkflow(workflowFile); } catch (e) {
+    if (e.status === 403) return { ok: false, reasons: [permissionHelp] };
+    return { ok: false, reasons: [`워크플로를 확인할 수 없습니다: ${e.message}`] };
+  }
+  if (!wf) return { ok: false, reasons: [`저장소 ${ctx.github.fullName}의 브랜치 ${branch}에 워크플로 파일 .github/workflows/${workflowFile} 이 없습니다. ⚙ 설정의 "클라우드 실행 워크플로 파일"에 저장소 Actions 탭에 있는 워크플로의 파일 이름을 적으세요.`] };
+  if (wf.state && wf.state !== 'active') return { ok: false, reasons: [`워크플로가 비활성 상태입니다 (${wf.state}). 저장소의 Actions 탭에서 활성화하세요.`] };
+  let sent = inputs;
+  let note = null;
+  try {
+    await ctx.github.dispatchWorkflow(workflowFile, branch, sent);
+  } catch (e) {
+    if (e.status === 422 && /unexpected inputs/i.test(e.message) && Object.keys(sent).length) {
+      // the workflow does not know these inputs: ask for a run with its own defaults and say so
+      const unknown = Object.keys(sent).join(', ');
+      sent = {};
+      try { await ctx.github.dispatchWorkflow(workflowFile, branch, sent); } catch (e2) {
+        return { ok: false, reasons: [e2.status === 403 ? permissionHelp : `실행 요청 실패: ${e2.message}`] };
+      }
+      note = `워크플로가 앱이 보낸 inputs(${unknown})를 모르므로 inputs 없이, 워크플로의 기본값으로 실행을 요청했습니다.`;
+    } else if (e.status === 403) return { ok: false, reasons: [permissionHelp] };
+    else if (e.status === 422) return { ok: false, reasons: [`워크플로가 실행 요청을 거부했습니다: ${e.message}`] };
+    else return { ok: false, reasons: [`실행 요청 실패: ${e.message}`] };
+  }
+  const runsUrl = `https://github.com/${ctx.github.fullName}/actions/workflows/${workflowFile}`;
+  ctx.log('info', `GitHub Actions 실행 요청: ${wf.name} @ ${branch}${note ? ' (' + note + ')' : ''}`);
+  return { ok: true, runsUrl, workflow: wf.name, ref: branch, inputs: sent, note, at: nowIso() };
 }
 
 /* ------------------------------------------------------------------ folder sources */

@@ -174,13 +174,28 @@ export function makeFakeWorld({ email = 'honggusangjoon@gmail.com', login = 'hon
         git.head = body.sha;
         return json(200, { object: { sha: git.head } });
       }
+      const wfM = /^\/actions\/workflows\/([^/]+)(\/dispatches)?$/.exec(rest);
+      if (wfM) {
+        if (!world.actionsPerm) return json(403, { message: 'Resource not accessible by personal access token' });
+        const file = decodeURIComponent(wfM[1]);
+        if (!world.workflows[file]) return json(404, { message: 'Not Found' });
+        if (wfM[2] && method === 'POST') {
+          const body = JSON.parse(init.body);
+          const allowed = world.workflows[file].inputs || [];
+          const bad = Object.keys(body.inputs || {}).filter((k) => !allowed.includes(k));
+          if (bad.length) return json(422, { message: `Unexpected inputs provided: ["${bad.join('", "')}"]` });
+          world.dispatches.push({ file, ref: body.ref, inputs: body.inputs || {} });
+          return json(204, null);
+        }
+        return json(200, { id: 1, name: world.workflows[file].name || file, path: '.github/workflows/' + file, state: 'active' });
+      }
       return json(404, { message: 'unknown github endpoint ' + rest });
     }
     if (u.host === 'oauth2.googleapis.com' && u.pathname === '/tokeninfo') return json(200, { scope: world.scope, email: world.email });
     return json(404, { message: 'unknown host ' + u.host });
   }
 
-  const world = { drive, git, calls, rootId, addFile, addFolder, addGoogleDoc, fetch: fetchImpl, headTree, conflictTimes: 0, refReject: null, email, scope, githubToken, perms: { read: canRead, write: canWrite },
+  const world = { drive, git, calls, rootId, addFile, addFolder, addGoogleDoc, fetch: fetchImpl, headTree, conflictTimes: 0, refReject: null, email, scope, githubToken, workflows: { 'sync-gdrive.yml': { name: 'Sync rooms with Google Drive', inputs: ['mode', 'entries', 'dry_run'] }, 'drives-sync-stock.yml': { name: 'Drives Sync - Stock Matching', inputs: ['dry_run', 'target_path', 'source_folder_id'] } }, dispatches: [], actionsPerm: true, perms: { read: canRead, write: canWrite },
     fileAt: (path) => { const t = headTree(); return t.has(path) ? git.blobs.get(t.get(path)) : null; } };
   return world;
 }

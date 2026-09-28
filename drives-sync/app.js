@@ -15,7 +15,7 @@ const PREVIEW_REASON = `미리 보기 환경(claude.ai)에서는 Google·GitHub 
 const previewFetch = async () => new Response(JSON.stringify({ message: PREVIEW_REASON, error: { message: PREVIEW_REASON } }), { status: 403, headers: { 'content-type': 'application/json' } });
 const LS = {
   config: 'ds.config', gToken: 'ds.google.token', gRefresh: 'ds.google.refresh', ghToken: 'ds.github.token',
-  logs: 'ds.logs', lastRuns: 'ds.lastRuns', pkce: 'ds.pkce', folders: 'ds.folders', automation: 'ds.automation',
+  logs: 'ds.logs', lastRuns: 'ds.lastRuns', pkce: 'ds.pkce', folders: 'ds.folders', automation: 'ds.automation', inflight: 'ds.inflight',
 };
 
 const store = {
@@ -74,6 +74,8 @@ function normalizeConfig(cfg) {
   cfg.github.branch = (cfg.github.branch || '').trim();
   cfg.google.sourceFolderId = (cfg.google.sourceFolderId || '').trim() || 'root';
   cfg.flow.driveSubPath = core.joinPath(cfg.flow.driveSubPath) || 'DrivesSync';
+  cfg.github.cloud = cfg.github.cloud || {};
+  cfg.github.cloud.workflow = (cfg.github.cloud.workflow || 'sync-gdrive.yml').trim();
   cfg.limits.maxFileBytes = Math.min(100 * 1048576, Math.max(1048576, Number(cfg.limits.maxFileBytes) || 100 * 1048576));
   cfg.limits.batchFiles = Math.min(200, Math.max(1, Number(cfg.limits.batchFiles) || 20));
   cfg.limits.concurrency = Math.min(8, Math.max(1, Number(cfg.limits.concurrency) || 3));
@@ -315,13 +317,17 @@ function makeCtx(section, signal) {
 
 function setRunning(kind) {
   state.running = kind ? { kind, startedAt: core.nowIso(), abort: new AbortController() } : null;
+  // a marker that survives a closed window: on the next open, an unfinished run is offered to resume
+  if (kind === 'stock' || kind === 'flow') store.set(LS.inflight, { kind, startedAt: state.running.startedAt });
+  else if (!kind) store.del(LS.inflight);
   document.body.dataset.state = kind ? 'running' : 'idle';
   renderChip('status-run', kind ? 'running' : 'idle', kind ? `${kind} 실행 중` : '대기');
-  for (const id of ['btn-preflight', 'btn-stock-run', 'btn-stock-dry', 'btn-flow-run-all', 'btn-flow-dry', 'btn-auto-run-now', 'btn-auto-check', 'btn-create-target', 'btn-manifest-reset']) $(id).disabled = !!kind;
+  for (const id of ['btn-preflight', 'btn-stock-run', 'btn-stock-dry', 'btn-flow-run-all', 'btn-flow-dry', 'btn-auto-run-now', 'btn-auto-check', 'btn-create-target', 'btn-manifest-reset', 'btn-stock-cloud']) $(id).disabled = !!kind;
   $('btn-stock-stop').hidden = kind !== 'stock';
   $('btn-flow-stop').hidden = kind !== 'flow';
   renderFolders();
   renderAgentState();
+  updateWakeLock();
   emit('state', { running: !!kind, kind });
 }
 
@@ -539,7 +545,9 @@ const automation = {
 };
 
 async function updateWakeLock() {
-  const want = state.config.automation.enabled && state.config.automation.keepAwake && document.visibilityState === 'visible';
+  // keep the screen on while a sync runs (a sleeping laptop stops the run), and while automation asks for it
+  const running = !!(state.running && state.running.kind !== 'preflight');
+  const want = document.visibilityState === 'visible' && (running || (state.config.automation.enabled && state.config.automation.keepAwake));
   if (want && !state.wakeLock && 'wakeLock' in navigator) {
     try { state.wakeLock = await navigator.wakeLock.request('screen'); state.wakeLock.addEventListener('release', () => { state.wakeLock = null; }); } catch (e) { log('automation', 'warn', `화면 켜짐 유지 실패: ${e.message}`); }
   } else if (!want && state.wakeLock) { try { await state.wakeLock.release(); } catch { /* ignore */ } state.wakeLock = null; }
@@ -755,6 +763,7 @@ function renderForms() {
   $('stock-source-name').value = cfg.google.sourceFolderName;
   for (const k of ['document', 'spreadsheet', 'presentation', 'drawing']) $(`export-${k}`).value = cfg.google.exports[k];
   $('flow-drive-sub').value = cfg.flow.driveSubPath;
+  $('cloud-workflow').value = cfg.github.cloud.workflow;
   $('google-client-id').value = cfg.google.clientId;
   $('google-client-secret').value = cfg.google.clientSecret;
   $('limit-max-mb').value = Math.round(cfg.limits.maxFileBytes / 1048576);
@@ -848,6 +857,39 @@ async function resetManifest() {
 }
 
 /* ------------------------------------------------------------------ wiring */
+/** Stock Matching in the cloud: GitHub Actions runs the same engine; the window may then be closed. */
+async function runStockInCloud() {
+  return guarded('preflight', async (signal) => {
+    const ctx = makeCtx('stock', signal);
+    const res = await core.dispatchStockWorkflow(ctx, {});
+    const el = $('stock-summary');
+    el.hidden = false;
+    el.classList.toggle('braked', !res.ok);
+    if (res.ok) {
+      el.innerHTML = `<b>클라우드 실행을 요청했습니다.</b> 저장소의 워크플로 "${escapeHtml(res.workflow)}"(브랜치 ${escapeHtml(res.ref)})가 GitHub Actions에서 Google Drive → 저장소 가져오기를 끝까지 실행하므로 이 창은 닫아도 됩니다. 진행 상황과 결과: <a href="${escapeHtml(res.runsUrl)}" target="_blank" rel="noopener">${escapeHtml(res.runsUrl)}</a>${res.note ? `<br><small>${escapeHtml(res.note)}</small>` : ''}`;
+      renderChip('chip-stock', 'ok', '클라우드 실행 요청됨');
+      log('stock', 'info', `클라우드 실행 요청됨: ${res.runsUrl}`);
+    } else {
+      el.innerHTML = `<b>클라우드 실행을 요청하지 못했습니다.</b><ul>${res.reasons.map((r) => `<li>${linkify(r)}</li>`).join('')}</ul>`;
+      renderChip('chip-stock', 'braked', '클라우드 실행 불가');
+      log('stock', 'brake', res.reasons.join(' / '));
+    }
+    return res;
+  });
+}
+
+/** Offered when the previous window closed with a Stock or Flow run still going. */
+function showResumeBanner(inflight) {
+  const b = $('banner');
+  const label = inflight.kind === 'stock' ? 'Stock Matching' : 'Flow Matching';
+  b.className = 'banner';
+  b.innerHTML = '<span class="banner-text"></span><button class="btn small" type="button" id="btn-resume">이어서 실행</button><button class="btn-secondary small" type="button" id="btn-resume-close">닫기</button>';
+  b.querySelector('.banner-text').textContent = `${fmtTime(inflight.startedAt)}에 시작한 ${label}이(가) 창이 닫히거나 앱이 종료되면서 끝나지 못했습니다. 그때까지 커밋된 배치는 남아 있고, 이어서 실행하면 나머지만 처리합니다.`;
+  b.hidden = false;
+  $('btn-resume').onclick = () => { hideBanner(); if (inflight.kind === 'stock') doStock({ trigger: 'resume' }); else doFlow({ trigger: 'resume' }); };
+  $('btn-resume-close').onclick = hideBanner;
+}
+
 function bindConfigInputs() {
   const bind = (id, apply, event = 'change') => $(id).addEventListener(event, (e) => { apply(e.target.value); saveConfig(); renderStatus(); renderFolders(); });
   bind('device-name', (v) => { state.config.device.name = v.trim() || state.config.device.name; });
@@ -861,6 +903,7 @@ function bindConfigInputs() {
   bind('stock-source-name', (v) => { state.config.google.sourceFolderName = v.trim(); });
   for (const k of ['document', 'spreadsheet', 'presentation', 'drawing']) bind(`export-${k}`, (v) => { state.config.google.exports[k] = v; });
   bind('flow-drive-sub', (v) => { state.config.flow.driveSubPath = core.joinPath(v) || 'DrivesSync'; $('flow-drive-sub').value = state.config.flow.driveSubPath; });
+  bind('cloud-workflow', (v) => { state.config.github.cloud.workflow = v.trim() || 'sync-gdrive.yml'; $('cloud-workflow').value = state.config.github.cloud.workflow; });
   bind('google-client-id', (v) => { state.config.google.clientId = v.trim(); });
   bind('google-client-secret', (v) => { state.config.google.clientSecret = v.trim(); });
   bind('limit-max-mb', (v) => { state.config.limits.maxFileBytes = Math.min(100, Math.max(1, Number(v) || 100)) * 1048576; });
@@ -908,6 +951,9 @@ function bindButtons() {
   $('btn-create-target').addEventListener('click', createTargetFolder);
   $('btn-stock-run').addEventListener('click', () => doStock());
   $('btn-stock-dry').addEventListener('click', () => doStock({ dryRun: true }));
+  $('btn-stock-cloud').addEventListener('click', () => runStockInCloud());
+  // a closed window ends a run: warn while one is going (the browser shows its own dialog)
+  window.addEventListener('beforeunload', (e) => { if (state.running && state.running.kind !== 'preflight') { e.preventDefault(); e.returnValue = ''; } });
   $('btn-stock-stop').addEventListener('click', () => state.running && state.running.abort.abort());
   $('btn-flow-stop').addEventListener('click', () => state.running && state.running.abort.abort());
   $('btn-flow-run-all').addEventListener('click', () => doFlow());
@@ -972,6 +1018,7 @@ window.DrivesSync = {
   getState: () => publicState(),
   preflight: ({ scope = 'stock' } = {}) => guarded('preflight', () => doPreflight({ scope })),
   runStock: (opts = {}) => doStock({ dryRun: !!opts.dryRun, trigger: opts.trigger || 'agent' }),
+  runStockInCloud: () => runStockInCloud(),
   runFlow: (opts = {}) => doFlow({ folderIds: opts.folderIds, dryRun: !!opts.dryRun, trigger: opts.trigger || 'agent', strict: !!opts.strict }),
   automation: { enable: (o) => automation.enable(o || {}), disable: () => automation.disable(), status: () => automation.status(), runNow: () => automation.runOnce('agent') },
   config: {
@@ -1026,6 +1073,8 @@ function showPreviewNote() {
 /* ------------------------------------------------------------------ boot */
 async function boot() {
   if (!document.body.dataset.state) document.body.dataset.state = 'idle';
+  const inflight = store.get(LS.inflight, null);   // read before any run can overwrite it
+  store.del(LS.inflight);
   if (BUILD.single) installSingleFileManifest();
   if (PREVIEW) showPreviewNote();
   renderForms();
@@ -1052,6 +1101,10 @@ async function boot() {
     log('app', 'warn', 'file:// 로 열려 Google 로그인을 비활성화했습니다. 웹 주소(https://hongguqaz.github.io/Lobby/drives-sync/ 또는 http://localhost:8000/)로 여세요.');
   }
   if (googleAuth.hasAny() && store.get(LS.ghToken, null)) await guarded('preflight', () => doPreflight({ quiet: true }));
+  if (inflight && (inflight.kind === 'stock' || inflight.kind === 'flow') && location.protocol !== 'file:') {
+    log(inflight.kind, 'warn', `${fmtTime(inflight.startedAt)}에 시작한 실행이 창이 닫히며 끝나지 못했습니다. 커밋된 배치는 남아 있습니다.`);
+    showResumeBanner(inflight);
+  }
   if (state.config.automation.enabled) { log('automation', 'info', '앱을 다시 열어 자동화를 재개합니다.'); automation.start(); updateWakeLock(); }
   log('app', 'info', `Drives Sync v${core.VERSION} 준비 (${state.config.device.name})`);
   renderAgentState();

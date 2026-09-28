@@ -214,6 +214,28 @@ await test('brake: a missing target folder stops the run and offers to create it
   await api("DrivesSync.config.set({ github: { targetPath: 'fin-lab/FinResearchRaw' } })");
 });
 
+await test('cloud button hands the run to GitHub Actions and says the window may be closed', async () => {
+  await page.click('#btn-stock-cloud');
+  await page.waitForFunction(() => document.body.dataset.state === 'idle' && document.getElementById('stock-summary').textContent.includes('GitHub Actions'), null, { timeout: 20000 });
+  const text = await page.textContent('#stock-summary');
+  assert.ok(text.includes('닫아도') && text.includes('Sync rooms with Google Drive'), text);
+  assert.equal(world.dispatches.length, 1);
+  assert.equal(world.dispatches[0].file, 'sync-gdrive.yml');
+  assert.equal(world.dispatches[0].inputs.mode, 'import');
+  assert.ok(await page.$('#stock-summary a[href*="/actions/workflows/sync-gdrive.yml"]'), 'link to the runs page');
+});
+
+await test('an interrupted run is offered to resume when the app reopens', async () => {
+  await page.evaluate(() => localStorage.setItem('ds.inflight', JSON.stringify({ kind: 'stock', startedAt: new Date().toISOString() })));
+  await page.reload();
+  await page.waitForFunction(() => window.DrivesSync && !document.getElementById('banner').hidden && document.getElementById('banner').textContent.includes('이어서'), null, { timeout: 15000 });
+  assert.equal(await page.evaluate(() => localStorage.getItem('ds.inflight')), null, 'marker consumed on open');
+  await page.evaluate(() => { const s = document.getElementById('stock-summary'); s.hidden = true; s.textContent = ''; });
+  await page.click('#btn-resume');
+  await page.waitForFunction(() => document.body.dataset.state === 'idle' && !document.getElementById('stock-summary').hidden && document.getElementById('stock-summary').textContent.includes('동기화'), null, { timeout: 20000 });
+  assert.equal(await page.evaluate(() => localStorage.getItem('ds.inflight')), null, 'marker cleared after the run finished');
+});
+
 await test('state JSON hides secrets and the logs are readable', async () => {
   const st = await api('DrivesSync.getState()');
   assert.equal(JSON.stringify(st).includes('GHTOKEN'), false);

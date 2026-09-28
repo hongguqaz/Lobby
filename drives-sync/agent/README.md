@@ -63,9 +63,10 @@ GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... node drives-sync-cli.mjs auth
 
 ### GitHub Actions에서
 
-Drive 저장소의 `.github/workflows/drives-sync-stock.yml`이 이 CLI로 기능 1(Stock Matching)을 실행합니다. Actions 탭에서
-수동으로 실행하고, 무인 실행이 필요하면 파일 안의 `schedule` 주석을 풉니다. 기능 2는 기기의 폴더가 필요하므로 Actions에서
-실행할 수 없습니다.
+Drive 저장소는 Drive → 저장소 가져오기를 자체 `sync/` 도구와 "Sync rooms with Google Drive" 워크플로로 맡고 있어, 이 CLI용
+워크플로(`drives-sync-stock.yml`)는 그 저장소에서 물러났습니다. 다른 저장소나 서버에서 이 CLI를 무인으로 돌리려면 `GOOGLE_*`,
+`GITHUB_TOKEN` 환경 변수에 더해 `DRIVES_SYNC_TARGET_PATH`, `DRIVES_SYNC_SOURCE_FOLDER`, `DRIVES_SYNC_BRANCH`,
+`DRIVES_SYNC_REPO`(owner/name)로 대상을 지정하면 됩니다. 기능 2는 기기의 폴더가 필요하므로 Actions에서 실행할 수 없습니다.
 
 ## 2. 브라우저 안 `window.DrivesSync`
 

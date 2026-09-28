@@ -8,7 +8,8 @@
    node drives-sync-cli.mjs auth [--port 53682]          obtain a Google refresh token (one time)
 
    Environment: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN (or GOOGLE_ACCESS_TOKEN),
-                GITHUB_TOKEN, DRIVES_SYNC_CONFIG (path to a config JSON), DRIVES_SYNC_DEVICE (device name).
+                GITHUB_TOKEN, DRIVES_SYNC_CONFIG (path to a config JSON), DRIVES_SYNC_DEVICE (device name),
+                DRIVES_SYNC_TARGET_PATH, DRIVES_SYNC_SOURCE_FOLDER, DRIVES_SYNC_BRANCH, DRIVES_SYNC_REPO (owner/name) overrides.
    Exit codes: 0 done, 2 braked (preflight failed - nothing written), 1 error, 3 usage. */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -71,6 +72,10 @@ async function buildContext() {
   const config = core.withDefaults(file.config || {});
   const env = process.env;
   if (env.DRIVES_SYNC_EXPECTED_EMAIL) config.google.expectedEmail = env.DRIVES_SYNC_EXPECTED_EMAIL;
+  if (env.DRIVES_SYNC_TARGET_PATH) config.github.targetPath = core.joinPath(env.DRIVES_SYNC_TARGET_PATH);
+  if (env.DRIVES_SYNC_SOURCE_FOLDER) config.google.sourceFolderId = env.DRIVES_SYNC_SOURCE_FOLDER.trim() || 'root';
+  if (env.DRIVES_SYNC_BRANCH) config.github.branch = env.DRIVES_SYNC_BRANCH.trim();
+  if (env.DRIVES_SYNC_REPO && env.DRIVES_SYNC_REPO.includes('/')) { const [o, r] = env.DRIVES_SYNC_REPO.split('/'); config.github.owner = o; config.github.repo = r; }
   if (env.GOOGLE_CLIENT_ID) config.google.clientId = env.GOOGLE_CLIENT_ID;
   if (env.GOOGLE_CLIENT_SECRET) config.google.clientSecret = env.GOOGLE_CLIENT_SECRET;
   if (!config.device.id) config.device.id = 'cli-' + slug(os.hostname());
