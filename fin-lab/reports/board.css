@@ -115,3 +115,37 @@ body { background: radial-gradient(ellipse at 50% -10%, #182440 0%, var(--room-b
   .prose { font-size: 15.5px; }
 }
 @media (prefers-reduced-motion: reduce) { .btn:hover { filter: none; } }
+
+/* FixC Pick: the material a report asks you to read in full */
+.pick-badge { display: inline-block; margin-left: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; line-height: 1; padding: 4px 7px; border-radius: 999px;
+  color: #ffe2a8; background: rgba(240, 192, 96, 0.14); border: 1px solid rgba(240, 192, 96, 0.5); vertical-align: 1px; }
+.picks { margin-top: 18px; padding: 14px 16px 10px; border-radius: var(--room-radius); background: rgba(240, 192, 96, 0.06); border: 1px solid rgba(240, 192, 96, 0.35); }
+.picks h2, .picks h3 { margin: 0 0 8px; font-size: 15px; font-weight: 600; color: #ffe2a8; letter-spacing: 0.02em; }
+.picks .sub { font-size: 12px; font-weight: 400; color: var(--room-muted); margin-left: 8px; letter-spacing: 0; }
+.picks-note { margin: -2px 0 8px; font-size: 12px; color: var(--room-muted); }
+.picks-note:empty { display: none; }
+.pick-list { list-style: none; margin: 0; padding: 0; }
+.pick { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: flex-start; padding: 10px 0; border-top: 1px solid rgba(240, 192, 96, 0.18); }
+.pick:first-child { border-top: 0; }
+.pick.current { background: rgba(79, 163, 255, 0.10); margin: 0 -8px; padding-inline: 8px; border-radius: 6px; }
+.pick-main { flex: 1 1 300px; min-width: 0; }
+.pick-post { display: inline-block; font-size: 12px; color: var(--room-ink-2); text-decoration: none; margin-bottom: 3px; }
+.pick-post:hover { text-decoration: underline; }
+.pick-title { display: flex; gap: 8px; align-items: baseline; font-size: 15px; font-weight: 500; line-height: 1.4; }
+.pick-title .ptype { flex: 0 0 auto; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: #9fd0ff; border: 1px solid rgba(79,163,255,0.45); border-radius: 4px; padding: 2px 5px; line-height: 1; }
+.pick.missing .ptype { color: #ffb3b3; border-color: rgba(255,123,123,0.55); }
+.pick-title .ptext { overflow-wrap: anywhere; }
+.pick-meta { font-size: 12px; color: var(--room-muted); margin-top: 3px; overflow-wrap: anywhere; }
+.pick-note { font-size: 13px; color: var(--room-ink-2); margin-top: 4px; }
+.pick-note.bad { color: #ffd3d3; }
+.pick-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.recent-picks { margin-top: 14px; }
+
+/* which file the body shows, when it is not the report itself */
+.viewing { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; font-size: 13px; color: var(--room-ink-2);
+  padding: 8px 12px; border-radius: var(--room-radius); background: var(--room-panel); border: 1px solid var(--room-line); }
+.viewing span { overflow-wrap: anywhere; }
+.post-head .heading { margin: 0 0 6px; font-size: 14px; color: var(--room-muted); }
+.kind.monthly { color: #c9b8ff; border-color: rgba(144, 133, 233, 0.5); }
+.prose a.repo-link { color: #0b5fb0; text-decoration: underline dotted; }
+.prose a.repo-link::after { content: " \2197"; font-size: 0.85em; }
