@@ -100,9 +100,9 @@ it produces. Nothing is copied here: the page lists that folder and fetches each
 API, so the reports stay private and appear on the board as soon as they are pushed.
 
 - **Token**: the page needs a GitHub token with *Contents: Read* on Drive, entered once under ⚙ and kept
-  in this browser's localStorage. It shares the key Drives Sync uses (`ds.github.token`), so a browser
-  that already runs Drives Sync needs nothing more. The repository, branch and folder can be changed
-  in the same panel (defaults: `hongguqaz/Drive`, default branch, `fin-lab/FixC Report`).
+  in this browser's localStorage only (key `ds.github.token`; nothing is sent anywhere but api.github.com).
+  The repository, branch and folder can be changed in the same panel (defaults: `hongguqaz/Drive`,
+  default branch, `fin-lab/FixC Report`).
 - **Names as they come**: a date found in the file name (`(261011)`, `2026-10-11`, `20261011`, `261011`,
   a period `(261006-261010)`) orders the post; without one the board uses the day the file entered the
   repository, which the Fin Desk in Drive writes into `fin-lab/FixC Report/.fin-desk/board.json` on

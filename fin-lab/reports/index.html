@@ -39,7 +39,7 @@
 
       <form class="settings" id="settings" hidden>
         <h2>연결 설정</h2>
-        <p>이 게시판은 비공개 저장소의 보고서 폴더를 GitHub API 로 직접 읽습니다. 토큰은 이 브라우저(localStorage)에만 저장되며, Drives Sync 와 같은 자리를 씁니다.
+        <p>이 게시판은 비공개 저장소의 보고서 폴더를 GitHub API 로 직접 읽습니다. 토큰은 이 브라우저(localStorage)에만 저장되고 api.github.com 외에는 어디에도 보내지 않습니다.
           토큰은 GitHub → Settings → Developer settings → Personal access tokens → <b>Fine-grained</b>: Repository access 에 <code>Drive</code>, Permissions 에 <b>Contents: Read-only</b> 로 만듭니다.</p>
         <div class="grid">
           <label class="wide">GitHub 토큰<input id="cfg-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_..."></label>

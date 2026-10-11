@@ -3,8 +3,9 @@
    (fin-lab/FixC Report/) as a date-ordered board, opens a post to read its body, download its
    attachments and open the material it picks out ("FixC Pick": the originals and renderings a
    report links to elsewhere in the room). The repository is private, so the page reads it through
-   the GitHub API with a token kept in this browser (localStorage, the same key Drives Sync uses:
-   ds.github.token). Nothing is copied into Lobby: every read goes to api.github.com.
+   the GitHub API with a token kept in this browser only (localStorage key ds.github.token, the key
+   the Drives Sync app used while it lived here). Nothing is copied into Lobby: every read goes to
+   api.github.com.
 
    File names are whatever FixC produces. The board shows them as they come: a date found in the
    name ("(261011)", "2026-10-11", "20261011", "261011", a period "(261006-261010)") orders the post;
@@ -632,7 +633,7 @@
       if (!state.token) {
         state.posts = []; state.meta = null; renderList();
         setStatus('토큰 없음', 'warn');
-        note('이 게시판은 비공개 저장소 <code>' + escapeHtml(state.cfg.owner + '/' + state.cfg.repo) + '</code> 를 직접 읽습니다. ⚙ 설정에 GitHub 토큰(fine-grained, 이 저장소의 <b>Contents: Read</b>)을 한 번 넣어 두세요. Drives Sync 에 넣은 토큰이 있으면 그대로 쓰입니다.', 'warn');
+        note('이 게시판은 비공개 저장소 <code>' + escapeHtml(state.cfg.owner + '/' + state.cfg.repo) + '</code> 를 직접 읽습니다. ⚙ 설정에 GitHub 토큰(fine-grained, 이 저장소의 <b>Contents: Read</b>)을 한 번 넣어 두세요. 토큰은 이 브라우저에만 남습니다.', 'warn');
         toggleSettings(true);
         return Promise.resolve();
       }
