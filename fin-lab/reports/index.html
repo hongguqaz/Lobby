@@ -4,21 +4,25 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>FixC Report - Fin Lab - Lobby</title>
+  <title>FixC report - Fin Lab - Lobby</title>
   <link rel="stylesheet" href="../../assets/rooms.css">
   <link rel="stylesheet" href="../../assets/gate.css">
-  <link rel="stylesheet" href="board.css">
+  <link rel="stylesheet" href="../reports/board.css">
   <script src="../../assets/gate.js"></script>
   <script>LobbyGate.require("fin-lab", "Fin Lab");</script>
 </head>
-<body class="room">
+<body class="room" data-board="reports">
   <div class="room-wrap">
-    <nav class="crumbs" aria-label="Breadcrumb"><a href="../../">Lobby</a><span aria-hidden="true">/</span><a href="../">Fin Lab</a><span aria-hidden="true">/</span><span aria-current="page">FixC Report</span></nav>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="../../">Lobby</a><span aria-hidden="true">/</span><a href="../">Fin Lab</a><span aria-hidden="true">/</span><span aria-current="page">FixC report</span></nav>
 
     <header class="room-head">
-      <h1>FixC Report<span class="sub">FixC 가 쓴 시장분석 보고서 · <span id="repo-label"></span></span></h1>
+      <h1>FixC report<span class="sub">FixC 가 쓴 위클리·데일리·노트 · <span id="repo-label"></span></span></h1>
       <span class="status" id="status" aria-live="polite">준비 중</span>
     </header>
+
+    <nav class="board-tabs" aria-label="게시판">
+      <a class="tab current" href="./" aria-current="page">FixC report</a><a class="tab" href="../picks/">FixC Daily Picks</a>
+    </nav>
 
     <section id="view-list">
       <div class="toolbar" role="search">
@@ -27,7 +31,7 @@
           <option value="all">전체</option>
           <option value="daily">일간</option>
           <option value="weekly">주간</option>
-          <option value="monthly">월간</option>
+          <option value="note">노트</option>
           <option value="picks">픽 있는 글</option>
         </select>
         <button type="button" class="btn ghost icon" id="btn-refresh" title="다시 읽기" aria-label="다시 읽기">&#8635;</button>
@@ -40,7 +44,7 @@
       <form class="settings" id="settings" hidden>
         <h2>연결 설정</h2>
         <p>이 게시판은 비공개 저장소의 보고서 폴더를 GitHub API 로 직접 읽습니다. 토큰은 이 브라우저(localStorage)에만 저장되고 api.github.com 외에는 어디에도 보내지 않습니다.
-          토큰은 GitHub → Settings → Developer settings → Personal access tokens → <b>Fine-grained</b>: Repository access 에 <code>Drive</code>, Permissions 에 <b>Contents: Read-only</b> 로 만듭니다.</p>
+          토큰은 GitHub → Settings → Developer settings → Personal access tokens → <b>Fine-grained</b>: Repository access 에 <code>Drive</code>, Permissions 에 <b>Contents: Read-only</b> 로 만듭니다. 두 게시판(FixC report · FixC Daily Picks)이 같은 설정을 씁니다.</p>
         <div class="grid">
           <label class="wide">GitHub 토큰<input id="cfg-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_..."></label>
           <label>소유자<input id="cfg-owner" type="text" autocomplete="off" spellcheck="false"></label>
@@ -57,7 +61,7 @@
       </form>
 
       <section class="picks recent-picks" id="recent-picks" hidden aria-labelledby="recent-picks-title">
-        <h2 id="recent-picks-title">최근 FixC Pick <span class="sub">보고서가 원문을 읽어 보라고 고른 자료</span></h2>
+        <h2 id="recent-picks-title">최근 FixC Daily Picks <span class="sub">데일리가 원문을 읽어 보라고 고른 자료</span></h2>
         <ol id="recent-picks-list" class="pick-list"></ol>
       </section>
 
@@ -71,18 +75,21 @@
         <p class="heading" id="post-heading" hidden></p>
         <div class="meta"><span id="post-date"></span><span class="kind" id="post-kind"></span></div>
       </div>
-      <section class="picks" id="post-picks" hidden aria-labelledby="post-picks-title">
-        <h3 id="post-picks-title">FixC Pick <span class="sub">원문 읽어보기</span></h3>
-        <p class="picks-note" id="post-picks-note"></p>
-        <ol id="post-picks-list" class="pick-list"></ol>
-      </section>
+
       <ul class="files" id="post-files" aria-label="첨부 파일"></ul>
       <div class="viewing" id="viewing" hidden><span id="viewing-name"></span><button type="button" class="btn ghost" id="btn-body">&larr; 본문으로</button></div>
       <article class="body prose" id="post-body"></article>
+      <section class="picks" id="post-day-picks" hidden aria-labelledby="post-day-picks-title">
+        <h3 id="post-day-picks-title">FixC Daily Picks <span class="sub">이 날 데일리가 고른 원문</span></h3>
+        <p class="picks-note"></p>
+        <ol class="pick-list"></ol>
+      </section>
+
+      <div class="cross-links" id="post-cross" hidden></div>
     </section>
 
-    <p class="room-foot">보고서의 보관본은 <code>Drive/fin-lab/FixC Report/</code> 입니다. 이 페이지는 사본을 두지 않고 저장소를 직접 읽습니다. <a href="../">&larr; Fin Lab</a></p>
+    <p class="room-foot">보고서의 보관본은 <code>Drive/fin-lab/FixC report/</code> 입니다. 이 페이지는 사본을 두지 않고 저장소를 직접 읽습니다. <a href="../">&larr; Fin Lab</a></p>
   </div>
-  <script src="board.js"></script>
+  <script src="../reports/board.js"></script>
 </body>
 </html>

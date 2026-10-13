@@ -149,3 +149,14 @@ body { background: radial-gradient(ellipse at 50% -10%, #182440 0%, var(--room-b
 .kind.monthly { color: #c9b8ff; border-color: rgba(144, 133, 233, 0.5); }
 .prose a.repo-link { color: #0b5fb0; text-decoration: underline dotted; }
 .prose a.repo-link::after { content: " \2197"; font-size: 0.85em; }
+
+/* the two boards of the room */
+.board-tabs { margin-top: 16px; display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--room-panel); border: 1px solid var(--room-line); }
+.board-tabs .tab { font-size: 13px; font-weight: 600; color: var(--room-ink-2); text-decoration: none; padding: 6px 14px; border-radius: 999px; }
+.board-tabs .tab.current { background: var(--room-accent); color: #06111f; }
+.board-tabs .tab:not(.current):hover { background: var(--board-row-hover); color: var(--room-ink); }
+.cross-links { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+.cross-links .btn { font-size: 13px; }
+#post-day-picks { margin-top: 18px; }
+.prose .fine { font-size: 0.82em; color: #6b7280; }
+.prose ol > li { margin: 0.35em 0; }

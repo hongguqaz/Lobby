@@ -1,30 +1,33 @@
-/* FixC Report board - Fin Lab, Lobby.
-   Lists the reports the FixC Claude Project commits into the private Drive repository
-   (fin-lab/FixC Report/) as a date-ordered board, opens a post to read its body, download its
-   attachments and open the material it picks out ("FixC Pick": the originals and renderings a
-   report links to elsewhere in the room). The repository is private, so the page reads it through
-   the GitHub API with a token kept in this browser only (localStorage key ds.github.token, the key
-   the Drives Sync app used while it lived here). Nothing is copied into Lobby: every read goes to
-   api.github.com.
+/* Fin Lab boards - Lobby.  One script, two pages:
+     fin-lab/reports/   "FixC report"       the reports the FixC Claude Project commits into Drive
+     fin-lab/picks/     "FixC Daily Picks"  the day's picked documents, named in daily/*_Picks.md
+   (the page says which with <body data-board="reports|picks">).
 
-   File names are whatever FixC produces. The board shows them as they come: a date found in the
-   name ("(261011)", "2026-10-11", "20261011", "261011", a period "(261006-261010)") orders the post;
-   without one, the day the file entered the repository is used, read from the Fin Desk's board index
-   (<folder>/.fin-desk/board.json), which also carries each report's picks. Files that share a name
-   (extension aside), a "<name>.assets/" folder and a "<name>/" folder form one post.
+   Both read the private Drive repository through the GitHub API with a token kept in this browser
+   only (localStorage key ds.github.token). Nothing is copied into Lobby: every read goes to
+   api.github.com, so a file FixC pushes is on the board the moment the page is (re)loaded.
 
-   The pure helpers (parseName, groupPosts, renderMarkdown, ...) are exported for Node tests
-   (fin-lab/reports/test-board.mjs); the page code runs only in a browser. */
+   The folder (fin-lab/FixC report/) holds weekly/, daily/ and notes/; a report is a PDF plus a
+   same-name .md, a Daily Picks file is daily/YYMMDD_FixC_Daily_Picks.md. File names are shown as
+   they come: a date found in the name orders the post, otherwise the day the file entered the
+   repository does, read from the Fin Desk's board index (<folder>/.fin-desk/board.json), which also
+   carries the picks each file names (original -> repository path, rendering). Without that index the
+   page reads the picks itself from the Markdown and finds the originals in fin-lab/Fin Docraw.
+
+   The pure helpers (parseName, groupPosts, renderMarkdown, parsePicksText, ...) are exported for Node
+   tests (fin-lab/reports/test-board.mjs); the page code runs only in a browser. */
 (function (root) {
   'use strict';
 
-  var DEFAULTS = { owner: 'hongguqaz', repo: 'Drive', branch: '', path: 'fin-lab/FixC Report' };
+  var DEFAULTS = { owner: 'hongguqaz', repo: 'Drive', branch: '', path: 'fin-lab/FixC report' };
   var INDEX_FILE = '.fin-desk/board.json';
+  var ORIGINALS_FOLDER = 'Fin Docraw';          // under the room root: where picked originals are looked up
   var LS = { token: 'ds.github.token', config: 'fixc-report.config' };
   var GITHUB_API = 'https://api.github.com';
   var IGNORED_NAMES = { 'README.md': 1, '.gitkeep': 1, '.DS_Store': 1, 'Thumbs.db': 1 };
   var MAX_DEPTH = 3;
-  var RECENT_PICK_POSTS = 3, RECENT_PICK_MAX = 9;
+  var RECENT_PICK_POSTS = 2, RECENT_PICK_MAX = 6;
+  var PAGES = { reports: 'reports', picks: 'picks' };
 
   /* ------------------------------------------------------------------ names and dates */
 
@@ -51,67 +54,73 @@
     return { stem: name.slice(0, i), ext: name.slice(i + 1).toLowerCase() };
   }
 
-  /** Parse one file name (or a post stem). Returns { date, dateEnd, title, ext, stem, kind, dated } where
-      kind is 'weekly' (a period or the word), 'monthly' (the word), 'daily' (one date) or 'undated'.
-      The title is the name without its extension; a date written at the start is taken off it, a date
-      elsewhere is left in place so the name shows as it came. */
+  /** Parse one file name. Returns { date, dateEnd, title, ext, stem, kind, dated }. The title is the
+      name without its extension, as it came; the date is read from anywhere in the name. */
   function parseName(name) {
     var se = splitExt(name), stem = se.stem;
-    var date = null, dateEnd = null, title = stem;
+    var date = null, dateEnd = null;
     var m = RE_PREFIX.exec(stem);
-    if (m && toIsoDate(m[1])) {
-      date = toIsoDate(m[1]); dateEnd = m[2] ? toIsoDate(m[2]) : null;
-      title = stem.slice(m[0].length).replace(/^[\s_.\-:,)\]]+/, '');
-    } else {
+    if (m && toIsoDate(m[1])) { date = toIsoDate(m[1]); dateEnd = m[2] ? toIsoDate(m[2]) : null; }
+    else {
       RE_ANYWHERE.lastIndex = 0;
       var a;
       while ((a = RE_ANYWHERE.exec(stem))) {
         if (toIsoDate(a[1])) { date = toIsoDate(a[1]); dateEnd = a[2] ? toIsoDate(a[2]) : null; break; }
       }
     }
-    title = title.replace(/[\s_.\-]+$/, '') || stem;
-    return { date: date, dateEnd: dateEnd, title: title, ext: se.ext, stem: stem, kind: kindOf(title, date, dateEnd), dated: !!date };
+    return { date: date, dateEnd: dateEnd, title: stem, ext: se.ext, stem: stem, kind: kindOf(stem, date, dateEnd, ''), dated: !!date };
   }
 
-  function kindOf(title, date, dateEnd) {
-    if (dateEnd && date && dateEnd !== date) return 'weekly';
+  /** The kind of a post: from its sub-folder (daily/, weekly/, notes/, monthly/) first, then its name. */
+  function kindOf(title, date, dateEnd, subdir) {
+    var s = String(subdir || '').toLowerCase();
+    if (/pick/i.test(title)) return 'picks';
+    if (/^daily|^일간/.test(s)) return 'daily';
+    if (/^weekly|^주간/.test(s)) return 'weekly';
+    if (/^monthly|^월간/.test(s)) return 'monthly';
+    if (/^note|^노트|^memo/.test(s)) return 'note';
     if (/월간|monthly/i.test(title)) return 'monthly';
     if (/주간|weekly/i.test(title)) return 'weekly';
+    if (/note|catch.?up|노트|메모|인계/i.test(title)) return 'note';
+    if (dateEnd && date && dateEnd !== date) return 'weekly';
+    if (/daily|일간|데일리/i.test(title)) return 'daily';
     return date ? 'daily' : 'undated';
   }
-  var KIND_LABEL = { daily: '일간', weekly: '주간', monthly: '월간', undated: '' };
+  var KIND_LABEL = { daily: '일간', weekly: '주간', monthly: '월간', note: '노트', picks: '픽', undated: '' };
+  var KIND_RANK = { daily: 0, picks: 1, weekly: 2, monthly: 3, note: 4, undated: 5 };
 
   /* ------------------------------------------------------------------ posts */
 
   var BODY_EXT = { md: 1, markdown: 1, html: 1, htm: 1, txt: 1 };
   var EXT_ORDER = ['md', 'markdown', 'html', 'htm', 'txt', 'pdf', 'docx', 'xlsx', 'pptx', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'];
 
+  function isPicksName(name) { return /pick/i.test(splitExt(name).stem); }
+
   /** Group the files of the report folder into posts.
       files: [{ path, name, size, sha }] - paths relative to the report folder.
-      meta:  the Fin Desk board index as { byPath: { path: record } } or null; a record carries the
-             file's registered day, its heading and its picks.
-      A post is every file that shares a stem (name without extension), everything under
-      "<stem>.assets/" and everything under a first-level folder "<stem>/". Newest first. */
+      meta:  the Fin Desk board index as { byPath } or null.
+      A post is every file that shares a stem (name without extension) inside the same sub-folder, plus
+      everything under "<stem>.assets/". A file whose name says "pick" is a picks post. Newest first;
+      on one day a daily sorts before its picks, the weekly and the notes. Every post gets its
+      same-day partner: a report's `picksPost`, a picks post's `reportPost`. */
   function groupPosts(files, meta) {
     var byPath = (meta && meta.byPath) || {};
     var posts = {}, order = [];
     files.forEach(function (f) {
       if (IGNORED_NAMES[f.name] || f.path.split('/').some(function (seg) { return seg.charAt(0) === '.'; })) return;
       var parts = f.path.split('/');
-      var stem, role, inAssets = false;
-      if (parts.length > 1) {
-        inAssets = /\.assets$/i.test(parts[parts.length - 2]);
-        stem = parts[0].replace(/\.assets$/i, '');
-        role = inAssets ? 'asset' : (BODY_EXT[splitExt(f.name).ext] ? 'body' : 'attachment');
+      var dirs = parts.slice(0, -1), stem, role, subdir;
+      if (dirs.length && /\.assets$/i.test(dirs[dirs.length - 1])) {
+        stem = dirs[dirs.length - 1].replace(/\.assets$/i, ''); role = 'asset'; subdir = dirs.slice(0, -1).join('/');
       } else {
-        stem = splitExt(f.name).stem;
+        stem = splitExt(f.name).stem; subdir = dirs.join('/');
         role = BODY_EXT[splitExt(f.name).ext] ? 'body' : 'attachment';
       }
-      var key = stem.toLowerCase();
+      var key = ((subdir ? subdir + '/' : '') + stem).toLowerCase();
       if (!posts[key]) {
         var p = parseName(stem);
-        posts[key] = { id: key, stem: stem, title: p.title, date: p.date, dateEnd: p.dateEnd, dated: p.dated,
-          files: [], size: 0, body: null, picks: [], heading: null, registered: null, indexed: false };
+        posts[key] = { id: key, stem: stem, subdir: subdir, title: p.title, date: p.date, dateEnd: p.dateEnd, dated: p.dated,
+          picksFile: isPicksName(stem), files: [], size: 0, body: null, picks: [], heading: null, registered: null, indexed: false };
         order.push(key);
       }
       var post = posts[key];
@@ -139,14 +148,27 @@
       post.attachments = post.files.filter(function (e) { return e.role !== 'asset'; });
       post.assets = post.files.filter(function (e) { return e.role === 'asset'; });
       if (!post.date && post.registered) post.date = post.registered;      // no date in the name: the day it arrived
-      post.kind = kindOf(post.title, post.date, post.dateEnd);
+      post.kind = kindOf(post.title, post.date, post.dateEnd, post.subdir);
       post.sortDate = post.dateEnd || post.date;                            // a period files under its last day
+      post.picksPost = null; post.reportPost = null;
       return post;
     });
     list.sort(function (a, b) {
       var da = a.sortDate || '0000', db = b.sortDate || '0000';
       if (da !== db) return da < db ? 1 : -1;
-      return a.title.localeCompare(b.title);
+      var ra = KIND_RANK[a.kind] || 0, rb = KIND_RANK[b.kind] || 0;
+      if (ra !== rb) return ra - rb;
+      return b.title.localeCompare(a.title);
+    });
+    // same-day partners: a report and the day's picks
+    list.forEach(function (p) {
+      if (!p.date) return;
+      if (p.picksFile) {
+        p.reportPost = list.filter(function (q) { return !q.picksFile && q.date === p.date && q.kind === 'daily'; })[0] ||
+          list.filter(function (q) { return !q.picksFile && q.sortDate === p.sortDate; })[0] || null;
+      } else {
+        p.picksPost = list.filter(function (q) { return q.picksFile && q.date === p.date; })[0] || null;
+      }
     });
     return list;
   }
@@ -197,6 +219,55 @@
     if (extra) Object.keys(extra).forEach(function (k) { r[k] = extra[k]; });
     return r;
   }
+
+  /* ------------------------------------------------------------------ a Daily Picks text */
+
+  var EXT_RE = '(?:pdf|html?|md|markdown|txt|png|jpe?g|webp|gif|docx?|xlsx?|pptx?|hwpx?)';
+  var RE_QUOTED_NAME = new RegExp('["“”\'‘’「」『』]\\s*([^"“”\'‘’「」『』\\n]+?\\.' + EXT_RE + ')\\s*["“”\'‘’「」『』]', 'gi');
+  var RE_BARE_NAME = new RegExp('(?:^|[^\\w/\\\\])([^\\s"“”\'‘’「」『』()<>\\[\\]]+\\.' + EXT_RE + ')(?![\\w.])', 'gi');
+
+  /** The picks a Daily Picks file names: its top-level numbered items, each with its first line as the
+      label, the quoted file name as the document ("* Findocraw 상의 파일명: "…pdf""), the rest of that
+      line as the note, and an optional "* 판독본: "…html"" naming the rendering.
+      Returns [{ label, name, note, renderingName }]. */
+  function parsePicksText(text) {
+    var lines = String(text || '').replace(/\r\n?/g, '\n').split('\n');
+    var items = [], fence = false;
+    lines.forEach(function (line) {
+      if (/^\s*(```|~~~)/.test(line)) { fence = !fence; return; }
+      if (fence) return;
+      var m = /^(\d+)[.)]\s+(.*)$/.exec(line);
+      if (m) { items.push([m[2]]); return; }
+      if (/^#{1,6}\s/.test(line)) { items.push([]); return; }
+      if (items.length && items[items.length - 1].length) items[items.length - 1].push(line);
+    });
+    var out = [];
+    items.forEach(function (item) {
+      if (!item.length) return;
+      var label = item[0].trim().replace(/^[*_]+|[*_]+$/g, '').trim().replace(/^["“”'‘’]|["“”'‘’]$/g, '').trim();
+      var doc = null, renderingName = '';
+      item.forEach(function (line) {
+        var names = namesIn(line);
+        if (!names.length) return;
+        var head = line.split(':')[0];
+        if (/판독본|rendering/i.test(head) && !renderingName) { renderingName = names[0].name; return; }
+        if (!doc) doc = names[0];
+      });
+      if (doc) out.push({ label: label, name: doc.name, note: doc.note, renderingName: renderingName });
+    });
+    return out;
+  }
+  function namesIn(line) {
+    var found = [], m;
+    RE_QUOTED_NAME.lastIndex = 0;
+    while ((m = RE_QUOTED_NAME.exec(line))) found.push({ name: m[1].trim(), note: noteAfterText(line.slice(m.index + m[0].length)) });
+    if (!found.length) {
+      RE_BARE_NAME.lastIndex = 0;
+      while ((m = RE_BARE_NAME.exec(line))) found.push({ name: m[1].trim(), note: noteAfterText(line.slice(m.index + m[0].length)) });
+    }
+    return found;
+  }
+  function noteAfterText(s) { return String(s || '').replace(/^[\s—–\-:：·,"“”'‘’」』]+/, '').replace(/\s+/g, ' ').trim().slice(0, 200); }
 
   /* ------------------------------------------------------------------ formatting */
 
@@ -275,9 +346,7 @@
 
   function inline(text) {
     var codes = [], links = [];
-    // protect code spans first
     text = text.replace(/`([^`\n]+)`/g, function (_, c) { codes.push(c); return '\u0000' + (codes.length - 1) + '\u0000'; });
-    // links and images -> placeholders holding finished HTML
     var parts = [], pos = 0;
     scanLinks(text).forEach(function (l) {
       parts.push(text.slice(pos, l.start));
@@ -294,7 +363,6 @@
     });
     parts.push(text.slice(pos));
     text = escapeHtml(parts.join(''));
-    // bare URLs
     text = text.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, function (_, pre, url) {
       return pre + '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + '</a>';
     });
@@ -323,10 +391,11 @@
   function isTableSep(line) { return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(line); }
 
   /** Markdown -> HTML. Covers what reports use: headings, paragraphs, emphasis, code, links,
-      images, lists (nested by indent), blockquotes, fenced code, GFM tables, rules. Output is
-      escaped; only http(s)/mailto/relative URLs survive. */
+      images, lists (nested by indent, numbered lists keep their start number), blockquotes, fenced
+      code, GFM tables, rules, HTML comments dropped. Output is escaped; only http(s)/mailto/relative
+      URLs survive. */
   function renderMarkdown(md) {
-    var lines = String(md || '').replace(/\r\n?/g, '\n').split('\n');
+    var lines = String(md || '').replace(/\r\n?/g, '\n').replace(/<!--[\s\S]*?-->/g, '').split('\n');
     var out = [], i = 0, para = [];
     function flushPara() { if (para.length) { out.push('<p>' + inline(para.join(' ')) + '</p>'); para = []; } }
 
@@ -378,14 +447,15 @@
         flushPara();
         var items = [];
         while (i < lines.length && lines[i].trim()) {
-          var lm = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/.exec(lines[i]);
-          if (lm) { items.push({ indent: lm[1].replace(/\t/g, '    ').length, ordered: /\d/.test(lm[2]), text: lm[3] }); i++; }
+          var lm = /^(\s*)([-*+]|(\d+)[.)])\s+(.*)$/.exec(lines[i]);
+          if (lm) { items.push({ indent: lm[1].replace(/\t/g, '    ').length, ordered: !!lm[3], start: lm[3] ? +lm[3] : 0, text: lm[4] }); i++; }
           else if (items.length && /^\s{2,}/.test(lines[i])) { items[items.length - 1].text += ' ' + lines[i].trim(); i++; }
           else break;
         }
         out.push(renderList(items, 0, items[0].indent));
         continue;
       }
+      if (/^\s*<(sub|sup|small|br)\b/i.test(line)) { flushPara(); out.push('<p class="fine">' + inline(line.replace(/<\/?(sub|sup|small)\b[^>]*>/gi, '').replace(/<br\s*\/?>/gi, ' ')) + '</p>'); i++; continue; }
       para.push(line.trim());
       i++;
     }
@@ -394,7 +464,9 @@
   }
 
   function renderList(items, start, indent) {
-    var tag = items[start].ordered ? 'ol' : 'ul', html = '<' + tag + '>', k = start;
+    var first = items[start];
+    var tag = first.ordered ? 'ol' : 'ul';
+    var html = '<' + tag + (first.ordered && first.start > 1 ? ' start="' + first.start + '"' : '') + '>', k = start;
     while (k < items.length && items[k].indent >= indent) {
       if (items[k].indent > indent) {
         var sub = renderListSpan(items, k, items[k].indent);
@@ -435,7 +507,6 @@
     if (t.charAt(0) === '/') return [normPath(t)];
     var rootSeg = cfg.path.split('/')[0];
     var asIs = normPath(t), fromFile = normPath((fileDir ? fileDir + '/' : '') + t), fromRoot = normPath(rootSeg + '/' + t);
-    // a path written as INDEX.md prints it ("fin-lab/...") means that path first; otherwise it is relative to the report
     var order = asIs.indexOf(rootSeg + '/') === 0 ? [asIs, fromFile, fromRoot] : [fromFile, fromRoot, asIs];
     var out = [];
     order.forEach(function (c) { if (c && out.indexOf(c) < 0) out.push(c); });
@@ -467,6 +538,13 @@
     var p = path.split('/').filter(Boolean).map(encodeURIComponent).join('/');
     return this.base() + '/contents/' + p + (ref ? '?ref=' + encodeURIComponent(ref) : '');
   };
+  /** The entries of one folder of the repository ([] when it does not exist). */
+  GitHub.prototype.dir = function (repoPath) {
+    var self = this;
+    return this.branch().then(function (ref) { return self.fetch(self.contentsUrl(repoPath, ref)); })
+      .then(function (r) { return r.json(); }).then(function (items) { return Array.isArray(items) ? items : []; })
+      .catch(function (err) { if (err && err.status === 404) return []; throw err; });
+  };
   /** Every file under the report folder (depth <= MAX_DEPTH), paths relative to it. */
   GitHub.prototype.listFolder = function () {
     var self = this, rootPath = this.rootPath;
@@ -489,6 +567,22 @@
       }
       return walk('', 0).then(function (files) { return { ref: ref, files: files }; });
     });
+  };
+  /** name (lower-cased) -> repository path for every file in a folder and its first-level sub-folders. */
+  GitHub.prototype.namesIn = function (repoPath) {
+    var self = this, map = {};
+    return this.dir(repoPath).then(function (items) {
+      var dirs = [];
+      items.forEach(function (it) {
+        if (it.type === 'file') map[it.name.toLowerCase()] = { path: repoPath + '/' + it.name, size: it.size };
+        else if (it.type === 'dir' && it.name.charAt(0) !== '.') dirs.push(it.name);
+      });
+      return Promise.all(dirs.map(function (d) {
+        return self.dir(repoPath + '/' + d).then(function (sub) {
+          sub.forEach(function (it) { if (it.type === 'file' && !map[it.name.toLowerCase()]) map[it.name.toLowerCase()] = { path: repoPath + '/' + d + '/' + it.name, size: it.size }; });
+        });
+      }));
+    }).then(function () { return map; });
   };
   /** The bytes of any file of the repository, as a Blob with the right MIME type. */
   GitHub.prototype.blobAt = function (repoPath, ext) {
@@ -558,8 +652,10 @@
 
   function startPage() {
     var $ = function (id) { return document.getElementById(id); };
-    var state = { cfg: readConfig(), token: readToken(), posts: [], meta: null, ref: null, loadedAt: null, error: null,
-      filter: '', kind: 'all', urls: [], current: null, viewing: null };
+    var page = document.body.getAttribute('data-board') === PAGES.picks ? PAGES.picks : PAGES.reports;
+    var other = page === PAGES.picks ? '../reports/' : '../picks/';
+    var state = { page: page, cfg: readConfig(), token: readToken(), posts: [], allPosts: [], meta: null, ref: null, loadedAt: null,
+      error: null, filter: '', kind: 'all', urls: [], current: null, viewing: null, names: null };
     var gh = null;
 
     var views = { list: $('view-list'), post: $('view-post'), settings: $('settings') };
@@ -571,6 +667,7 @@
     function objectUrl(blob) { var u = URL.createObjectURL(blob); state.urls.push(u); return u; }
     function statusCount() { return state.posts.length + '건' + (state.meta && state.meta.count ? ' · 색인 ' + state.meta.count : ' · 색인 없음') + ' · ' + fmtTime(state.loadedAt || new Date()); }
     function fmtTime(d) { return pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ' 기준'; }
+    function pageTitle() { return page === PAGES.picks ? 'FixC Daily Picks' : 'FixC report'; }
 
     // settings
     function fillSettings() {
@@ -587,7 +684,7 @@
       state.cfg = { owner: $('cfg-owner').value.trim() || DEFAULTS.owner, repo: $('cfg-repo').value.trim() || DEFAULTS.repo,
         branch: $('cfg-branch').value.trim(), path: ($('cfg-path').value.trim() || DEFAULTS.path).replace(/^\/+|\/+$/g, '') };
       writeConfig(state.cfg);
-      gh = null;
+      gh = null; state.names = null;
       toggleSettings(false);
       load();
     });
@@ -610,14 +707,14 @@
 
     // toolbar
     $('search').addEventListener('input', function (e) { state.filter = e.target.value.trim().toLowerCase(); renderList(); });
-    $('kind').addEventListener('change', function (e) { state.kind = e.target.value; renderList(); });
+    if ($('kind')) $('kind').addEventListener('change', function (e) { state.kind = e.target.value; renderList(); });
     $('btn-refresh').addEventListener('click', function () { load(); });
     $('btn-back').addEventListener('click', function (e) { e.preventDefault(); location.hash = ''; });
     $('btn-body').addEventListener('click', function () {
       if (!state.current) return;
       var post = state.current;
       var first = post.body || post.attachments.filter(function (f) { return f.type !== 'binary'; })[0];
-      setHash(post, null);
+      setHash(post, null, true);
       if (first) preview(post, fileRef(first)); else emptyBody(post);
     });
 
@@ -627,11 +724,12 @@
     }
     function fileRef(f) { return refOf(client().rootPath + '/' + f.path, f.size, { file: f }); }
     function pickRef(pk) { return refOf(pk.path, pk.bytes || 0, { pick: pk }); }
+    function roomRoot() { return client().rootPath.split('/')[0]; }
 
     function load() {
       $('repo-label').textContent = state.cfg.owner + '/' + state.cfg.repo + ' · ' + state.cfg.path;
       if (!state.token) {
-        state.posts = []; state.meta = null; renderList();
+        state.posts = []; state.allPosts = []; state.meta = null; renderList();
         setStatus('토큰 없음', 'warn');
         note('이 게시판은 비공개 저장소 <code>' + escapeHtml(state.cfg.owner + '/' + state.cfg.repo) + '</code> 를 직접 읽습니다. ⚙ 설정에 GitHub 토큰(fine-grained, 이 저장소의 <b>Contents: Read</b>)을 한 번 넣어 두세요. 토큰은 이 브라우저에만 남습니다.', 'warn');
         toggleSettings(true);
@@ -643,29 +741,68 @@
       var c = client();
       return Promise.all([c.listFolder(), c.boardIndex().catch(function () { return null; })]).then(function (res) {
         var r = res[0];
-        state.ref = r.ref; state.meta = indexMeta(res[1]); state.posts = groupPosts(r.files, state.meta);
+        state.ref = r.ref; state.meta = indexMeta(res[1]);
+        state.allPosts = groupPosts(r.files, state.meta);
+        state.posts = state.allPosts.filter(function (p) { return page === PAGES.picks ? p.picksFile : !p.picksFile; });
         state.loadedAt = new Date(); state.error = null;
         setStatus(statusCount());
-        if (!state.posts.length) note('아직 보고서가 없습니다. FixC 가 <code>' + escapeHtml(state.cfg.path) + '/</code> 에 파일을 커밋하면 여기에 실립니다.');
+        if (!state.posts.length) note(page === PAGES.picks
+          ? '아직 Daily Picks 파일이 없습니다. FixC 가 <code>' + escapeHtml(state.cfg.path) + '/daily/</code> 에 <code>…_Picks.md</code> 를 커밋하면 여기에 실립니다.'
+          : '아직 보고서가 없습니다. FixC 가 <code>' + escapeHtml(state.cfg.path) + '/</code> 에 파일을 커밋하면 여기에 실립니다.');
         renderList();
         route();
+        return fillMissingPicks();
       }).catch(function (err) {
-        state.error = err; state.posts = []; renderList();
+        state.error = err; state.posts = []; state.allPosts = []; renderList();
         setStatus('오류', 'bad');
         note(escapeHtml(explainError(err, state.cfg)), 'bad');
         if (err.status === 401) toggleSettings(true);
       }).then(function () { listEl.removeAttribute('aria-busy'); });
     }
 
+    /** Picks posts the desk has not indexed yet (pushed minutes ago): read their picks from the text
+        and find the originals in the room's inbox folder. */
+    function fillMissingPicks() {
+      var todo = state.allPosts.filter(function (p) { return p.picksFile && !p.indexed && p.body && p.body.type === 'markdown'; }).slice(0, 5);
+      if (!todo.length) return Promise.resolve();
+      return Promise.all(todo.map(function (p) {
+        return client().blob(p.body.path, p.body.ext).then(function (b) { return b.text(); }).then(function (text) {
+          var items = parsePicksText(text);
+          if (!items.length) return;
+          return originalNames().then(function (names) {
+            items.forEach(function (it) {
+              var hit = names[it.name.toLowerCase()] || names[basename(it.name).toLowerCase()];
+              var rend = it.renderingName ? (names[it.renderingName.toLowerCase()] || null) : null;
+              var pk = hit ? { path: hit.path, text: it.label, note: it.note, exists: true, kind: typeOf(splitExt(hit.path).ext) === 'pdf' ? 'pdf' : undefined, bytes: hit.size }
+                           : { path: it.name, text: it.label, note: it.note, exists: false, unresolved: true };
+              if (rend) pk.rendering = rend.path;
+              if (!p.picks.some(function (q) { return q.path === pk.path; })) p.picks.push(pk);
+            });
+            p.picksFromText = true;
+          });
+        }).catch(function () { /* leave the post without picks */ });
+      })).then(function () { renderList(); if (state.current) refreshPickPanels(state.current); });
+    }
+    function originalNames() {
+      if (state.names) return Promise.resolve(state.names);
+      return client().namesIn(roomRoot() + '/' + ORIGINALS_FOLDER).then(function (map) { state.names = map; return map; });
+    }
+
     function visiblePosts() {
       return state.posts.filter(function (p) {
-        if (state.kind === 'picks') { if (!p.picks.length) return false; }
+        if (state.kind === 'picks') { if (!dayPicks(p).length) return false; }
         else if (state.kind !== 'all' && p.kind !== state.kind) return false;
         if (!state.filter) return true;
         var hay = (p.title + ' ' + (p.heading || '') + ' ' + (p.date || '') + ' ' + p.files.map(function (f) { return f.name; }).join(' ') + ' ' +
-          p.picks.map(function (k) { return (k.text || '') + ' ' + (k.title || '') + ' ' + basename(k.path); }).join(' ')).toLowerCase();
+          dayPicks(p).map(function (k) { return (k.text || '') + ' ' + (k.title || '') + ' ' + basename(k.path); }).join(' ')).toLowerCase();
         return state.filter.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; });
       });
+    }
+    /** The picks that belong to a post on the board: its own, plus the day's Daily Picks for a report. */
+    function dayPicks(post) {
+      var out = post.picks.slice();
+      if (!post.picksFile && post.picksPost) post.picksPost.picks.forEach(function (pk) { if (!out.some(function (q) { return q.path === pk.path; })) out.push(pk); });
+      return out;
     }
 
     function renderList() {
@@ -686,28 +823,29 @@
           group = el('ol', { class: 'posts' });
           listEl.appendChild(group);
         }
-        var attach = p.attachments.length;
+        var attach = p.attachments.length, picks = dayPicks(p).length;
         var link = el('a', { class: 'post', href: '#post=' + encodeURIComponent(p.id) }, [
           el('span', { class: 'no', text: String(n--) }),
           el('span', { class: 'date', text: p.dateEnd && p.dateEnd !== p.date ? fmtDate(p.date) + '~' + fmtDate(p.dateEnd).slice(5) : fmtDate(p.date) }),
           el('span', { class: 'kind ' + p.kind, text: KIND_LABEL[p.kind] || '기타' }),
-          el('span', { class: 'title' }, [p.title, p.picks.length ? el('span', { class: 'pick-badge', text: '픽 ' + p.picks.length }) : null]),
+          el('span', { class: 'title' }, [p.title, picks ? el('span', { class: 'pick-badge', text: (page === PAGES.picks ? '자료 ' : '픽 ') + picks }) : null]),
           el('span', { class: 'meta', text: (p.body ? TYPE_LABEL[p.body.type] : (p.attachments[0] ? p.attachments[0].ext.toUpperCase() : '')) + (attach > 1 ? ' · 첨부 ' + attach : '') + (p.size ? ' · ' + fmtBytes(p.size) : '') })
         ]);
         group.appendChild(el('li', null, [link]));
       });
     }
 
-    /** The picks of the newest posts, on the list page, so an original is one click away. */
+    /** On the reports board: the newest Daily Picks, so an original is one click away. */
     function renderRecentPicks() {
       var box = $('recent-picks'), ul = $('recent-picks-list');
+      if (!box) return;
       ul.replaceChildren();
-      var rows = [], seenPosts = 0;
-      for (var i = 0; i < state.posts.length && seenPosts < RECENT_PICK_POSTS && rows.length < RECENT_PICK_MAX; i++) {
-        var p = state.posts[i];
-        if (!p.picks.length) continue;
-        seenPosts++;
-        p.picks.forEach(function (pk) { if (rows.length < RECENT_PICK_MAX) rows.push({ post: p, pick: pk }); });
+      if (page === PAGES.picks) { box.hidden = true; return; }
+      var rows = [], seen = 0;
+      var sources = state.allPosts.filter(function (p) { return p.picksFile && p.picks.length; });
+      for (var i = 0; i < sources.length && seen < RECENT_PICK_POSTS && rows.length < RECENT_PICK_MAX; i++) {
+        seen++;
+        sources[i].picks.forEach(function (pk) { if (rows.length < RECENT_PICK_MAX) rows.push({ post: sources[i], pick: pk }); });
       }
       box.hidden = !rows.length;
       rows.forEach(function (r) { ul.appendChild(pickRow(r.post, r.pick, true)); });
@@ -721,29 +859,32 @@
       if (pk.institution) metaBits.push(pk.institution);
       if (pk.publication_date) metaBits.push('발간 ' + fmtPub(pk.publication_date));
       if (pk.bytes) metaBits.push(fmtBytes(pk.bytes));
-      if (pk.path !== label) metaBits.push(pk.path);
+      if (pk.path !== label) metaBits.push(missing && pk.unresolved ? '파일명: ' + pk.path : pk.path);
+      var owner = post.picksFile ? post : (post.picksPost || post);          // the post whose address the pick opens under
+      var onThisPage = state.posts.indexOf(owner) >= 0 || (!post.picksFile && page === PAGES.reports);
       var buttons = [];
-      if (!missing && ref.type !== 'binary') buttons.push(el('button', { type: 'button', class: 'btn', text: '원문 보기', onclick: function () { openPick(post, pk); } }));
+      if (!missing && ref.type !== 'binary') buttons.push(el('button', { type: 'button', class: 'btn', text: '원문 보기', onclick: function () { openPick(onThisPage ? post : owner, pk, false, onThisPage); } }));
       if (!missing) buttons.push(el('button', { type: 'button', class: 'btn ghost', text: '내려받기', onclick: function () { download(ref); } }));
-      if (pk.rendering) buttons.push(el('button', { type: 'button', class: 'btn ghost', text: '판독본', onclick: function () { openPick(post, pk, true); } }));
-      buttons.push(el('a', { class: 'btn ghost', href: client().webUrlAt(pk.path, state.ref || state.cfg.branch || 'main'), target: '_blank', rel: 'noopener noreferrer', text: 'GitHub' }));
+      if (pk.rendering) buttons.push(el('button', { type: 'button', class: 'btn ghost', text: '판독본', onclick: function () { openPick(onThisPage ? post : owner, pk, true, onThisPage); } }));
+      if (!missing) buttons.push(el('a', { class: 'btn ghost', href: client().webUrlAt(pk.path, state.ref || state.cfg.branch || 'main'), target: '_blank', rel: 'noopener noreferrer', text: 'GitHub' }));
       return el('li', { class: 'pick' + (missing ? ' missing' : ''), 'data-path': pk.path }, [
         el('div', { class: 'pick-main' }, [
-          withPost ? el('a', { class: 'pick-post', href: '#post=' + encodeURIComponent(post.id), text: fmtDate(post.date) + ' · ' + post.title }) : null,
+          withPost ? el('a', { class: 'pick-post', href: (post.picksFile && page === PAGES.reports ? other : '') + '#post=' + encodeURIComponent(post.id), text: fmtDate(post.date) + ' · ' + post.title }) : null,
           el('div', { class: 'pick-title' }, [
             el('span', { class: 'ptype', text: missing ? '없음' : (TYPE_LABEL[ref.type] || ref.ext.toUpperCase()) }),
             el('span', { class: 'ptext', text: label })
           ]),
           metaBits.length ? el('div', { class: 'pick-meta', text: metaBits.join(' · ') }) : null,
           pk.note ? el('div', { class: 'pick-note', text: pk.note }) : null,
-          missing ? el('div', { class: 'pick-note bad', text: '저장소에 이 경로의 파일이 없습니다. 보고서의 링크를 확인하세요.' }) : null
+          missing ? el('div', { class: 'pick-note bad', text: pk.unresolved ? '저장소에서 이 이름의 파일을 찾지 못했습니다. Daily Picks 의 파일명을 확인하세요.' : '저장소에 이 경로의 파일이 없습니다. 보고서의 링크를 확인하세요.' }) : null
         ]),
         el('div', { class: 'pick-actions' }, buttons)
       ]);
     }
 
-    function openPick(post, pk, rendering) {
+    function openPick(post, pk, rendering, onThisPage) {
       var path = rendering && pk.rendering ? pk.rendering : pk.path;
+      if (onThisPage === false) { location.href = other + '#post=' + encodeURIComponent(post.id) + '&pick=' + encodeURIComponent(path); return; }
       if (state.current !== post) { setHash(post, path); return; }
       setHash(post, path, true);
       preview(post, rendering && pk.rendering ? refOf(pk.rendering, 0, { pick: pk, rendering: true }) : pickRef(pk));
@@ -770,7 +911,7 @@
         $('post-date').textContent = fmtPeriod(post);
         $('post-kind').textContent = KIND_LABEL[post.kind] || '';
         $('post-kind').className = 'kind ' + post.kind;
-        document.title = post.title + ' - FixC Report - Lobby';
+        document.title = post.title + ' - ' + pageTitle() + ' - Lobby';
         var files = $('post-files'); files.replaceChildren();
         post.attachments.forEach(function (f) {
           var ref = fileRef(f);
@@ -783,12 +924,12 @@
           ]));
         });
         if (post.assets.length) files.appendChild(el('li', { class: 'file assets', text: '그림 ' + post.assets.length + '개 (' + fmtBytes(post.assets.reduce(function (s, a) { return s + a.size; }, 0)) + ') 는 본문에 표시됩니다.' }));
-        renderPicks(post, post.picks, post.indexed);
+        refreshPickPanels(post);
         window.scrollTo(0, 0);
       }
       var target = null;
       if (pickPath) {
-        var pk = post.picks.filter(function (k) { return k.path === pickPath || k.rendering === pickPath; })[0];
+        var pk = dayPicks(post).filter(function (k) { return k.path === pickPath || k.rendering === pickPath; })[0];
         target = pk ? (pk.rendering === pickPath && pk.path !== pickPath ? refOf(pickPath, 0, { pick: pk, rendering: true }) : pickRef(pk)) : refOf(pickPath, 0, {});
       }
       if (!target) {
@@ -799,12 +940,37 @@
       if (target) preview(post, target); else emptyBody(post);
     }
 
-    function renderPicks(post, picks, fromIndex) {
-      var box = $('post-picks'), ul = $('post-picks-list');
+    /** The pick panels of a post: on the picks board the documents come first (above the text); on the
+        reports board the day's Daily Picks follow the body, with a way to the Daily Picks post itself. */
+    function refreshPickPanels(post) {
+      var top = $('post-picks'), bottom = $('post-day-picks');
+      var picks = dayPicks(post);
+      var fromText = post.picksFile ? post.picksFromText : (post.picksPost && post.picksPost.picksFromText);
+      var noteText = fromText ? '열람대 색인이 아직 없어 Daily Picks 본문에서 읽고 Fin Docraw 에서 찾았습니다.' : (!post.indexed && picks.length ? '열람대 색인이 아직 없어 본문의 링크에서 읽었습니다.' : '');
+      if (page === PAGES.picks) {
+        fillPickPanel(top, post, picks, noteText);
+        if (bottom) bottom.hidden = true;
+        var cross = $('post-cross');
+        cross.replaceChildren();
+        cross.hidden = !post.reportPost;
+        if (post.reportPost) cross.appendChild(el('a', { class: 'btn ghost', href: other + '#post=' + encodeURIComponent(post.reportPost.id), text: '이 날의 데일리 보고서 → ' + post.reportPost.title }));
+      } else {
+        if (top) top.hidden = true;
+        fillPickPanel(bottom, post, picks, noteText);
+        var cross2 = $('post-cross');
+        cross2.replaceChildren();
+        cross2.hidden = !post.picksPost;
+        if (post.picksPost) cross2.appendChild(el('a', { class: 'btn ghost', href: other + '#post=' + encodeURIComponent(post.picksPost.id), text: 'Daily Picks 글 보기 → ' + post.picksPost.title }));
+      }
+    }
+    function fillPickPanel(box, post, picks, noteText) {
+      if (!box) return;
+      var ul = box.querySelector('.pick-list'), noteEl2 = box.querySelector('.picks-note');
       ul.replaceChildren();
       box.hidden = !picks.length;
-      $('post-picks-note').textContent = fromIndex ? '' : '열람대 색인이 아직 없어 본문의 링크에서 읽었습니다.';
+      if (noteEl2) noteEl2.textContent = noteText || '';
       picks.forEach(function (pk) { ul.appendChild(pickRow(post, pk, false)); });
+      if (state.viewing) markViewing(post, state.viewing);
     }
 
     function emptyBody(post) {
@@ -819,7 +985,7 @@
       var bar = $('viewing');
       bar.hidden = !ref || isBody;
       $('viewing-name').textContent = ref ? (ref.rendering ? '판독본 · ' : (ref.pick ? '원문 · ' : '')) + ref.name : '';
-      Array.prototype.forEach.call(document.querySelectorAll('#post-files .file, #post-picks-list .pick'), function (li) {
+      Array.prototype.forEach.call(document.querySelectorAll('#post-files .file, #view-post .pick'), function (li) {
         li.classList.toggle('current', !!ref && li.getAttribute('data-path') === (ref.rendering && ref.pick ? ref.pick.path : ref.repoPath));
       });
     }
@@ -890,8 +1056,8 @@
     }
 
     /** Images and links in a Markdown body: the post's own files first, then any file of the repository
-        (a pick written as a repository path, a relative path or a GitHub URL). Without a desk index the
-        repository links found here become the post's picks. */
+        (a repository path, a relative path or a GitHub URL). Without a desk index the repository links
+        found in a report become its picks. */
     function resolveLinks(post, ref, container) {
       var byName = {};
       post.files.forEach(function (f) { byName[f.path.toLowerCase()] = f; byName[f.name.toLowerCase()] = f; });
@@ -922,7 +1088,7 @@
         }
         var paths = repoPathCandidates(target, state.cfg, fileDir);
         if (!paths.length) { if (a.hasAttribute('data-href')) a.removeAttribute('href'); return; }
-        var known = post.picks.filter(function (k) { return paths.indexOf(k.path) >= 0; })[0];
+        var known = dayPicks(post).filter(function (k) { return paths.indexOf(k.path) >= 0; })[0];
         if (known) paths = [known.path].concat(paths.filter(function (c) { return c !== known.path; }));
         a.classList.add('repo-link');
         a.title = paths[0];
@@ -936,7 +1102,7 @@
       });
       if (!post.indexed && found.length) {
         found.forEach(function (k) { if (!post.picks.some(function (q) { return q.path === k.path; })) post.picks.push({ path: k.path, text: k.text, note: k.note, candidates: k.candidates }); });
-        renderPicks(post, post.picks, false);
+        refreshPickPanels(post);
         renderList();
       }
     }
@@ -976,21 +1142,23 @@
         var id = decodeURIComponent(m[1]), pickPath = m[2] ? decodeURIComponent(m[2]) : null;
         var post = state.posts.filter(function (p) { return p.id === id; })[0];
         if (post) { showPost(post, pickPath); return; }
-        if (state.posts.length) note('그 글을 찾지 못했습니다: ' + escapeHtml(id), 'warn');
+        var elsewhere = state.allPosts.filter(function (p) { return p.id === id; })[0];
+        if (elsewhere) { location.replace(other + h); return; }                 // the post lives on the other board
+        if (state.allPosts.length) note('그 글을 찾지 못했습니다: ' + escapeHtml(id), 'warn');
       }
       state.current = null; state.viewing = null;
       revokeAll();
       views.post.hidden = true; views.list.hidden = false;
-      document.title = 'FixC Report - Fin Lab - Lobby';
+      document.title = pageTitle() + ' - Fin Lab - Lobby';
     }
     window.addEventListener('hashchange', route);
 
     load();
   }
 
-  var api = { DEFAULTS: DEFAULTS, INDEX_FILE: INDEX_FILE, parseName: parseName, groupPosts: groupPosts, indexMeta: indexMeta,
-    renderMarkdown: renderMarkdown, inline: inline, scanLinks: scanLinks, repoPathCandidates: repoPathCandidates, normPath: normPath,
-    escapeHtml: escapeHtml, safeUrl: safeUrl, fmtBytes: fmtBytes, fmtDate: fmtDate, fmtPeriod: fmtPeriod, fmtMonth: fmtMonth,
+  var api = { DEFAULTS: DEFAULTS, INDEX_FILE: INDEX_FILE, parseName: parseName, kindOf: kindOf, groupPosts: groupPosts, indexMeta: indexMeta,
+    parsePicksText: parsePicksText, renderMarkdown: renderMarkdown, inline: inline, scanLinks: scanLinks, repoPathCandidates: repoPathCandidates,
+    normPath: normPath, escapeHtml: escapeHtml, safeUrl: safeUrl, fmtBytes: fmtBytes, fmtDate: fmtDate, fmtPeriod: fmtPeriod, fmtMonth: fmtMonth,
     typeOf: typeOf, mimeOf: mimeOf, toIsoDate: toIsoDate, GitHub: GitHub, explainError: explainError, startPage: startPage };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
