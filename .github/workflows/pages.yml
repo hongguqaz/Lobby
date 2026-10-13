@@ -29,6 +29,11 @@ jobs:
           python-version: "3.12"
       - name: No raw data committed, published data well-formed
         run: python scripts/check_public_data.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: FixC Report board tests
+        run: node fin-lab/reports/test-board.mjs
 
   deploy:
     needs: check
