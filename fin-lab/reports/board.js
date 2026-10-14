@@ -3,8 +3,15 @@
      fin-lab/picks/     "FixC Daily Picks"  the day's picked documents, named in daily/*_Picks.md
    (the page says which with <body data-board="reports|picks">).
 
-   Both read the private Drive repository through the GitHub API with a token kept in this browser
-   only (localStorage key ds.github.token). Nothing is copied into Lobby: every read goes to
+   A plain board: one post per report (its file name is the title), newest first, twenty to a page.
+   Opening a post shows FixC's own file first (the PDF when there is one, else the .md) in the viewer,
+   and lists every file the post carries above the viewer: FixC's files, the day's Daily Picks file,
+   and the documents the picks name in the room (the originals in fin-lab/Fin Docraw, their renderings
+   in Fin Docai). Each one opens in place or downloads. PDFs are drawn page by page with pdf.js
+   (vendor/pdfjs/), so they open on every browser, phones included.
+
+   Both pages read the private Drive repository through the GitHub API with a token kept in this
+   browser only (localStorage key ds.github.token). Nothing is copied into Lobby: every read goes to
    api.github.com, so a file FixC pushes is on the board the moment the page is (re)loaded.
 
    The folder (fin-lab/FixC report/) holds weekly/, daily/ and notes/; a report is a PDF plus a
@@ -14,8 +21,8 @@
    carries the picks each file names (original -> repository path, rendering). Without that index the
    page reads the picks itself from the Markdown and finds the originals in fin-lab/Fin Docraw.
 
-   The pure helpers (parseName, groupPosts, renderMarkdown, parsePicksText, ...) are exported for Node
-   tests (fin-lab/reports/test-board.mjs); the page code runs only in a browser. */
+   The pure helpers (parseName, groupPosts, postItems, renderMarkdown, parsePicksText, ...) are
+   exported for Node tests (fin-lab/reports/test-board.mjs); the page code runs only in a browser. */
 (function (root) {
   'use strict';
 
@@ -26,8 +33,12 @@
   var GITHUB_API = 'https://api.github.com';
   var IGNORED_NAMES = { 'README.md': 1, '.gitkeep': 1, '.DS_Store': 1, 'Thumbs.db': 1 };
   var MAX_DEPTH = 3;
-  var RECENT_PICK_POSTS = 2, RECENT_PICK_MAX = 6;
+  var PAGE_SIZE = 20;
   var PAGES = { reports: 'reports', picks: 'picks' };
+  var SCRIPT_BASE = (typeof document !== 'undefined' && document.currentScript && document.currentScript.src)
+    ? document.currentScript.src.replace(/[^/]*$/, '') : '';
+  var PDFJS = { version: '4.10.38', lib: SCRIPT_BASE + 'vendor/pdfjs/pdf.min.mjs', worker: SCRIPT_BASE + 'vendor/pdfjs/pdf.worker.min.mjs',
+    cmaps: 'https://unpkg.com/pdfjs-dist@4.10.38/cmaps/', fonts: 'https://unpkg.com/pdfjs-dist@4.10.38/standard_fonts/' };
 
   /* ------------------------------------------------------------------ names and dates */
 
@@ -92,7 +103,7 @@
   /* ------------------------------------------------------------------ posts */
 
   var BODY_EXT = { md: 1, markdown: 1, html: 1, htm: 1, txt: 1 };
-  var EXT_ORDER = ['md', 'markdown', 'html', 'htm', 'txt', 'pdf', 'docx', 'xlsx', 'pptx', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'];
+  var EXT_ORDER = ['pdf', 'md', 'markdown', 'html', 'htm', 'txt', 'docx', 'xlsx', 'pptx', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'];
 
   function isPicksName(name) { return /pick/i.test(splitExt(name).stem); }
 
@@ -160,7 +171,6 @@
       if (ra !== rb) return ra - rb;
       return b.title.localeCompare(a.title);
     });
-    // same-day partners: a report and the day's picks
     list.forEach(function (p) {
       if (!p.date) return;
       if (p.picksFile) {
@@ -173,7 +183,7 @@
     return list;
   }
 
-  function rank(e) { var i = EXT_ORDER.indexOf(e.ext); return (e.role === 'body' ? 0 : 100) + (i < 0 ? 50 : i); }
+  function rank(e) { var i = EXT_ORDER.indexOf(e.ext); return (e.role === 'asset' ? 100 : 0) + (i < 0 ? 50 : i); }
 
   /** The Fin Desk board index as the page uses it: { byPath }. */
   function indexMeta(data) {
@@ -212,12 +222,53 @@
     return out.join('/');
   }
 
-  /** A viewable thing: { repoPath, name, ext, type, size }. */
-  function refOf(repoPath, size, extra) {
-    var name = basename(repoPath), ext = splitExt(name).ext;
-    var r = { repoPath: repoPath, name: name, ext: ext, type: typeOf(ext), size: size || 0 };
-    if (extra) Object.keys(extra).forEach(function (k) { r[k] = extra[k]; });
-    return r;
+  /* ------------------------------------------------------------------ the files of a post */
+
+  /** Everything a post lets you open, in the order the strip shows it:
+        FixC's own files (PDF first, then the .md twin, then other attachments),
+        the day's Daily Picks file (for a report) and the documents it names (the picks),
+        and, for a picks post, the day's report files after the picks.
+      Items: { kind: 'file'|'link', role, repoPath, name, label, note, size, ext, type, exists, unresolved,
+               rendering, index, post }.  rootPath: the report folder in the repository. */
+  function postItems(post, rootPath) {
+    var items = [], seen = {};
+    function push(it) { if (!it.repoPath || seen[it.repoPath]) return; seen[it.repoPath] = 1; items.push(it); }
+    function fileItem(f, role, owner) {
+      return { kind: 'file', role: role, repoPath: rootPath + '/' + f.path, name: f.name, label: f.name, note: '', size: f.size || 0,
+        ext: f.ext, type: f.type, exists: true, unresolved: false, rendering: null, index: 0, post: owner };
+    }
+    function materials(src) {
+      return src.picks.map(function (pk, i) {
+        var name = basename(pk.path), ext = splitExt(name).ext;
+        return { kind: 'link', role: 'material', repoPath: pk.path, name: name,
+          label: (pk.text && pk.text !== name) ? pk.text : (pk.title || name), note: pk.note || '',
+          size: pk.bytes || 0, ext: ext, type: typeOf(ext), exists: pk.exists !== false, unresolved: !!pk.unresolved,
+          rendering: pk.rendering || null, institution: pk.institution || '', publication_date: pk.publication_date || '',
+          index: i + 1, post: src };
+      });
+    }
+    if (!post.picksFile) {
+      post.attachments.forEach(function (f) { push(fileItem(f, f.type === 'pdf' ? 'report' : 'twin', post)); });
+      if (post.picksPost) {
+        post.picksPost.attachments.forEach(function (f) { push(fileItem(f, 'picks', post.picksPost)); });
+        materials(post.picksPost).forEach(push);
+      }
+      materials(post).forEach(push);
+    } else {
+      post.attachments.forEach(function (f) { push(fileItem(f, 'picks', post)); });
+      materials(post).forEach(push);
+      if (post.reportPost) post.reportPost.attachments.forEach(function (f) { push(fileItem(f, 'daily', post.reportPost)); });
+    }
+    return items;
+  }
+
+  /** What the viewer shows when a post opens: FixC's PDF, else its first readable file, else the first
+      readable document among the picks. */
+  function defaultItem(items) {
+    return items.filter(function (i) { return i.kind === 'file' && i.type === 'pdf' && (i.role === 'report' || i.role === 'picks'); })[0] ||
+      items.filter(function (i) { return i.kind === 'file' && i.type !== 'binary' && i.role !== 'daily'; })[0] ||
+      items.filter(function (i) { return i.kind === 'file' && i.type !== 'binary'; })[0] ||
+      items.filter(function (i) { return i.exists && i.type !== 'binary'; })[0] || null;
   }
 
   /* ------------------------------------------------------------------ a Daily Picks text */
@@ -284,7 +335,10 @@
     if (post.dateEnd && post.dateEnd !== post.date) return fmtDate(post.date) + ' ~ ' + fmtDate(post.dateEnd);
     return fmtDate(post.date, true) + (post.dated ? '' : ' · 등록일');
   }
-  function fmtMonth(iso) { return iso ? iso.slice(0, 4) + '년 ' + (+iso.slice(5, 7)) + '월' : '날짜 없음'; }
+  function fmtShort(post) {
+    if (!post.date) return '';
+    return post.dateEnd && post.dateEnd !== post.date ? fmtDate(post.date).slice(2) + '~' + fmtDate(post.dateEnd).slice(5) : fmtDate(post.date).slice(2);
+  }
   function fmtBytes(n) {
     if (!n && n !== 0) return '';
     if (n < 1024) return n + ' B';
@@ -603,7 +657,6 @@
     return 'https://github.com/' + this.cfg.owner + '/' + this.cfg.repo + '/blob/' + encodeURIComponent(ref) + '/' +
       repoPath.split('/').map(encodeURIComponent).join('/');
   };
-  GitHub.prototype.webUrl = function (relPath, ref) { return this.webUrlAt(this.rootPath + (relPath ? '/' + relPath : ''), ref); };
   GitHub.prototype.whoami = function () { return this.fetch(GITHUB_API + '/user').then(function (r) { return r.json(); }); };
 
   function explainError(err, cfg) {
@@ -655,7 +708,7 @@
     var page = document.body.getAttribute('data-board') === PAGES.picks ? PAGES.picks : PAGES.reports;
     var other = page === PAGES.picks ? '../reports/' : '../picks/';
     var state = { page: page, cfg: readConfig(), token: readToken(), posts: [], allPosts: [], meta: null, ref: null, loadedAt: null,
-      error: null, filter: '', kind: 'all', urls: [], current: null, viewing: null, names: null };
+      error: null, filter: '', kind: 'all', pageNo: 1, urls: [], current: null, items: [], viewing: null, names: null, pdfjs: null };
     var gh = null;
 
     var views = { list: $('view-list'), post: $('view-post'), settings: $('settings') };
@@ -706,24 +759,15 @@
     });
 
     // toolbar
-    $('search').addEventListener('input', function (e) { state.filter = e.target.value.trim().toLowerCase(); renderList(); });
-    if ($('kind')) $('kind').addEventListener('change', function (e) { state.kind = e.target.value; renderList(); });
+    $('search').addEventListener('input', function (e) { state.filter = e.target.value.trim().toLowerCase(); state.pageNo = 1; renderList(); });
+    if ($('kind')) $('kind').addEventListener('change', function (e) { state.kind = e.target.value; state.pageNo = 1; renderList(); });
     $('btn-refresh').addEventListener('click', function () { load(); });
-    $('btn-back').addEventListener('click', function (e) { e.preventDefault(); location.hash = ''; });
-    $('btn-body').addEventListener('click', function () {
-      if (!state.current) return;
-      var post = state.current;
-      var first = post.body || post.attachments.filter(function (f) { return f.type !== 'binary'; })[0];
-      setHash(post, null, true);
-      if (first) preview(post, fileRef(first)); else emptyBody(post);
-    });
+    $('btn-back').addEventListener('click', function (e) { e.preventDefault(); location.hash = state.pageNo > 1 ? '#page=' + state.pageNo : '#'; });
 
     function client() {
       if (!gh) gh = new GitHub(state.token, state.cfg);
       return gh;
     }
-    function fileRef(f) { return refOf(client().rootPath + '/' + f.path, f.size, { file: f }); }
-    function pickRef(pk) { return refOf(pk.path, pk.bytes || 0, { pick: pk }); }
     function roomRoot() { return client().rootPath.split('/')[0]; }
 
     function load() {
@@ -781,11 +825,18 @@
             p.picksFromText = true;
           });
         }).catch(function () { /* leave the post without picks */ });
-      })).then(function () { renderList(); if (state.current) refreshPickPanels(state.current); });
+      })).then(function () { renderList(); if (state.current) renderStrip(state.current); });
     }
     function originalNames() {
       if (state.names) return Promise.resolve(state.names);
       return client().namesIn(roomRoot() + '/' + ORIGINALS_FOLDER).then(function (map) { state.names = map; return map; });
+    }
+
+    /** The picks that belong to a post on the board: its own, plus the day's Daily Picks for a report. */
+    function dayPicks(post) {
+      var out = post.picks.slice();
+      if (!post.picksFile && post.picksPost) post.picksPost.picks.forEach(function (pk) { if (!out.some(function (q) { return q.path === pk.path; })) out.push(pk); });
+      return out;
     }
 
     function visiblePosts() {
@@ -798,110 +849,71 @@
         return state.filter.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; });
       });
     }
-    /** The picks that belong to a post on the board: its own, plus the day's Daily Picks for a report. */
-    function dayPicks(post) {
-      var out = post.picks.slice();
-      if (!post.picksFile && post.picksPost) post.picksPost.picks.forEach(function (pk) { if (!out.some(function (q) { return q.path === pk.path; })) out.push(pk); });
-      return out;
-    }
 
+    /* ---- the list: a board, twenty posts a page */
     function renderList() {
       listEl.replaceChildren();
-      renderRecentPicks();
       var posts = visiblePosts();
-      $('count').textContent = state.posts.length ? (posts.length === state.posts.length ? posts.length + '건' : posts.length + ' / ' + state.posts.length + '건') : '';
-      if (!posts.length) {
+      var total = posts.length, pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      if (state.pageNo > pages) state.pageNo = pages;
+      if (state.pageNo < 1) state.pageNo = 1;
+      $('count').textContent = state.posts.length ? (total === state.posts.length ? total + '건' : total + ' / ' + state.posts.length + '건') : '';
+      if (!total) {
         if (state.posts.length) listEl.appendChild(el('p', { class: 'empty', text: '조건에 맞는 글이 없습니다.' }));
+        renderPager(0, 1);
         return;
       }
-      var month = null, group = null, n = posts.length;
-      posts.forEach(function (p) {
-        var m = fmtMonth(p.sortDate);
-        if (m !== month) {
-          month = m;
-          listEl.appendChild(el('h2', { class: 'month', text: m }));
-          group = el('ol', { class: 'posts' });
-          listEl.appendChild(group);
-        }
-        var attach = p.attachments.length, picks = dayPicks(p).length;
-        var link = el('a', { class: 'post', href: '#post=' + encodeURIComponent(p.id) }, [
-          el('span', { class: 'no', text: String(n--) }),
-          el('span', { class: 'date', text: p.dateEnd && p.dateEnd !== p.date ? fmtDate(p.date) + '~' + fmtDate(p.dateEnd).slice(5) : fmtDate(p.date) }),
-          el('span', { class: 'kind ' + p.kind, text: KIND_LABEL[p.kind] || '기타' }),
-          el('span', { class: 'title' }, [p.title, picks ? el('span', { class: 'pick-badge', text: (page === PAGES.picks ? '자료 ' : '픽 ') + picks }) : null]),
-          el('span', { class: 'meta', text: (p.body ? TYPE_LABEL[p.body.type] : (p.attachments[0] ? p.attachments[0].ext.toUpperCase() : '')) + (attach > 1 ? ' · 첨부 ' + attach : '') + (p.size ? ' · ' + fmtBytes(p.size) : '') })
-        ]);
-        group.appendChild(el('li', null, [link]));
-      });
-    }
-
-    /** On the reports board: the newest Daily Picks, so an original is one click away. */
-    function renderRecentPicks() {
-      var box = $('recent-picks'), ul = $('recent-picks-list');
-      if (!box) return;
-      ul.replaceChildren();
-      if (page === PAGES.picks) { box.hidden = true; return; }
-      var rows = [], seen = 0;
-      var sources = state.allPosts.filter(function (p) { return p.picksFile && p.picks.length; });
-      for (var i = 0; i < sources.length && seen < RECENT_PICK_POSTS && rows.length < RECENT_PICK_MAX; i++) {
-        seen++;
-        sources[i].picks.forEach(function (pk) { if (rows.length < RECENT_PICK_MAX) rows.push({ post: sources[i], pick: pk }); });
-      }
-      box.hidden = !rows.length;
-      rows.forEach(function (r) { ul.appendChild(pickRow(r.post, r.pick, true)); });
-    }
-
-    function pickRow(post, pk, withPost) {
-      var ref = pickRef(pk);
-      var missing = pk.exists === false;
-      var label = pk.text && pk.text !== basename(pk.path) ? pk.text : (pk.title || basename(pk.path));
-      var metaBits = [];
-      if (pk.institution) metaBits.push(pk.institution);
-      if (pk.publication_date) metaBits.push('발간 ' + fmtPub(pk.publication_date));
-      if (pk.bytes) metaBits.push(fmtBytes(pk.bytes));
-      if (pk.path !== label) metaBits.push(missing && pk.unresolved ? '파일명: ' + pk.path : pk.path);
-      var owner = post.picksFile ? post : (post.picksPost || post);          // the post whose address the pick opens under
-      var onThisPage = state.posts.indexOf(owner) >= 0 || (!post.picksFile && page === PAGES.reports);
-      var buttons = [];
-      if (!missing && ref.type !== 'binary') buttons.push(el('button', { type: 'button', class: 'btn', text: '원문 보기', onclick: function () { openPick(onThisPage ? post : owner, pk, false, onThisPage); } }));
-      if (!missing) buttons.push(el('button', { type: 'button', class: 'btn ghost', text: '내려받기', onclick: function () { download(ref); } }));
-      if (pk.rendering) buttons.push(el('button', { type: 'button', class: 'btn ghost', text: '판독본', onclick: function () { openPick(onThisPage ? post : owner, pk, true, onThisPage); } }));
-      if (!missing) buttons.push(el('a', { class: 'btn ghost', href: client().webUrlAt(pk.path, state.ref || state.cfg.branch || 'main'), target: '_blank', rel: 'noopener noreferrer', text: 'GitHub' }));
-      return el('li', { class: 'pick' + (missing ? ' missing' : ''), 'data-path': pk.path }, [
-        el('div', { class: 'pick-main' }, [
-          withPost ? el('a', { class: 'pick-post', href: (post.picksFile && page === PAGES.reports ? other : '') + '#post=' + encodeURIComponent(post.id), text: fmtDate(post.date) + ' · ' + post.title }) : null,
-          el('div', { class: 'pick-title' }, [
-            el('span', { class: 'ptype', text: missing ? '없음' : (TYPE_LABEL[ref.type] || ref.ext.toUpperCase()) }),
-            el('span', { class: 'ptext', text: label })
-          ]),
-          metaBits.length ? el('div', { class: 'pick-meta', text: metaBits.join(' · ') }) : null,
-          pk.note ? el('div', { class: 'pick-note', text: pk.note }) : null,
-          missing ? el('div', { class: 'pick-note bad', text: pk.unresolved ? '저장소에서 이 이름의 파일을 찾지 못했습니다. Daily Picks 의 파일명을 확인하세요.' : '저장소에 이 경로의 파일이 없습니다. 보고서의 링크를 확인하세요.' }) : null
-        ]),
-        el('div', { class: 'pick-actions' }, buttons)
+      var start = (state.pageNo - 1) * PAGE_SIZE, slice = posts.slice(start, start + PAGE_SIZE);
+      var table = el('table', { class: 'board-table' }, [
+        el('thead', null, [el('tr', null, [
+          el('th', { class: 'c-no', text: '번호' }), el('th', { class: 'c-kind', text: '종류' }), el('th', { class: 'c-title', text: '제목' }),
+          el('th', { class: 'c-files', text: '파일' }), el('th', { class: 'c-date', text: '날짜' })
+        ])])
       ]);
+      var tbody = el('tbody');
+      slice.forEach(function (p, i) {
+        var items = postItems(p, client().rootPath);
+        var files = items.filter(function (it) { return it.kind === 'file'; }).length;
+        var links = items.filter(function (it) { return it.kind === 'link'; }).length;
+        var href = '#post=' + encodeURIComponent(p.id);
+        tbody.appendChild(el('tr', { class: 'row ' + p.kind, onclick: function (e) { if (e.target.closest('a')) return; location.hash = href; } }, [
+          el('td', { class: 'c-no', text: String(total - start - i) }),
+          el('td', { class: 'c-kind' }, [el('span', { class: 'kind ' + p.kind, text: KIND_LABEL[p.kind] || '기타' })]),
+          el('td', { class: 'c-title' }, [
+            el('a', { class: 'post-link', href: href, text: p.title }),
+            p.heading && p.heading !== p.title ? el('span', { class: 'sub-heading', text: p.heading }) : null
+          ]),
+          el('td', { class: 'c-files', text: files + (links ? ' + 참고 ' + links : '') }),
+          el('td', { class: 'c-date', text: fmtShort(p) })
+        ]));
+      });
+      table.appendChild(tbody);
+      listEl.appendChild(table);
+      renderPager(total, pages);
     }
 
-    function openPick(post, pk, rendering, onThisPage) {
-      var path = rendering && pk.rendering ? pk.rendering : pk.path;
-      if (onThisPage === false) { location.href = other + '#post=' + encodeURIComponent(post.id) + '&pick=' + encodeURIComponent(path); return; }
-      if (state.current !== post) { setHash(post, path); return; }
-      setHash(post, path, true);
-      preview(post, rendering && pk.rendering ? refOf(pk.rendering, 0, { pick: pk, rendering: true }) : pickRef(pk));
+    function renderPager(total, pages) {
+      var pager = $('pager');
+      pager.replaceChildren();
+      pager.hidden = pages <= 1;
+      if (pages <= 1) return;
+      var cur = state.pageNo;
+      function go(n) { return function (e) { e.preventDefault(); state.pageNo = n; location.hash = n > 1 ? '#page=' + n : '#'; renderList(); window.scrollTo(0, 0); }; }
+      pager.appendChild(el('a', { class: 'pg' + (cur === 1 ? ' off' : ''), href: '#page=' + Math.max(1, cur - 1), text: '‹ 이전', onclick: go(Math.max(1, cur - 1)) }));
+      var from = Math.max(1, cur - 3), to = Math.min(pages, from + 6);
+      from = Math.max(1, Math.min(from, to - 6));
+      if (from > 1) { pager.appendChild(el('a', { class: 'pg', href: '#page=1', text: '1', onclick: go(1) })); if (from > 2) pager.appendChild(el('span', { class: 'pg gap', text: '…' })); }
+      for (var n = from; n <= to; n++) pager.appendChild(el('a', { class: 'pg' + (n === cur ? ' current' : ''), href: '#page=' + n, text: String(n), 'aria-current': n === cur ? 'page' : null, onclick: go(n) }));
+      if (to < pages) { if (to < pages - 1) pager.appendChild(el('span', { class: 'pg gap', text: '…' })); pager.appendChild(el('a', { class: 'pg', href: '#page=' + pages, text: String(pages), onclick: go(pages) })); }
+      pager.appendChild(el('a', { class: 'pg' + (cur === pages ? ' off' : ''), href: '#page=' + Math.min(pages, cur + 1), text: '다음 ›', onclick: go(Math.min(pages, cur + 1)) }));
+      pager.appendChild(el('span', { class: 'pg total', text: total + '건 · ' + cur + '/' + pages + ' 쪽' }));
     }
 
-    /** Point the address at a post (and one of its picks). `replace` records it without routing:
-        the caller shows the file itself; a plain set fires hashchange and route() does the showing. */
-    function setHash(post, pickPath, replace) {
-      var h = '#post=' + encodeURIComponent(post.id) + (pickPath ? '&pick=' + encodeURIComponent(pickPath) : '');
-      if (location.hash === h) return;
-      if (replace && history.replaceState) history.replaceState(null, '', h); else location.hash = h;
-    }
-
-    // post view
-    function showPost(post, pickPath) {
+    /* ---- a post: title, the strip of everything it opens, the viewer */
+    function showPost(post, filePath) {
       var samePost = state.current === post;
       state.current = post;
+      state.items = postItems(post, client().rootPath);
       views.list.hidden = true; views.post.hidden = false;
       if (!samePost) {
         revokeAll();
@@ -912,65 +924,88 @@
         $('post-kind').textContent = KIND_LABEL[post.kind] || '';
         $('post-kind').className = 'kind ' + post.kind;
         document.title = post.title + ' - ' + pageTitle() + ' - Lobby';
-        var files = $('post-files'); files.replaceChildren();
-        post.attachments.forEach(function (f) {
-          var ref = fileRef(f);
-          files.appendChild(el('li', { class: 'file', 'data-path': ref.repoPath }, [
-            el('span', { class: 'fname', text: f.name }),
-            el('span', { class: 'fsize', text: fmtBytes(f.size) }),
-            el('button', { type: 'button', class: 'btn', text: '내려받기', onclick: function () { download(ref); } }),
-            (f.type !== 'binary') ? el('button', { type: 'button', class: 'btn ghost', text: '보기', onclick: function () { setHash(post, null, true); preview(post, ref); } }) : null,
-            el('a', { class: 'btn ghost', href: client().webUrl(f.path, state.ref || state.cfg.branch || 'main'), target: '_blank', rel: 'noopener noreferrer', text: 'GitHub' })
-          ]));
-        });
-        if (post.assets.length) files.appendChild(el('li', { class: 'file assets', text: '그림 ' + post.assets.length + '개 (' + fmtBytes(post.assets.reduce(function (s, a) { return s + a.size; }, 0)) + ') 는 본문에 표시됩니다.' }));
-        refreshPickPanels(post);
+        renderStrip(post);
         window.scrollTo(0, 0);
       }
       var target = null;
-      if (pickPath) {
-        var pk = dayPicks(post).filter(function (k) { return k.path === pickPath || k.rendering === pickPath; })[0];
-        target = pk ? (pk.rendering === pickPath && pk.path !== pickPath ? refOf(pickPath, 0, { pick: pk, rendering: true }) : pickRef(pk)) : refOf(pickPath, 0, {});
-      }
+      if (filePath) target = state.items.filter(function (it) { return it.repoPath === filePath; })[0] ||
+        (function () { var by = state.items.filter(function (it) { return it.rendering === filePath; })[0]; return by ? renderingItem(by) : null; })() ||
+        { kind: 'link', role: 'material', repoPath: filePath, name: basename(filePath), label: basename(filePath), note: '', size: 0, ext: splitExt(basename(filePath)).ext, type: typeOf(splitExt(basename(filePath)).ext), exists: true, post: post };
       if (!target) {
-        if (samePost && state.viewing && !state.viewing.pick) return;
-        var first = post.body || post.attachments.filter(function (f) { return f.type !== 'binary'; })[0];
-        target = first ? fileRef(first) : null;
+        if (samePost && state.viewing) return;
+        target = defaultItem(state.items);
       }
-      if (target) preview(post, target); else emptyBody(post);
+      if (target) view(post, target); else emptyBody(post);
     }
 
-    /** The pick panels of a post: on the picks board the documents come first (above the text); on the
-        reports board the day's Daily Picks follow the body, with a way to the Daily Picks post itself. */
-    function refreshPickPanels(post) {
-      var top = $('post-picks'), bottom = $('post-day-picks');
-      var picks = dayPicks(post);
-      var fromText = post.picksFile ? post.picksFromText : (post.picksPost && post.picksPost.picksFromText);
-      var noteText = fromText ? '열람대 색인이 아직 없어 Daily Picks 본문에서 읽고 Fin Docraw 에서 찾았습니다.' : (!post.indexed && picks.length ? '열람대 색인이 아직 없어 본문의 링크에서 읽었습니다.' : '');
-      if (page === PAGES.picks) {
-        fillPickPanel(top, post, picks, noteText);
-        if (bottom) bottom.hidden = true;
-        var cross = $('post-cross');
-        cross.replaceChildren();
-        cross.hidden = !post.reportPost;
-        if (post.reportPost) cross.appendChild(el('a', { class: 'btn ghost', href: other + '#post=' + encodeURIComponent(post.reportPost.id), text: '이 날의 데일리 보고서 → ' + post.reportPost.title }));
-      } else {
-        if (top) top.hidden = true;
-        fillPickPanel(bottom, post, picks, noteText);
-        var cross2 = $('post-cross');
-        cross2.replaceChildren();
-        cross2.hidden = !post.picksPost;
-        if (post.picksPost) cross2.appendChild(el('a', { class: 'btn ghost', href: other + '#post=' + encodeURIComponent(post.picksPost.id), text: 'Daily Picks 글 보기 → ' + post.picksPost.title }));
-      }
+    function renderingItem(it) {
+      var name = basename(it.rendering), ext = splitExt(name).ext;
+      return { kind: 'link', role: 'rendering', repoPath: it.rendering, name: name, label: '판독본 · ' + it.label, note: '', size: 0, ext: ext, type: typeOf(ext), exists: true, of: it, post: it.post };
     }
-    function fillPickPanel(box, post, picks, noteText) {
-      if (!box) return;
-      var ul = box.querySelector('.pick-list'), noteEl2 = box.querySelector('.picks-note');
-      ul.replaceChildren();
-      box.hidden = !picks.length;
-      if (noteEl2) noteEl2.textContent = noteText || '';
-      picks.forEach(function (pk) { ul.appendChild(pickRow(post, pk, false)); });
+
+    /** The strip under the title: FixC's files, then the documents the day's picks name. */
+    function renderStrip(post) {
+      state.items = postItems(post, client().rootPath);
+      var strip = $('post-strip');
+      strip.replaceChildren();
+      var groups = [
+        { title: 'FixC 파일', items: state.items.filter(function (it) { return it.kind === 'file' && it.role !== 'daily'; }) },
+        { title: '참고 자료 (Daily Picks 가 고른 원문)', items: state.items.filter(function (it) { return it.kind === 'link'; }) },
+        { title: '이 날의 데일리', items: state.items.filter(function (it) { return it.kind === 'file' && it.role === 'daily'; }) }
+      ];
+      groups.forEach(function (g) {
+        if (!g.items.length) return;
+        strip.appendChild(el('li', { class: 'strip-head', text: g.title }));
+        g.items.forEach(function (it) { strip.appendChild(stripRow(post, it)); });
+      });
+      var src = post.picksFile ? post : post.picksPost;
+      var noteText = src && src.picksFromText ? '열람대 색인이 아직 없어 Daily Picks 본문에서 읽고 Fin Docraw 에서 찾았습니다.' : '';
+      $('strip-note').textContent = noteText;
+      $('strip-note').hidden = !noteText;
+      var cross = $('post-cross');
+      cross.replaceChildren();
+      var partner = post.picksFile ? post.reportPost : post.picksPost;
+      cross.hidden = !partner;
+      if (partner) cross.appendChild(el('a', { class: 'btn ghost', href: other + '#post=' + encodeURIComponent(partner.id),
+        text: (post.picksFile ? '이 날의 데일리 글 → ' : 'Daily Picks 글 → ') + partner.title }));
       if (state.viewing) markViewing(post, state.viewing);
+    }
+
+    function stripRow(post, it) {
+      var missing = !it.exists;
+      var roleLabel = { report: 'FixC', twin: '텍스트판', picks: 'Daily Picks', daily: '데일리', material: it.index ? '참고 ' + it.index : '참고' }[it.role] || '';
+      var bits = [];
+      if (it.institution) bits.push(it.institution);
+      if (it.publication_date) bits.push('발간 ' + fmtPub(it.publication_date));
+      if (it.size) bits.push(fmtBytes(it.size));
+      if (it.kind === 'link') bits.push(missing && it.unresolved ? '파일명: ' + it.repoPath : it.repoPath);
+      var buttons = [];
+      if (!missing) buttons.push(el('button', { type: 'button', class: 'btn ghost small', text: '내려받기', onclick: function (e) { e.stopPropagation(); download(it); } }));
+      if (it.rendering) buttons.push(el('button', { type: 'button', class: 'btn ghost small', text: '판독본', onclick: function (e) { e.stopPropagation(); setHash(post, it.rendering, true); view(post, renderingItem(it)); } }));
+      if (!missing) buttons.push(el('a', { class: 'btn ghost small', href: client().webUrlAt(it.repoPath, state.ref || state.cfg.branch || 'main'), target: '_blank', rel: 'noopener noreferrer', text: 'GitHub', onclick: function (e) { e.stopPropagation(); } }));
+      var row = el('li', { class: 'strip-item ' + it.kind + (missing ? ' missing' : ''), 'data-path': it.repoPath, tabindex: missing ? null : '0', role: missing ? null : 'button' }, [
+        el('span', { class: 'ptype', text: missing ? '없음' : (TYPE_LABEL[it.type] || it.ext.toUpperCase()) }),
+        el('span', { class: 'strip-main' }, [
+          el('span', { class: 'strip-label' }, [roleLabel ? el('span', { class: 'role', text: roleLabel }) : null, it.label]),
+          bits.length ? el('span', { class: 'strip-meta', text: bits.join(' · ') }) : null,
+          it.note ? el('span', { class: 'strip-note', text: it.note }) : null,
+          missing ? el('span', { class: 'strip-note bad', text: it.unresolved ? '저장소에서 이 이름의 파일을 찾지 못했습니다. Daily Picks 의 파일명을 확인하세요.' : '저장소에 이 경로의 파일이 없습니다.' }) : null
+        ]),
+        el('span', { class: 'strip-actions' }, buttons)
+      ]);
+      if (!missing) {
+        var open = function () { setHash(post, it.repoPath, true); view(post, it); };
+        row.addEventListener('click', open);
+        row.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+      }
+      return row;
+    }
+
+    /** Point the address at a post (and one of its files). `replace` records it without routing. */
+    function setHash(post, filePath, replace) {
+      var h = '#post=' + encodeURIComponent(post.id) + (filePath ? '&file=' + encodeURIComponent(filePath) : '');
+      if (location.hash === h) return;
+      if (replace && history.replaceState) history.replaceState(null, '', h); else location.hash = h;
     }
 
     function emptyBody(post) {
@@ -979,60 +1014,113 @@
       markViewing(post, null);
     }
 
-    function markViewing(post, ref) {
-      state.viewing = ref;
-      var isBody = !!(ref && ref.file && post.body && ref.file.path === post.body.path);
-      var bar = $('viewing');
-      bar.hidden = !ref || isBody;
-      $('viewing-name').textContent = ref ? (ref.rendering ? '판독본 · ' : (ref.pick ? '원문 · ' : '')) + ref.name : '';
-      Array.prototype.forEach.call(document.querySelectorAll('#post-files .file, #view-post .pick'), function (li) {
-        li.classList.toggle('current', !!ref && li.getAttribute('data-path') === (ref.rendering && ref.pick ? ref.pick.path : ref.repoPath));
+    function markViewing(post, it) {
+      state.viewing = it;
+      $('viewing-name').textContent = it ? it.name : '';
+      $('viewing').hidden = !it;
+      var dl = $('viewing-download');
+      dl.hidden = !it;
+      dl.onclick = function () { if (it) download(it); };
+      Array.prototype.forEach.call(document.querySelectorAll('#post-strip .strip-item'), function (li) {
+        li.classList.toggle('current', !!it && li.getAttribute('data-path') === (it.of ? it.of.repoPath : it.repoPath));
       });
     }
 
-    function download(ref) {
+    function download(it) {
       setStatus('내려받는 중…');
-      client().blobAt(ref.repoPath, ref.ext).then(function (blob) {
-        var a = el('a', { href: objectUrl(blob), download: ref.name }); document.body.appendChild(a); a.click(); a.remove();
+      client().blobAt(it.repoPath, it.ext).then(function (blob) {
+        var a = el('a', { href: objectUrl(blob), download: it.name }); document.body.appendChild(a); a.click(); a.remove();
         setStatus(statusCount());
-      }).catch(function (err) { err.path = ref.repoPath; note(escapeHtml(explainError(err, state.cfg)), 'bad'); setStatus('오류', 'bad'); });
+      }).catch(function (err) { err.path = it.repoPath; note(escapeHtml(explainError(err, state.cfg)), 'bad'); setStatus('오류', 'bad'); });
     }
 
-    function preview(post, ref) {
+    /* ---- the viewer */
+    function view(post, it) {
       var body = $('post-body');
       body.className = 'body';
-      body.replaceChildren(el('p', { class: 'empty', text: ref.name + ' 불러오는 중…' }));
+      body.replaceChildren(el('p', { class: 'empty', text: it.name + ' 불러오는 중…' }));
       body.setAttribute('aria-busy', 'true');
-      markViewing(post, ref);
+      markViewing(post, it);
       var token = {}; state.previewToken = token;
-      client().blobAt(ref.repoPath, ref.ext).then(function (blob) {
+      client().blobAt(it.repoPath, it.ext).then(function (blob) {
         if (state.previewToken !== token) return;
-        if (ref.type === 'markdown') {
+        if (it.type === 'pdf') return showPdf(body, blob, it, token);
+        if (it.type === 'markdown') {
           return blob.text().then(function (text) {
+            if (state.previewToken !== token) return;
             body.className = 'body prose';
             body.innerHTML = renderMarkdown(text);
-            resolveLinks(post, ref, body);
+            resolveLinks(post, it, body);
           });
         }
-        if (ref.type === 'html') {
-          return blob.text().then(function (html) { return inlineHtmlImages(html, dirname(ref.repoPath)); }).then(function (html) {
-            var frame = el('iframe', { class: 'frame html', sandbox: '', title: ref.name });
+        if (it.type === 'html') {
+          return blob.text().then(function (html) { return inlineHtmlImages(html, dirname(it.repoPath)); }).then(function (html) {
+            if (state.previewToken !== token) return;
+            var frame = el('iframe', { class: 'frame html', sandbox: '', title: it.name });
             frame.srcdoc = html;
             body.replaceChildren(frame);
             frame.addEventListener('load', function () { try { frame.style.height = Math.max(600, frame.contentDocument.documentElement.scrollHeight + 24) + 'px'; } catch (e) { frame.style.height = '80vh'; } });
           });
         }
-        if (ref.type === 'text') return blob.text().then(function (text) { body.replaceChildren(el('pre', { class: 'plain', text: text })); });
-        if (ref.type === 'pdf') { body.replaceChildren(el('iframe', { class: 'frame pdf', src: objectUrl(blob), title: ref.name })); return; }
-        if (ref.type === 'image') { body.replaceChildren(el('img', { class: 'picture', src: objectUrl(blob), alt: ref.name })); return; }
-        var a = el('a', { href: objectUrl(blob), download: ref.name, class: 'btn', text: ref.name + ' 내려받기' });
+        if (it.type === 'text') return blob.text().then(function (text) { if (state.previewToken === token) body.replaceChildren(el('pre', { class: 'plain', text: text })); });
+        if (it.type === 'image') { body.replaceChildren(el('img', { class: 'picture', src: objectUrl(blob), alt: it.name })); return; }
+        var a = el('a', { href: objectUrl(blob), download: it.name, class: 'btn', text: it.name + ' 내려받기' });
         body.replaceChildren(el('p', { class: 'empty' }, ['이 형식은 미리볼 수 없습니다. ', a]));
       }).catch(function (err) {
         if (state.previewToken !== token) return;
-        err.path = ref.repoPath;
+        err.path = it.repoPath;
         body.className = 'body';
         body.replaceChildren(el('p', { class: 'empty bad', text: explainError(err, state.cfg) }));
-      }).then(function () { body.removeAttribute('aria-busy'); });
+      }).then(function () { if (state.previewToken === token) body.removeAttribute('aria-busy'); });
+    }
+
+    /** PDFs are drawn page by page with pdf.js, so they open on every browser (a phone's browser has no
+        viewer of its own, and an <iframe> of a blob shows nothing there). Falls back to the browser's
+        viewer when the library cannot be loaded. */
+    function loadPdfJs() {
+      if (!state.pdfjs) {
+        state.pdfjs = import(PDFJS.lib).then(function (lib) { lib.GlobalWorkerOptions.workerSrc = PDFJS.worker; return lib; });
+        state.pdfjs.catch(function () { state.pdfjs = null; });
+      }
+      return state.pdfjs;
+    }
+    function showPdf(body, blob, it, token) {
+      return blob.arrayBuffer().then(function (buf) {
+        return loadPdfJs().then(function (lib) {
+          return lib.getDocument({ data: buf, cMapUrl: PDFJS.cmaps, cMapPacked: true, standardFontDataUrl: PDFJS.fonts }).promise;
+        });
+      }).then(function (pdf) {
+        if (state.previewToken !== token) return;
+        var pages = el('div', { class: 'pdf-pages' });
+        var count = el('span', { class: 'pdf-count', text: pdf.numPages + '면' });
+        body.className = 'body pdf';
+        body.replaceChildren(el('div', { class: 'pdf-bar' }, [
+          el('span', { class: 'pdf-name', text: it.name }), count,
+          el('a', { class: 'btn ghost small', href: objectUrl(blob), download: it.name, text: '내려받기' }),
+          el('a', { class: 'btn ghost small', href: objectUrl(blob), target: '_blank', rel: 'noopener', text: '새 창에서' })
+        ]), pages);
+        var width = Math.max(280, pages.clientWidth || body.clientWidth - 32);
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        function renderPage(n) {
+          if (n > pdf.numPages || state.previewToken !== token) return Promise.resolve();
+          return pdf.getPage(n).then(function (pg) {
+            var base = pg.getViewport({ scale: 1 });
+            var vp = pg.getViewport({ scale: (width / base.width) * dpr });
+            var canvas = el('canvas', { class: 'pdf-page', 'aria-label': n + '면' });
+            canvas.width = Math.floor(vp.width); canvas.height = Math.floor(vp.height);
+            pages.appendChild(canvas);
+            return pg.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+          }).then(function () { count.textContent = Math.min(n, pdf.numPages) + ' / ' + pdf.numPages + '면'; return renderPage(n + 1); });
+        }
+        return renderPage(1);
+      }).catch(function (err) {
+        if (state.previewToken !== token) return;
+        body.className = 'body';
+        body.replaceChildren(
+          el('p', { class: 'empty', text: 'PDF 뷰어를 불러오지 못해 브라우저의 뷰어로 엽니다 (' + (err && err.message ? err.message : err) + ').' }),
+          el('iframe', { class: 'frame pdf', src: objectUrl(blob), title: it.name }),
+          el('p', null, [el('a', { class: 'btn', href: objectUrl(blob), download: it.name, text: it.name + ' 내려받기' })]));
+      });
     }
 
     /** A rendering's figures sit next to it ("<name>.assets/"); fetch them so the sandboxed frame shows them. */
@@ -1058,42 +1146,43 @@
     /** Images and links in a Markdown body: the post's own files first, then any file of the repository
         (a repository path, a relative path or a GitHub URL). Without a desk index the repository links
         found in a report become its picks. */
-    function resolveLinks(post, ref, container) {
+    function resolveLinks(post, it, container) {
       var byName = {};
       post.files.forEach(function (f) { byName[f.path.toLowerCase()] = f; byName[f.name.toLowerCase()] = f; });
-      var fileDir = dirname(ref.repoPath);
-      function ownFile(target) {
+      var fileDir = dirname(it.repoPath);
+      function ownItem(target) {
         var r; try { r = decodeURIComponent(target); } catch (e) { r = target; }
         r = r.replace(/^\.\//, '').toLowerCase();
-        if (byName[r]) return byName[r];
-        var hit = null;
-        post.files.forEach(function (f) { if (!hit && f.path.toLowerCase().slice(-r.length) === r) hit = f; });
-        return hit || byName[r.split('/').pop()] || null;
+        var f = byName[r] || null;
+        if (!f) post.files.forEach(function (x) { if (!f && x.path.toLowerCase().slice(-r.length) === r) f = x; });
+        if (!f) f = byName[r.split('/').pop()] || null;
+        if (!f) return null;
+        return state.items.filter(function (x) { return x.repoPath === client().rootPath + '/' + f.path; })[0] ||
+          { kind: 'file', role: 'twin', repoPath: client().rootPath + '/' + f.path, name: f.name, label: f.name, note: '', size: f.size, ext: f.ext, type: f.type, exists: true, post: post };
       }
       Array.prototype.forEach.call(container.querySelectorAll('img[data-src]'), function (img) {
-        var target = img.getAttribute('data-src'), f = ownFile(target);
-        var paths = f ? [client().rootPath + '/' + f.path] : repoPathCandidates(target, state.cfg, fileDir);
+        var target = img.getAttribute('data-src'), own = ownItem(target);
+        var paths = own ? [own.repoPath] : repoPathCandidates(target, state.cfg, fileDir);
         if (!paths.length) { img.replaceWith(el('span', { class: 'missing', text: '[그림 없음: ' + target + ']' })); return; }
         firstBlob(paths).then(function (r) { img.src = objectUrl(r.blob); }).catch(function () { img.replaceWith(el('span', { class: 'missing', text: '[그림을 불러오지 못했습니다: ' + target + ']' })); });
       });
       var found = [];
       Array.prototype.forEach.call(container.querySelectorAll('a[data-href], a[href^="https://github.com/"], a[href^="https://raw.githubusercontent.com/"]'), function (a) {
         var target = a.getAttribute('data-href') || a.getAttribute('href');
-        var f = a.hasAttribute('data-href') ? ownFile(target) : null;
-        if (f) {
-          var fr = fileRef(f);
+        var own = a.hasAttribute('data-href') ? ownItem(target) : null;
+        if (own) {
           a.href = '#';
-          a.addEventListener('click', function (e) { e.preventDefault(); if (fr.type === 'binary') download(fr); else { setHash(post, null, true); preview(post, fr); } });
+          a.addEventListener('click', function (e) { e.preventDefault(); if (own.type === 'binary') download(own); else { setHash(post, own.repoPath, true); view(post, own); } });
           return;
         }
         var paths = repoPathCandidates(target, state.cfg, fileDir);
         if (!paths.length) { if (a.hasAttribute('data-href')) a.removeAttribute('href'); return; }
-        var known = dayPicks(post).filter(function (k) { return paths.indexOf(k.path) >= 0; })[0];
-        if (known) paths = [known.path].concat(paths.filter(function (c) { return c !== known.path; }));
+        var known = state.items.filter(function (k) { return paths.indexOf(k.repoPath) >= 0; })[0];
+        if (known) paths = [known.repoPath].concat(paths.filter(function (c) { return c !== known.repoPath; }));
         a.classList.add('repo-link');
         a.title = paths[0];
         if (!a.hasAttribute('target')) a.href = client().webUrlAt(paths[0], state.ref || state.cfg.branch || 'main');
-        if (!known && paths[0].indexOf(client().rootPath + '/') !== 0) found.push({ path: paths[0], text: a.textContent, note: noteAfter(a), candidates: paths });
+        if (!known && paths[0].indexOf(client().rootPath + '/') !== 0) found.push({ path: paths[0], text: a.textContent, note: noteAfter(a) });
         a.addEventListener('click', function (e) {
           if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;      // let the browser open GitHub
           e.preventDefault();
@@ -1101,8 +1190,8 @@
         });
       });
       if (!post.indexed && found.length) {
-        found.forEach(function (k) { if (!post.picks.some(function (q) { return q.path === k.path; })) post.picks.push({ path: k.path, text: k.text, note: k.note, candidates: k.candidates }); });
-        refreshPickPanels(post);
+        found.forEach(function (k) { if (!post.picks.some(function (q) { return q.path === k.path; })) post.picks.push({ path: k.path, text: k.text, note: k.note }); });
+        renderStrip(post);
         renderList();
       }
     }
@@ -1120,14 +1209,15 @@
       }
       return next(null);
     }
-    function openRepoPaths(post, paths, pk) {
+    function openRepoPaths(post, paths, known) {
       setStatus('여는 중…');
       firstBlob(paths).then(function (r) {
         setStatus(statusCount());
-        var ref = refOf(r.path, r.blob.size, pk ? { pick: pk } : {});
-        if (ref.type === 'binary') { var a = el('a', { href: objectUrl(r.blob), download: ref.name }); document.body.appendChild(a); a.click(); a.remove(); return; }
+        var name = basename(r.path), ext = splitExt(name).ext;
+        var it = known || { kind: 'link', role: 'material', repoPath: r.path, name: name, label: name, note: '', size: r.blob.size, ext: ext, type: typeOf(ext), exists: true, post: post };
+        if (it.type === 'binary') { var a = el('a', { href: objectUrl(r.blob), download: it.name }); document.body.appendChild(a); a.click(); a.remove(); return; }
         setHash(post, r.path, true);
-        preview(post, ref);
+        view(post, it);
       }).catch(function (err) {
         err.path = paths[0];
         setStatus('오류', 'bad');
@@ -1137,16 +1227,18 @@
 
     function route() {
       var h = location.hash || '';
-      var m = /^#post=([^&]+)(?:&pick=(.+))?$/.exec(h);
+      var m = /^#post=([^&]+)(?:&(?:file|pick)=(.+))?$/.exec(h);
       if (m) {
-        var id = decodeURIComponent(m[1]), pickPath = m[2] ? decodeURIComponent(m[2]) : null;
+        var id = decodeURIComponent(m[1]), filePath = m[2] ? decodeURIComponent(m[2]) : null;
         var post = state.posts.filter(function (p) { return p.id === id; })[0];
-        if (post) { showPost(post, pickPath); return; }
+        if (post) { showPost(post, filePath); return; }
         var elsewhere = state.allPosts.filter(function (p) { return p.id === id; })[0];
         if (elsewhere) { location.replace(other + h); return; }                 // the post lives on the other board
         if (state.allPosts.length) note('그 글을 찾지 못했습니다: ' + escapeHtml(id), 'warn');
       }
-      state.current = null; state.viewing = null;
+      var pg = /^#page=(\d+)$/.exec(h);
+      if (pg) { state.pageNo = Math.max(1, +pg[1]); renderList(); }
+      state.current = null; state.viewing = null; state.items = [];
       revokeAll();
       views.post.hidden = true; views.list.hidden = false;
       document.title = pageTitle() + ' - Fin Lab - Lobby';
@@ -1156,9 +1248,10 @@
     load();
   }
 
-  var api = { DEFAULTS: DEFAULTS, INDEX_FILE: INDEX_FILE, parseName: parseName, kindOf: kindOf, groupPosts: groupPosts, indexMeta: indexMeta,
-    parsePicksText: parsePicksText, renderMarkdown: renderMarkdown, inline: inline, scanLinks: scanLinks, repoPathCandidates: repoPathCandidates,
-    normPath: normPath, escapeHtml: escapeHtml, safeUrl: safeUrl, fmtBytes: fmtBytes, fmtDate: fmtDate, fmtPeriod: fmtPeriod, fmtMonth: fmtMonth,
+  var api = { DEFAULTS: DEFAULTS, INDEX_FILE: INDEX_FILE, PAGE_SIZE: PAGE_SIZE, PDFJS: PDFJS, parseName: parseName, kindOf: kindOf,
+    groupPosts: groupPosts, postItems: postItems, defaultItem: defaultItem, indexMeta: indexMeta, parsePicksText: parsePicksText,
+    renderMarkdown: renderMarkdown, inline: inline, scanLinks: scanLinks, repoPathCandidates: repoPathCandidates, normPath: normPath,
+    escapeHtml: escapeHtml, safeUrl: safeUrl, fmtBytes: fmtBytes, fmtDate: fmtDate, fmtPeriod: fmtPeriod, fmtShort: fmtShort,
     typeOf: typeOf, mimeOf: mimeOf, toIsoDate: toIsoDate, GitHub: GitHub, explainError: explainError, startPage: startPage };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

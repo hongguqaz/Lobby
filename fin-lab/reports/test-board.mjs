@@ -1,5 +1,5 @@
-/* Fin Lab boards - tests for the pure helpers (names, grouping, Daily Picks text, Markdown, paths).
-   Run: node fin-lab/reports/test-board.mjs   (from the Lobby repository root, Node 18+) */
+/* Fin Lab boards - tests for the pure helpers (names, grouping, a post's files, Daily Picks text,
+   Markdown, paths).  Run: node fin-lab/reports/test-board.mjs   (from the Lobby repository root, Node 18+) */
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 
@@ -22,10 +22,8 @@ test('parseName: the title is the file name as it came; the date is read from an
   assert.deepEqual([p.date, p.dateEnd, p.title, p.kind], ['2026-10-08', '2026-10-10', 'FixC_Catchup_261008-261010_2of2', 'note']);
   p = B.parseName('(261011) 금리 상승 재료 점검.md');
   assert.deepEqual([p.date, p.title, p.kind], ['2026-10-11', '(261011) 금리 상승 재료 점검', 'daily']);
-  p = B.parseName('2026-10-11 KOSPI 리스크 점검.html');
-  assert.deepEqual([p.date, p.ext], ['2026-10-11', 'html']);
   p = B.parseName('FixC_0226_daily_report.pdf');                 // 4 digits are not a date
-  assert.deepEqual([p.date, p.kind], [null, 'daily']);            // ... but "daily" in the name still says what it is
+  assert.deepEqual([p.date, p.kind], [null, 'daily']);
   assert.equal(B.parseName('report 3200pt 123456789.md').date, null);
   assert.equal(B.parseName('(261399) 제목.md').date, null);
   assert.equal(B.parseName('261012_FixC_Daily_Picks.md').kind, 'picks');
@@ -53,6 +51,8 @@ const FILES = [
   { path: 'weekly/261006-261010_FixC_Weekly_W9.pdf', name: '261006-261010_FixC_Weekly_W9.pdf', size: 1481146 },
   { path: '.fin-desk/board.json', name: 'board.json', size: 100 },
 ];
+const ROOT = 'fin-lab/FixC report';
+const PDF1 = 'fin-lab/Fin Docraw/20261012_mail_홍상준_1485_DB증권.pdf';
 
 test("groupPosts: FixC's folder - a PDF and its .md twin are one post, in time order, picks files apart", () => {
   const posts = B.groupPosts(FILES, null);
@@ -64,14 +64,14 @@ test("groupPosts: FixC's folder - a PDF and its .md twin are one post, in time o
   assert.deepEqual(posts.map((p) => p.kind), ['daily', 'picks', 'daily', 'picks', 'weekly', 'note', 'note']);
   const daily = posts[0];
   assert.equal(daily.id, 'daily/261012_fixc_daily');
-  assert.deepEqual(daily.attachments.map((f) => f.ext), ['md', 'pdf']);
+  assert.deepEqual(daily.attachments.map((f) => f.ext), ['pdf', 'md']);        // the PDF is the report people read
   assert.equal(daily.body.name, '261012_FixC_Daily.md');
   assert.equal(daily.size, 24725 + 1296539);
   assert.equal(daily.picksFile, false);
   assert.equal(daily.picksPost, posts[1]);                                   // the same day's Daily Picks
   assert.equal(posts[1].picksFile, true);
   assert.equal(posts[1].reportPost, daily);
-  assert.equal(posts[4].picksPost, null);                                    // the weekly has no picks file of its own day
+  assert.equal(posts[4].picksPost, null);
   assert.equal(posts[5].dateEnd, '2026-10-10');
   assert.ok(posts.every((p) => p.indexed === false && p.picks.length === 0));
 });
@@ -79,7 +79,7 @@ test("groupPosts: FixC's folder - a PDF and its .md twin are one post, in time o
 test('groupPosts: the desk index dates an undated name, adds picks and the heading', () => {
   const meta = B.indexMeta({ generator: 'Fin Desk 1.0.0', files: [
     { path: 'daily/261012_FixC_Daily_Picks.md', bytes: 7647, registered: '2026-10-13', picks_file: true, heading: '261012 FixC Daily Picks — 오늘의 선별 자료',
-      picks: [{ path: 'fin-lab/Fin Docraw/20261012_mail_김성수_1435.pdf', text: '2026.10.12, 「FI Weekly」, 김성수, 한화', note: '', exists: true, kind: 'pdf', bytes: 1000 }] },
+      picks: [{ path: PDF1, text: '2026.10.12, 「오만과 편견」, 문홍철, DB증권', note: '', exists: true, kind: 'pdf', bytes: 1000 }] },
     { path: 'notes/FixC_STATE_handover.md', bytes: 500, registered: '2026-10-13', heading: '인계 상태' },
   ] });
   const posts = B.groupPosts(FILES.concat([{ path: 'notes/FixC_STATE_handover.md', name: 'FixC_STATE_handover.md', size: 500 }]), meta);
@@ -89,7 +89,47 @@ test('groupPosts: the desk index dates an undated name, adds picks and the headi
   const picks = posts.filter((p) => p.title === '261012_FixC_Daily_Picks')[0];
   assert.equal(picks.picks.length, 1);
   assert.equal(picks.reportPost.title, '261012_FixC_Daily');
-  assert.equal(posts[0].title, 'FixC_STATE_handover');                       // newest day first
+  assert.equal(posts[0].title, 'FixC_STATE_handover');
+});
+
+test("postItems: a report's strip - its PDF, its .md, the day's picks file, then the picked originals", () => {
+  const meta = B.indexMeta({ files: [
+    { path: 'daily/261012_FixC_Daily_Picks.md', picks_file: true, picks: [
+      { path: PDF1, text: '2026.10.12, 「오만과 편견」, 문홍철, DB증권', note: '', exists: true, kind: 'pdf', bytes: 1000, rendering: 'fin-lab/Fin Docai/x.html' },
+      { path: 'nope.pdf', text: '없는 자료', exists: false, unresolved: true },
+    ] },
+  ] });
+  const posts = B.groupPosts(FILES, meta);
+  const daily = posts[0];
+  const items = B.postItems(daily, ROOT);
+  assert.deepEqual(items.map((i) => [i.kind, i.role, i.name]), [
+    ['file', 'report', '261012_FixC_Daily.pdf'],
+    ['file', 'twin', '261012_FixC_Daily.md'],
+    ['file', 'picks', '261012_FixC_Daily_Picks.md'],
+    ['link', 'material', '20261012_mail_홍상준_1485_DB증권.pdf'],
+    ['link', 'material', 'nope.pdf'],
+  ]);
+  assert.equal(items[0].repoPath, ROOT + '/daily/261012_FixC_Daily.pdf');
+  assert.equal(items[3].label, '2026.10.12, 「오만과 편견」, 문홍철, DB증권');
+  assert.equal(items[3].rendering, 'fin-lab/Fin Docai/x.html');
+  assert.equal(items[3].index, 1);
+  assert.deepEqual([items[4].exists, items[4].unresolved], [false, true]);
+  assert.equal(B.defaultItem(items).name, '261012_FixC_Daily.pdf');           // FixC's PDF opens first
+  // a picks post: its own file, the originals, then the day's report files
+  const pk = posts[1];
+  const pitems = B.postItems(pk, ROOT);
+  assert.deepEqual(pitems.map((i) => [i.kind, i.role, i.name]), [
+    ['file', 'picks', '261012_FixC_Daily_Picks.md'],
+    ['link', 'material', '20261012_mail_홍상준_1485_DB증권.pdf'],
+    ['link', 'material', 'nope.pdf'],
+    ['file', 'daily', '261012_FixC_Daily.pdf'],
+    ['file', 'daily', '261012_FixC_Daily.md'],
+  ]);
+  assert.equal(B.defaultItem(pitems).name, '261012_FixC_Daily_Picks.md');    // the picks file itself opens first
+  // a note without a PDF opens its .md; a post with only unreadable files has no default
+  const note = posts.filter((p) => p.kind === 'note')[0];
+  assert.equal(B.defaultItem(B.postItems(note, ROOT)).type, 'markdown');
+  assert.equal(B.defaultItem([{ kind: 'file', role: 'report', type: 'binary', exists: true }]), null);
 });
 
 const PICKS_MD = `# 261012 FixC Daily Picks — 오늘의 선별 자료
@@ -182,16 +222,19 @@ test('repoPathCandidates: repository paths, relative paths and GitHub URLs of th
   assert.equal(B.normPath('a/./b/../c//d/'), 'a/c/d');
 });
 
-test('formatting helpers', () => {
+test('formatting helpers and constants', () => {
   assert.equal(B.fmtBytes(512), '512 B');
   assert.equal(B.fmtBytes(2048), '2.0 KB');
   assert.equal(B.fmtBytes(3 * 1048576), '3.0 MB');
   assert.equal(B.fmtDate('2026-10-11', true), '2026.10.11 (일)');
-  assert.equal(B.fmtMonth('2026-10-11'), '2026년 10월');
   assert.equal(B.fmtPeriod({ date: '2026-10-06', dateEnd: '2026-10-10' }), '2026.10.06 ~ 2026.10.10');
+  assert.equal(B.fmtShort({ date: '2026-10-06', dateEnd: '2026-10-10' }), '26.10.06~10.10');
+  assert.equal(B.fmtShort({ date: '2026-10-12', dateEnd: null }), '26.10.12');
   assert.equal(B.typeOf('md'), 'markdown'); assert.equal(B.typeOf('docx'), 'binary'); assert.equal(B.typeOf('png'), 'image');
   assert.equal(B.mimeOf('pdf'), 'application/pdf');
   assert.equal(B.DEFAULTS.path, 'fin-lab/FixC report');
+  assert.equal(B.PAGE_SIZE, 20);
+  assert.equal(B.PDFJS.version, '4.10.38');
 });
 
 test('explainError names the path on 404 and the token on 401', () => {

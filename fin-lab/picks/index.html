@@ -55,6 +55,7 @@
       </form>
 
       <div class="board" id="post-list" aria-live="polite"></div>
+      <nav class="pager" id="pager" aria-label="쪽" hidden></nav>
     </section>
 
     <section id="view-post" hidden>
@@ -64,16 +65,10 @@
         <p class="heading" id="post-heading" hidden></p>
         <div class="meta"><span id="post-date"></span><span class="kind" id="post-kind"></span></div>
       </div>
-      <section class="picks" id="post-picks" hidden aria-labelledby="post-picks-title">
-        <h3 id="post-picks-title">선별 자료 <span class="sub">원문·판독본 바로 열기</span></h3>
-        <p class="picks-note"></p>
-        <ol class="pick-list"></ol>
-      </section>
-
-      <ul class="files" id="post-files" aria-label="첨부 파일"></ul>
-      <div class="viewing" id="viewing" hidden><span id="viewing-name"></span><button type="button" class="btn ghost" id="btn-body">&larr; 본문으로</button></div>
+      <ol class="strip" id="post-strip" aria-label="이 글의 파일"></ol>
+      <p class="picks-note" id="strip-note" hidden></p>
+      <div class="viewing" id="viewing" hidden><span id="viewing-name"></span><button type="button" class="btn ghost small" id="viewing-download">내려받기</button></div>
       <article class="body prose" id="post-body"></article>
-
       <div class="cross-links" id="post-cross" hidden></div>
     </section>
 
