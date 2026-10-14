@@ -26,13 +26,13 @@
 
     <section id="view-list">
       <div class="toolbar" role="search">
-        <input type="search" id="search" placeholder="제목·날짜·파일명·픽으로 찾기" aria-label="검색" autocomplete="off">
+        <input type="search" id="search" placeholder="제목·날짜·파일명·참고 자료로 찾기" aria-label="검색" autocomplete="off">
         <select id="kind" aria-label="종류">
           <option value="all">전체</option>
           <option value="daily">일간</option>
           <option value="weekly">주간</option>
           <option value="note">노트</option>
-          <option value="picks">픽 있는 글</option>
+          <option value="picks">참고 자료 있는 글</option>
         </select>
         <button type="button" class="btn ghost icon" id="btn-refresh" title="다시 읽기" aria-label="다시 읽기">&#8635;</button>
         <button type="button" class="btn ghost icon" id="btn-settings" title="설정" aria-label="설정" aria-expanded="false" aria-controls="settings">&#9881;</button>
@@ -60,12 +60,8 @@
         </div>
       </form>
 
-      <section class="picks recent-picks" id="recent-picks" hidden aria-labelledby="recent-picks-title">
-        <h2 id="recent-picks-title">최근 FixC Daily Picks <span class="sub">데일리가 원문을 읽어 보라고 고른 자료</span></h2>
-        <ol id="recent-picks-list" class="pick-list"></ol>
-      </section>
-
       <div class="board" id="post-list" aria-live="polite"></div>
+      <nav class="pager" id="pager" aria-label="쪽" hidden></nav>
     </section>
 
     <section id="view-post" hidden>
@@ -75,16 +71,10 @@
         <p class="heading" id="post-heading" hidden></p>
         <div class="meta"><span id="post-date"></span><span class="kind" id="post-kind"></span></div>
       </div>
-
-      <ul class="files" id="post-files" aria-label="첨부 파일"></ul>
-      <div class="viewing" id="viewing" hidden><span id="viewing-name"></span><button type="button" class="btn ghost" id="btn-body">&larr; 본문으로</button></div>
+      <ol class="strip" id="post-strip" aria-label="이 글의 파일"></ol>
+      <p class="picks-note" id="strip-note" hidden></p>
+      <div class="viewing" id="viewing" hidden><span id="viewing-name"></span><button type="button" class="btn ghost small" id="viewing-download">내려받기</button></div>
       <article class="body prose" id="post-body"></article>
-      <section class="picks" id="post-day-picks" hidden aria-labelledby="post-day-picks-title">
-        <h3 id="post-day-picks-title">FixC Daily Picks <span class="sub">이 날 데일리가 고른 원문</span></h3>
-        <p class="picks-note"></p>
-        <ol class="pick-list"></ol>
-      </section>
-
       <div class="cross-links" id="post-cross" hidden></div>
     </section>
 
