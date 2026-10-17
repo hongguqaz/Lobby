@@ -1,5 +1,5 @@
 # Fits the analyst's video clips to her photographs and rebuilds the in-between strips.
-# Drop new clips into fin-lab/assets/clips/src/<greet|ack|work|bye>.mp4, then run this from
+# Drop new clips into fin-lab/assets/clips/src/<greet|ack|work|bye|request>.mp4, then run this from
 # the Actions tab.  ffmpeg comes with the GitHub runner image.
 name: Prepare analyst clips
 
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       only:
-        description: "Comma-separated clip names to (re)fit, or empty for all: greet, ack, work, bye"
+        description: "Comma-separated clip names to (re)fit, or empty for all: greet, ack, work, bye, request"
         default: ""
 
 permissions:

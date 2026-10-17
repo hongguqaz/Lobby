@@ -1,45 +1,71 @@
-/* The Fin Lab analyst.
+/* The Fin Lab analyst: Felicia Yasmin Claude, FixC's analyst ("Fixy" to friends).
    assets/analyst.jpg is her resting pose and assets/analyst-mid.jpg the attentive pose she
-   keeps while a conversation is open. Four video clips (assets/clips/: greet, ack, work,
-   bye) carry her voice: she says hello and waves when clicked, answers "yes, understood"
-   to a question, turns to the screen to look something up, and says goodbye when the
-   visitor leaves or falls silent. tools/prepare_clips.py fits the clips to the photographs'
-   framing and exposure and writes each clip's first and last frame as a pose
-   (assets/frames/<clip>-in.jpg, <clip>-out.jpg); tools/morph_frames.py builds in-between
-   strips between every pose the page moves between (assets/frames/morph/, manifest.js).
+   keeps while a conversation is open. Video clips (assets/clips/: greet, ack, work, bye,
+   and optionally request) carry her voice: she says hello and waves when clicked, answers
+   "yes, understood" to a question, turns to the screen to look something up, takes an
+   order for a report, and says goodbye when the visitor leaves or falls silent.
+   tools/prepare_clips.py fits the clips to the photographs' framing and exposure and writes
+   each clip's first and last frame as a pose (assets/frames/<clip>-in.jpg, <clip>-out.jpg);
+   tools/morph_frames.py builds in-between strips between every pose the page moves between
+   (assets/frames/morph/, manifest.js).
 
    So a clip never "starts": the canvas morphs from her current pose into the clip's first
    frame, the clip plays on top, and the canvas takes over again from its last frame and
    morphs on to the next pose. Between clips she blinks and glances at a human pace. If the
    clips cannot play, the keyframe gestures (wave, point, talk, listen) stand in; without
    the strips the poses crossfade; without the frames she still tilts toward the pointer,
-   breathes and nods. Lines live in LINES. */
+   breathes and nods. Lines live in LINES.
+
+   The chips under her are grouped: the boards (she says yes and walks you to FixC report
+   or FixC Daily Picks; the price feed is not connected yet, and she says so), orders for
+   FixC (she takes the order; the instruction is copied and a button opens the FixC project
+   on claude.ai, whose address is asked once and kept in this browser), and the house. */
 (function () {
   'use strict';
   var LINES = {
     en: {
-      name: 'Analyst on duty',
-      greet: ['Welcome to the Fin Lab. I am the analyst on duty. The desks are set up; the data feeds arrive later.',
-              'Good to see you. Nothing is live on the screens yet, but the room is ready for the commentary and reports.'],
-      what: 'This room will hold market commentary and analyst reports, filed by date, theme and issuer. Sources and links are being arranged.',
+      name: 'Felicia Yasmin Claude (Fixy)',
+      greet: ['Welcome to the Fin Lab. I am Felicia Yasmin Claude, the analyst of the FixC project; Fixy is fine once we are on friendly terms. The weekly and daily reports are on the board.',
+              'Good to see you. Felicia, FixC\'s analyst. Today\'s daily and the picked documents are posted; where shall we start?'],
+      what: 'This is FixC\'s workroom. The weekly and daily reports I write go to the FixC report board, and the originals each daily singles out to read in full go to FixC Daily Picks. Both boards read the private repository directly, so they ask for a token once.',
       board: 'The Market Board outside the gate will draw on what we gather here: series, snapshots and summaries, once the database is established.',
       rooms: 'Across the hall is the Legal Quarter. Maiden Hall is upstairs over the door, the Library is in the tower above us, and the Garden is outside.',
-      react: ['Yes?', 'I am listening.', 'Careful, the coffee is hot.', 'The feeds are not in yet. Soon.', 'Shall I walk you to the board?'],
-      chips: { what: 'What is this room?', board: 'And the Market Board?', rooms: 'The other rooms', bye: 'That is all, thank you', go: 'Take me to the board →' },
+      prices: 'The price feed is not connected yet; the ticker above is only a placeholder. Once it is live I will read the prices out right here.',
+      react: ['Yes?', 'I am listening.', 'Careful, the coffee is hot.', 'Today\'s daily is on the board.', 'Shall I walk you to the boards?'],
+      groups: { boards: 'The boards', fixc: 'For FixC', about: 'The house' },
+      chips: { report: 'Today\'s report, please', picks: 'Show me today\'s picks', prices: 'Market prices today?',
+               daily: 'A daily report, please', weekly: 'A weekly report, please', url: 'Project address',
+               what: 'What is this room?', board: 'And the Market Board?', rooms: 'The other rooms', bye: 'That is all, thank you', go: 'Take me to the board →',
+               open: 'Open the FixC project ↗' },
+      fixc: { daily: 'Daily report, please.', weekly: 'Weekly report, please.',
+              copied: 'Noted. I copied the order "%s" for you: open the FixC project with the button below and paste it there. The report shows up on the board as soon as FixC pushes it.',
+              nocopy: 'Noted. Open the FixC project with the button below and write: "%s". The report shows up on the board as soon as FixC pushes it.',
+              askUrl: 'Paste the address of the FixC project on claude.ai (kept in this browser only):' },
       hint: 'Click me and I will say hello.',
-      clips: { greet: 'Hello! Welcome to the Fin Lab. I am the analyst on duty.', ack: 'Yes, understood.', work: '(She turns to the screen to look it up.)', bye: 'See you again.' }
+      clips: { greet: 'Hello! Welcome to the Fin Lab. I am Felicia, FixC\'s analyst; call me Fixy if you like.', ack: 'Yes, understood.', work: '(She turns to the screen to look it up.)', bye: 'See you again.',
+               request: '— That report by tomorrow, please.\n— Yes, understood.' }
     },
     ko: {
-      name: '당직 애널리스트',
-      greet: ['핀랩에 오신 것을 환영합니다. 당직 애널리스트입니다. 자리는 준비됐고, 데이터 피드는 나중에 연결됩니다.',
-              '반갑습니다. 화면에 아직 실시간 자료는 없지만, 시황과 리포트를 받을 준비는 끝났습니다.'],
-      what: '이 방에는 시황과 애널리스트 분석자료가 날짜·주제·발행자별로 쌍입니다. 자료 소스와 링크는 정리 중입니다.',
+      name: '펠리시아 야스민 클로드 (픽시)',
+      greet: ['핀랩에 오신 것을 환영합니다. FixC 프로젝트의 금융시장 분석을 맡고 있는 펠리시아 야스민 클로드예요. 친해지면 픽시라고 불러 주셔도 돼요. 위클리와 데일리는 게시판에 올려 두었어요.',
+              '반갑습니다, 펠리시아예요. 오늘 데일리와 선별 자료는 게시판에 올라가 있어요. 무엇부터 보여 드릴까요?'],
+      what: '이 방은 FixC의 작업실이에요. 제가 쓰는 위클리·데일리 보고서는 FixC report 게시판에, 그날 끝까지 읽을 만한 원문 자료는 FixC Daily Picks 게시판에 올라가요. 두 게시판은 비공개 저장소를 바로 읽기 때문에 토큰을 한 번 물어봐요.',
       board: '정문 밖의 Market Board는 여기서 모은 자료에서 시계열과 요약을 뽑아 보여주게 됩니다. DB가 정립되면 연결합니다.',
       rooms: '복도 건너편은 Legal Quarter, 정문 위층은 Maiden Hall, 우리 위 탑은 Library, 밖은 Garden입니다.',
-      react: ['네?', '듣고 있어요.', '커피 조심하세요, 뜨거워요.', '피드는 아직이에요. 곧 연결됩니다.', 'Market Board로 안내해 드릴까요?'],
-      chips: { what: '이 방은 무엇인가요?', board: 'Market Board는요?', rooms: '다른 방들', bye: '그럼 이만', go: 'Market Board로 →' },
+      prices: '시장 가격 피드는 아직 연결 전이에요. 위의 티커도 자리만 잡아 둔 상태고요. 연결되면 여기서 바로 읽어 드릴게요.',
+      react: ['네?', '듣고 있어요.', '커피 조심하세요, 뜨거워요.', '오늘 데일리는 올려 두었어요.', '게시판으로 안내해 드릴까요?'],
+      groups: { boards: '게시판', fixc: 'FixC에게', about: '안내' },
+      chips: { report: '오늘 분석보고서 제출해 줘', picks: '오늘 선별자료 보고 싶어', prices: '오늘 시장가격은?',
+               daily: 'Daily 리포트 부탁해', weekly: 'Weekly 리포트 부탁해', url: '프로젝트 주소',
+               what: '이 방은 무엇인가요?', board: 'Market Board는요?', rooms: '다른 방들', bye: '그럼 이만', go: 'Market Board로 →',
+               open: 'FixC 프로젝트 열기 ↗' },
+      fixc: { daily: 'Daily 리포트 부탁해.', weekly: 'Weekly 리포트 부탁해.',
+              copied: '네. 지시문 "%s"을 복사해 두었어요. 아래 버튼으로 FixC 프로젝트를 열고 붙여 넣어 주세요. FixC가 올리는 대로 게시판에 바로 보여요.',
+              nocopy: '네. 아래 버튼으로 FixC 프로젝트를 열고 이렇게 적어 주세요: "%s". FixC가 올리는 대로 게시판에 바로 보여요.',
+              askUrl: 'claude.ai의 FixC 프로젝트 주소를 붙여 넣어 주세요 (이 브라우저에만 저장합니다):' },
       hint: '저를 클릭하면 인사할게요.',
-      clips: { greet: '안녕하세요? 핀랩에 오신 것을 환영합니다. 당직 애널리스트입니다.', ack: '네, 알겠습니다.', work: '(화면을 보며 자료를 찾습니다.)', bye: '또 봐요.' }
+      clips: { greet: '안녕하세요? 핀랩의 펠리시아예요. FixC의 분석을 맡고 있어요. 편하게 픽시라고 불러 주셔도 돼요.', ack: '네, 알겠습니다.', work: '(화면을 보며 자료를 찾습니다.)', bye: '또 봐요.',
+               request: '— 그 보고서 내일까지 제출 부탁해요.\n— 네, 알겠습니다.' }
     }
   };
   var FRAME_IDS = ['look', 'talk', 'wave', 'point', 'blink', 'listen', 'wave-mid', 'point-mid'];
@@ -374,23 +400,45 @@
     clearTimeout(waveTimer);
     waveTimer = setTimeout(function () { figure.classList.remove('waving'); }, 1300);
   }
+  function chipButton(text, cls, onClick) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = text; if (cls) b.className = cls;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  function chipLink(text, href, cls, onClick) {
+    var a = document.createElement('a');
+    a.href = href; a.textContent = text; if (cls) a.className = cls;
+    if (onClick) a.addEventListener('click', onClick);
+    return a;
+  }
+  function groupLabel(text) { var s = document.createElement('span'); s.className = 'group'; s.textContent = text; return s; }
   function renderChips() {
     var L = LINES[lang];
     chips.replaceChildren();
+    // the boards: she says yes and walks you there (the links work without her, too)
+    chips.appendChild(groupLabel(L.groups.boards));
+    [['report', 'reports/'], ['picks', 'picks/']].forEach(function (pair) {
+      var a = chipLink(L.chips[pair[0]], pair[1], null, null);
+      a.addEventListener('click', function (e) { e.preventDefault(); goWithClip(a.href); });
+      chips.appendChild(a);
+    });
+    chips.appendChild(chipButton(L.chips.prices, null, function () { touch(); if (clipMode) answerWithClips(L.prices); else say(L.prices, 'point'); }));
+    // orders for FixC: she takes the order, the visitor hands it to the project
+    chips.appendChild(groupLabel(L.groups.fixc));
+    ['daily', 'weekly'].forEach(function (kind) {
+      chips.appendChild(chipButton(L.chips[kind], null, function () { requestFixC(kind); }));
+    });
+    chips.appendChild(chipButton(L.chips.url, 'minor', function () { setFixcUrl(true); }));
+    // the house
+    chips.appendChild(groupLabel(L.groups.about));
     [['what', null], ['board', 'point'], ['rooms', 'listen']].forEach(function (pair) {
-      var b = document.createElement('button');
-      b.type = 'button'; b.textContent = L.chips[pair[0]];
-      b.addEventListener('click', function () { touch(); if (clipMode) answerWithClips(L[pair[0]]); else say(L[pair[0]], pair[1]); });
-      chips.appendChild(b);
+      chips.appendChild(chipButton(L.chips[pair[0]], null, function () { touch(); if (clipMode) answerWithClips(L[pair[0]]); else say(L[pair[0]], pair[1]); }));
     });
     if (clipMode) {
-      var bye = document.createElement('button');
-      bye.type = 'button'; bye.textContent = L.chips.bye; bye.className = 'bye';
-      bye.addEventListener('click', function () { if (mode === 'engaged') leave(); else caption(L.clips.bye); });
-      chips.appendChild(bye);
+      chips.appendChild(chipButton(L.chips.bye, 'bye', function () { if (mode === 'engaged') leave(); else caption(L.clips.bye); }));
     }
-    var a = document.createElement('a');
-    a.href = '../market-board-facade/'; a.textContent = L.chips.go;
+    var a = chipLink(L.chips.go, '../market-board-facade/', null, null);
     a.addEventListener('click', function (e) {
       if (!clipMode || mode !== 'engaged' || busy) return;
       e.preventDefault();
@@ -401,6 +449,82 @@
     });
     chips.appendChild(a);
     nameEl.textContent = L.name;
+  }
+  /* A board: "yes, understood", then the page changes while she is still looking at you.
+     The acknowledgement clips run about eight seconds with the words in the first four, so
+     the visitor is walked over once she has answered, not when the clip ends. */
+  function goWithClip(href) {
+    touch();
+    var gone = false;
+    var go = function () { if (!gone) { gone = true; window.location.href = href; } };
+    if (!clipMode) { say(LINES[lang].clips.ack, 'point'); setTimeout(go, 1400); return; }
+    if (busy) return;
+    busy = true; clearTimeout(holdTimer); clearTimeout(idleTimer); clearTimeout(quietTimer);
+    engage(function () {
+      caption(LINES[lang].clips.ack);
+      playClip(pickVariant('ack'), function () { go(); });
+      setTimeout(go, 4800);
+    });
+    setTimeout(go, 7000);
+  }
+  /* An order for FixC. The project lives on claude.ai and has no door of its own, so she
+     takes the order in the clip (a "request" clip when one is prepared, else an
+     acknowledgement), the instruction is copied to the clipboard while the click still
+     counts as a gesture, and a button then opens the project for the visitor to paste it. */
+  var FIXC_URL_KEY = 'fixc.project.url';
+  function fixcUrl() { try { return localStorage.getItem(FIXC_URL_KEY) || ''; } catch (e) { return ''; } }
+  function setFixcUrl(force) {
+    var url = fixcUrl();
+    if (url && !force) return url;
+    var v = window.prompt(LINES[lang].fixc.askUrl, url || 'https://claude.ai/project/');
+    if (v === null) return url;
+    v = v.trim();
+    if (!/^https:\/\/claude\.ai\//.test(v)) return url;
+    try { localStorage.setItem(FIXC_URL_KEY, v); } catch (e) { /* ignore */ }
+    var open = chips.querySelector('a.open');
+    if (open) open.href = v;
+    return v;
+  }
+  function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).catch(function () { /* the caption shows the words anyway */ }); return true; }
+    } catch (e) { /* ignore */ }
+    return false;
+  }
+  function offerOpen(text, copied) {
+    var L = LINES[lang];
+    caption((copied ? L.fixc.copied : L.fixc.nocopy).replace('%s', text));
+    var old = chips.querySelector('a.open');
+    if (old) old.remove();
+    var a = chipLink(L.chips.open, fixcUrl() || '#', 'open', null);
+    a.target = '_blank'; a.rel = 'noopener';
+    a.addEventListener('click', function (e) {
+      touch(); copyText(text);
+      if (!fixcUrl()) {
+        e.preventDefault();
+        var u = setFixcUrl(false);
+        if (u) window.open(u, '_blank', 'noopener');
+      }
+    });
+    // right after the FixC chips
+    var anchor = chips.querySelector('button.minor');
+    if (anchor && anchor.parentNode === chips) chips.insertBefore(a, anchor); else chips.appendChild(a);
+  }
+  function requestFixC(kind) {
+    if (busy) return;
+    var L = LINES[lang], text = L.fixc[kind];
+    touch();
+    var copied = copyText(text);
+    var show = function () { offerOpen(text, copied); };
+    if (!clipMode) { say(L.clips.ack, 'listen'); setTimeout(show, 1600); return; }
+    busy = true; clearTimeout(holdTimer); clearTimeout(idleTimer);
+    engage(function () {
+      caption(L.clips.request);
+      var name = variants('request').length ? pickVariant('request') : pickVariant('ack');
+      playClip(name, function () {
+        goTo('mid', 600, EASE.inOut, function () { busy = false; touch(); queueNext(); scheduleIdle(); show(); });
+      });
+    });
   }
   function setLang(next) {
     lang = LINES[next] ? next : 'en';
@@ -471,7 +595,7 @@
   }
   function queueNext() {
     // choose the next acknowledgement, piece of work and goodbye now and start fetching them
-    ['ack', 'work', 'bye'].forEach(function (kind) {
+    ['ack', 'work', 'bye', 'request'].forEach(function (kind) {
       if (!upNext[kind]) {
         var names = variants(kind);
         var pool = names.length > 1 ? names.filter(function (n) { return n !== lastPlayed[kind]; }) : names;

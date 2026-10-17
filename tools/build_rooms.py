@@ -70,6 +70,11 @@ def placard(title, text, tag):
     return '      <section class="placard"><h2>%s</h2><p>%s</p><span class="soon">%s</span></section>' % (title, text, tag)
 
 
+def placard_link(title, text, tag, href):
+    """A placard that is a door: the whole card links to a live page of the room."""
+    return '      <a class="placard live" href="%s"><h2>%s &rarr;</h2><p>%s</p><span class="soon">%s</span></a>' % (href, title, text, tag)
+
+
 # ====================================================================== FIN LAB
 def fin_lab():
     rnd = random.Random(3)
@@ -170,7 +175,16 @@ def fin_lab():
     .bubble::before { content: ""; position: absolute; top: -9px; left: 36px; border: 9px solid transparent; border-top: 0; border-bottom-color: #f4f6fa; }
     .bubble .caret { display: inline-block; width: 2px; height: 1em; background: #16202f; vertical-align: -2px; margin-left: 1px; animation: blinkcaret 1s steps(2) infinite; }
     @keyframes blinkcaret { 50% { opacity: 0; } }
-    .chips { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+    a.placard { display: block; color: inherit; text-decoration: none; }
+    a.placard.live { border-color: rgba(79, 163, 255, 0.55); }
+    a.placard.live:hover { background: rgba(79, 163, 255, 0.14); }
+    a.placard.live .soon { border-style: solid; color: #9fd0ff; border-color: rgba(79, 163, 255, 0.45); }
+    .chips { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .chips .group { flex-basis: 100%; font-size: 10px; color: var(--room-muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 6px; }
+    .chips .group:first-child { margin-top: 0; }
+    .chips button.minor { font-size: 11px; opacity: 0.7; background: transparent; }
+    .chips a.open { background: rgba(255, 196, 79, 0.18); border-color: rgba(255, 196, 79, 0.55); }
+    .chips a.open:hover { background: rgba(255, 196, 79, 0.3); }
     .chips button, .chips a { font: inherit; font-size: 12px; color: var(--room-ink); background: rgba(79, 163, 255, 0.12); border: 1px solid rgba(79, 163, 255, 0.35); border-radius: 999px; padding: 4px 10px; cursor: pointer; text-decoration: none; }
     .chips button:hover, .chips a:hover { background: rgba(79, 163, 255, 0.24); }
     @media (prefers-reduced-motion: reduce) { .figure-photo, .figure-glow, .figure.waving .figure-tilt, .figure.waving .figure-shine, .figure.waving .figure-ring, .ticker-track { animation: none !important; } .figure-tilt, .figure-photo.frame { transition: none; } }
@@ -183,10 +197,10 @@ def fin_lab():
       <span class="status">Keyed &middot; desks ready, feeds pending</span>
     </header>
     <p class="room-desc">The trading-floor office of the house. Market commentary and analyst reports will accumulate here, and the Market Board
-      outside the gate will draw on them. Sources and links are still being arranged; for now the analyst on duty will show you around.</p>
+      outside the gate will draw on them. The <b>FixC</b> project writes its weekly and daily reports here; Felicia Yasmin Claude, its analyst, shows you to the boards.</p>
     <div class="lab">
       <aside class="guide" aria-label="The analyst">
-        <div class="figure" id="figure" tabindex="0" role="img" aria-label="The Fin Lab analyst at her desk. Click to get her attention.">
+        <div class="figure" id="figure" tabindex="0" role="img" aria-label="Felicia Yasmin Claude, the FixC analyst, at her desk. Click to get her attention.">
           <div class="figure-tilt" id="figure-tilt">
             <img class="figure-photo base" src="assets/analyst.jpg" alt="" width="768" height="1152">
             <img class="figure-photo frame" alt="" aria-hidden="true">
@@ -198,7 +212,7 @@ __VIDEOS__
           </div>
           <div class="figure-ring"></div>
         </div>
-        <div class="nameplate"><span id="fig-name">Analyst on duty</span><span class="lang" role="group" aria-label="Language"><button type="button" class="sound" id="fig-sound" aria-pressed="true" title="Sound">&#128266;</button><button type="button" data-lang="en" aria-pressed="true">EN</button><button type="button" data-lang="ko" aria-pressed="false">KO</button></span></div>
+        <div class="nameplate"><span id="fig-name">Felicia Yasmin Claude (Fixy)</span><span class="lang" role="group" aria-label="Language"><button type="button" class="sound" id="fig-sound" aria-pressed="true" title="Sound">&#128266;</button><button type="button" data-lang="en" aria-pressed="true">EN</button><button type="button" data-lang="ko" aria-pressed="false">KO</button></span></div>
         <div class="bubble" id="bubble" aria-live="polite"><span id="bubble-text"></span><span class="caret" aria-hidden="true"></span></div>
         <div class="chips" id="chips"></div>
       </aside>
@@ -207,11 +221,13 @@ __VIDEOS__
 %s
 %s
 %s
+%s
       </div>
     </div>
-    <p class="room-foot">Design only for now. The private side of this room is <code>Drive/fin-lab/</code>. <a href="../market-board-facade/">Market Board Facade &rarr;</a></p>''' % (
+    <p class="room-foot">The private side of this room is <code>Drive/fin-lab/</code>; its <a href="reports/">FixC report</a> and <a href="picks/">FixC Daily Picks</a> boards read from there. <a href="../market-board-facade/">Market Board Facade &rarr;</a></p>''' % (
         ticker_items, ticker_items,
-        placard('Market commentary', 'Daily and weekly notes on the markets: rates, FX, equities, credit. Filed by date and theme.', 'Space reserved'),
+        placard_link('FixC report', 'The weekly and daily market reports and the notes the FixC project writes from the lab\'s research, filed by date. Read them here, download the PDFs, and jump to the day\'s picked originals.', 'Open &middot; private, token in your browser', 'reports/'),
+        placard_link('FixC Daily Picks', 'The one to three documents each daily singles out to read in full: the originals from the lab\'s inbox, opened in place, with FixC\'s note on why.', 'Open &middot; private, token in your browser', 'picks/'),
         placard('Analyst reports', 'Sell-side and in-house research, tagged by sector, issuer and author, with the key charts kept alongside.', 'Space reserved'),
         placard('Sources &amp; feeds', 'Where the material comes from and how it is refreshed: uploads, scheduled pulls, and links to be connected.', 'To be connected'),
         placard('Hand-off to the Market Board', 'What the lab extracts for the board outside: series, snapshots and summaries, once the database is established.', 'Planned'))

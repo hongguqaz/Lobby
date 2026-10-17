@@ -62,6 +62,8 @@ def clip_pairs():
             pairs += [(f"{name}-out", f"{w}-in") for w in by_kind.get("work", [])]
         elif k == "work":
             pairs += [("mid", f"{name}-in"), (f"{name}-out", "mid")]
+        elif k == "request":   # the visitor asks for a report, she says yes: in and out of the attentive pose
+            pairs += [("mid", f"{name}-in"), (f"{name}-out", "mid")]
         elif k == "bye":
             pairs += [("mid", f"{name}-in"), (f"{name}-out", "base")]
     return pairs

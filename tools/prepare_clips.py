@@ -44,7 +44,7 @@ W, H = 768, 1152
 #   ack    "yes, understood"
 #   work   turns to the screen or the papers and works
 #   bye    "see you again", then back to work
-KINDS = ("greet", "ack", "work", "bye")
+KINDS = ("greet", "ack", "work", "bye", "request")
 PHOTOS = {"base": FIN / "analyst.jpg", "mid": FIN / "analyst-mid.jpg"}   # resting and attentive portraits
 
 
